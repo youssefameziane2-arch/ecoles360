@@ -1,5 +1,6 @@
 import { plainToInstance, Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -61,7 +62,24 @@ export class EnvironmentVariables {
   @IsOptional()
   HEALTH_CHECK_TIMEOUT_MS = 2000;
 
-  @Transform(({ value }) => value === undefined || value === '' || value === 'true')
+  /**
+   * Exposition de `/api/docs`.
+   *
+   * Laisser `undefined` quand la variable est absente ou vide est ce qui
+   * compte : `main.ts` retombe alors sur « actif hors production », donc
+   * FERMÉ en production. Écrire `value === undefined || … === 'true'`
+   * renverrait `true` pour une variable absente et ouvrirait la
+   * documentation en production — au prix d'un pari sur le fait que
+   * class-transformer n'appelle pas `@Transform` sur une clé manquante.
+   * Un défaut d'exposition ne se décide pas par effet de bord.
+   */
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    return value === 'true' || value === '1';
+  })
+  @IsBoolean({ message: 'SWAGGER_ENABLED doit valoir true ou false.' })
   @IsOptional()
   SWAGGER_ENABLED?: boolean;
 
