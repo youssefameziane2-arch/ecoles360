@@ -131,3 +131,73 @@ baisserait à chaque module ajouté. Deux fichiers sont couverts au lot 1
 `coverageThreshold`. Une revue qui laisse passer un service sans seuil laisse
 passer un service sans test.
 **Statut :** convention posée.
+
+---
+
+## Relevé pendant l'implémentation du lot 2
+
+### B-13 · Les fichiers SQL voisins ne sont pas exécutés par Prisma Migrate
+**Source :** L10 §1 — « les contraintes CHECK sont ajoutées par un fichier SQL
+supplémentaire dans le même dossier de migration (prisma migrate exécute tout
+`*.sql` présent) ».
+**Constat :** Prisma Migrate n'exécute QUE le fichier `migration.sql` de chaque
+dossier. Un fichier voisin serait ignoré **en silence** — les contraintes
+n'existeraient jamais en base, et rien ne le signalerait.
+**Tranché :** les CHECK vivent dans une migration dédiée
+(`*_contraintes_check/migration.sql`). L'intention du livrable est préservée —
+des contraintes versionnées, appliquées par la même chaîne — sans reposer sur
+un comportement que l'outil n'a pas.
+**Statut :** à confirmer.
+
+### B-14 · `chk_fac_origine` : contrainte impossible et contradictoire
+**Source :** L10 §2.7 — clés étrangères de `factures` en `onDelete: SetNull`
+ET contrainte CHECK exigeant exactement une origine non nulle.
+**Constat :** MySQL 8 refuse (erreur 3823 — une colonne servant à une action
+référentielle ne peut pas figurer dans un CHECK). Et il a raison : si la
+suppression d'un abonnement met `abonnement_id` à `NULL`, la facture se
+retrouve **sans aucune origine**, ce que le CHECK interdit. Les deux règles du
+livrable sont logiquement incompatibles.
+**Provisoire :** le CHECK n'est pas posé ; l'invariant reste garanti à
+l'écriture par `FacturationService` (L11 §4), comme le livrable le prévoit déjà.
+**Recommandation :** au lot de la facturation, passer les trois clés en
+`onDelete: Restrict`. Le CHECK redevient posable, ET l'on interdit de supprimer
+un abonnement déjà facturé — comportement attendu d'un document conservé dix
+ans (RG14). **À arbitrer.**
+
+### B-15 · `main.cli.ts` ou `dist/cli.js` ?
+**Source :** L10 §3 nomme la source `api/src/main.cli.ts` ; L10 §4 et L14 §4.3
+invoquent `node dist/cli.js`.
+**Constat :** les deux ne peuvent pas être vrais — `tsc` produirait
+`dist/main.cli.js`.
+**Tranché :** la source s'appelle `src/cli.ts`, ce qui produit `dist/cli.js`.
+C'est le chemin d'exécution qui fait foi : c'est lui qui figure dans le runbook
+et dans les procédures d'exploitation.
+**Statut :** à confirmer.
+
+### B-16 · Droits MySQL pour la base fantôme de Prisma
+**Constat :** `prisma migrate dev` crée une base temporaire pour détecter les
+dérives. L'utilisateur applicatif n'ayant pas le droit d'en créer, la commande
+échouait en P3014 et aucune migration ne pouvait être produite.
+**Tranché :** `infra/mysql/init/01-bases-et-droits.sql`, joué à la création du
+volume, accorde le droit sur le **préfixe** `prisma_migrate_shadow_db%`
+uniquement — pas sur `*.*`. Y est aussi créée la base `ecoles360_test`.
+Développement seulement : en production `prisma migrate deploy` n'a jamais
+besoin de base fantôme.
+**Statut :** convention posée.
+
+### B-17 · `nest-commander` figé en 3.17.0
+**Constat :** à partir de la 3.18, `nest-commander` dépend de
+`@golevelup/nestjs-discovery` qui exige NestJS 11, alors que le livrable 7
+impose **NestJS 10**. La version est donc figée exactement, pas en `^`.
+**À revoir** au moment d'une éventuelle montée vers NestJS 11.
+**Statut :** contrainte documentée.
+
+### B-18 · Import open data non implémenté
+**Source :** L10 §4 — `ImportEtablissementsCommand`, pipeline en 6 étapes
+(collecte, nettoyage, doublons par similarité, slugs, géocodage Nominatim,
+insertion), mode `--dry-run`.
+**Constat :** hors du critère de sortie du lot 2, qui porte sur
+`prisma migrate deploy` + seed. L'import suppose en outre un fichier CSV du MEN
+qui n'est pas fourni dans le handoff, et un accès réseau à Nominatim.
+**Proposition :** lot dédié, avec le CSV réel en entrée.
+**Statut :** à arbitrer — fournir le CSV.

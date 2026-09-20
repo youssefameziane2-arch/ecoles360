@@ -82,14 +82,24 @@ jobs:
       - name: Générer le client Prisma
         run: pnpm --filter api exec prisma generate
 
-      # LOT 2 — `prisma migrate deploy` puis la commande de seed entreront ici,
-      # dès que api/prisma/migrations/ existera (livrable 10 §3, livrable 14 §3).
+      - name: Appliquer les migrations
+        run: pnpm --filter api exec prisma migrate deploy
+
+      # Le build précède le seed : la commande est `node dist/cli.js`, même
+      # binaire que l'API avec un point d'entrée différent (livrable 14 §2).
+      - name: Build (nest build — échoue si un type est cassé)
+        run: pnpm --filter api build
+
+      - name: Seed (référentiels + démonstration)
+        run: pnpm --filter api db:seed
+        env:
+          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+          SEED_SECRETAIRE_PASSWORD: ${{ secrets.SEED_SECRETAIRE_PASSWORD }}
+          SEED_ETABLISSEMENT_PASSWORD: ${{ secrets.SEED_ETABLISSEMENT_PASSWORD }}
+          SEED_COMMERCIAL_PASSWORD: ${{ secrets.SEED_COMMERCIAL_PASSWORD }}
 
       - name: Lint (ESLint + Prettier)
         run: pnpm --filter api lint
-
-      - name: Build (nest build — échoue si un type est cassé)
-        run: pnpm --filter api build
 
       - name: Tests (Jest + Supertest, couverture)
         run: pnpm --filter api test:cov
