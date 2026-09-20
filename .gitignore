@@ -1,0 +1,39 @@
+# — Dépendances —
+node_modules/
+.pnpm-store/
+
+# — Build —
+dist/
+build/
+*.tsbuildinfo
+
+# — Secrets et environnement (lot 1 §4 : aucun secret réel dans le dépôt) —
+.env
+.env.*
+!.env.example
+.env.tag
+secrets/
+
+# — Prisma : client généré (regénéré par `prisma generate`, voir L10 §2.0) —
+api/src/generated/
+
+# — Tests —
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# — Médias hors dépôt (volume Docker « storage », L7 §1) —
+storage/
+
+# — Journaux —
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# — Éditeurs et OS —
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
