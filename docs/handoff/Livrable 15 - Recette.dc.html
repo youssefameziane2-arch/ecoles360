@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Livrable 15 · Recette</span>
+    <span>v2.5 · septembre 2026</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Livrable 15 / 16 — Réalisation &amp; mise en service</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">Recette et procès-verbal</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">Vérification de conformité du produit livré aux exigences : scénarios de bout en bout par acteur (parent, établissement, secrétaire, admin / Super Admin, commercial), joués sur le staging conteneurisé <span style="font-family:ui-monospace,monospace;font-size:11px;">staging.ecoles360.com</span> (livrable 14 v2.5), tracés vers les règles de gestion RG01–RG27 et les critères d'acceptation. Se conclut par le procès-verbal de recette et la liste des réserves.</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Version 2.5 · Septembre 2026 · S'appuie sur les livrables 3 (critères d'acceptation), 13 v2.5 (parcours E2E Jest/Supertest + Playwright) et 14 v2.5 (staging conteneurisé déployé sur le VPS Hostinger KVM) · Prépare le livrable 16 v2.5 (documentation &amp; maintenance)</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. Cadre et méthode de recette</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">La recette est conduite sur <span style="font-family:ui-monospace,monospace;font-size:10px;">staging.ecoles360.com</span> — hébergé sur le même VPS Hostinger KVM 2 que la production mais dans un <strong>projet Docker Compose distinct</strong> (<span style="font-family:ui-monospace,monospace;font-size:10px;">-p ecoles360-staging</span>, volumes et réseau séparés — livrable 14 v2.5 §4.3), <span style="font-family:ui-monospace,monospace;font-size:10px;">server_name</span> nginx dédié, base <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360_staging</span> re-seedée à chaque déploiement (<span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose exec api npx prisma migrate reset --force</span> puis <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose run --rm api node dist/cli.js db:seed</span>). Les comptes et données de démonstration produits par la commande de seed (livrable 10 v2.5 §3) servent de jeu d'essai reproductible. Chaque scénario est rejoué manuellement par le client et automatiquement par la suite Playwright (livrable 13 v2.5 §4). Un scénario est <strong>Conforme</strong> si toutes ses étapes passent et que les règles de gestion visées sont respectées ; sinon une <strong>réserve</strong> est ouverte (§4), qualifiée bloquante, majeure ou mineure.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:22%;">Compte de recette</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:30%;">Identifiant</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Rôle / portées</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Parent</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">— (consultation libre, sans compte)</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Recherche, comparaison, demande de contact, dépôt d'avis.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Admin / Super Admin</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">direction@ecoles360.com</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Validation, facturation, sponsoring, modération, validation des fiches (RG20), console d'administration (RG25–RG27).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Commercial</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">commercial@ecoles360.com</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Prospects affectés, pipeline commercial, commissions (RG17, RG18).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Établissement</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">contact@almassira.ma</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Lycée Al Massira — fiche, statistiques, abonnement, avis, CRM leads, blog (RG27).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Secrétaire</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">sara.s@ecoles360.com</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Sara Idrissi — portées fiches + contacts + avis, CRM en traitement sans suppression / export (RG23).</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 16px;">Mots de passe injectés par variables d'environnement (<span style="font-family:ui-monospace,monospace;font-size:9px;">SEED_*_PASSWORD</span>), jamais en clair (livrables 10 v2.5 et 14 v2.5). Sessions Passport persistées dans Redis (cookie HttpOnly + CSRF double-submit, Argon2id).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. Scénarios de bout en bout par acteur</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">Chaque scénario liste ses étapes, le résultat attendu et les règles vérifiées. Colonne <em>Réf.</em> = numéro du parcours E2E correspondant du livrable 13 v2.5 §4.</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">SR-01 — Parent : recherche → fiche → demande de contact</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead><tr>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:6%;">#</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:44%;">Étape</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;">Résultat attendu · règles</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:12%;">Statut</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">1</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Recherche « Casablanca » + type Lycée, filtres appliqués — rendu SSR (livrable 12 v2.5)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">18 fiches / page, sponsorisées en tête avec badge (RG02, RG19) ; balises SEO natives (title, schema.org LocalBusiness)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">2</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Ouverture de la fiche Lycée Al Massira</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Vue comptée par <em>ViewBillingService</em> (compteur plafonné, RG12) ; ★ 4,8 / 142 avis affichés</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">3</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Envoi d'une demande de contact sans consentement</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Refus 422 du <em>ValidationPipe</em>, message français porté par le DTO class-validator (RG09)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">4</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Envoi valide (nom, tél, message, consentement)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Demande créée, jobs BullMQ <em>mail</em> + <em>alerts</em> émis ; lead « nouveau » auto (RG21)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">SR-02 — Établissement : de la demande reçue à la conversion du lead + article blog <span style="font:600 9.5px/1 'Inter',sans-serif;color:#9AA3AF;">(réf. E2E-3)</span></p>
+  <table style="width:100%;border-collapse:collapse;font:400 10px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead><tr>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:6%;">#</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:44%;">Étape</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;">Résultat attendu · règles</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:12%;">Statut</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">1</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Connexion → tableau de bord ; bloc CRM affiche « 1 nouveau »</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Compteurs et badges de nav live, invalidations React Query + purge du cache API (RG21)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">2</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">CRM Leads : ouverture du lead, complétion de la fiche de besoin (FC-1 → FC-11)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Score recalculé par <em>LeadService</em>, borné 0–10 (RG22)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">3</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Ajustement manuel du score à 12</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Refus par le <em>ValidationPipe</em> (422), valeur ramenée à 10, delta journalisé (RG22, RG15, RG26)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">4</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Ajout d'un commentaire + programmation d'une relance</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Timeline horodatée ; relance visible dans « à relancer » (RG21)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">5</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Passage à « perdu » sans motif, puis avec motif</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Refus sans <span style="font-family:ui-monospace,monospace;font-size:9px;">raison_perte</span> (422) ; accepté avec motif (RG21)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">6</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Sur un autre lead : statut → « inscrit », saisie de l'acompte</td><td style="border:1px solid #E1E5EA;padding:5px 7px;"><span style="font-family:ui-monospace,monospace;font-size:9px;">converti_le</span> fixé ; bloc CRM et KPI du dashboard à jour (RG21)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">7</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Blog : soumission d'un article « Portes ouvertes »</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Article <em>en_attente</em> (<em>ArticleWorkflowService</em>) ; aucun bouton de publication directe (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">8</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Ma fiche : modification de la description + envoi</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Proposition en attente (<em>FicheProposalService</em>) ; fiche publique inchangée (RG20, RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">SR-03 — Secrétaire : portées et confidentialité des leads <span style="font:600 9.5px/1 'Inter',sans-serif;color:#9AA3AF;">(réf. E2E-4)</span></p>
+  <table style="width:100%;border-collapse:collapse;font:400 10px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead><tr>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:6%;">#</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:44%;">Étape</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;">Résultat attendu · règles</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:12%;">Statut</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">1</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Connexion (session Passport) ; nav réduite (Tableau de bord · Demandes · Fiches)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">« Bonjour Sara 👋 » ; nav filtrée côté front et portées vérifiées par le <em>ScopesGuard</em> (RG05)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">2</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Traite une demande de contact ; dépose une proposition de fiche</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Autorisé ; proposition en attente sans toucher la fiche publique (RG20)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">3</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Appel direct à <span style="font-family:ui-monospace,monospace;font-size:9px;">DELETE /api/v1/leads/&lt;id&gt;</span></td><td style="border:1px solid #E1E5EA;padding:5px 7px;">403 (<em>LeadGuard</em>) — donnée intacte, entrée d'audit (RG23, RG26)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">4</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Modération d'un avis signalé avec motif</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Avis masqué, <span style="font-family:ui-monospace,monospace;font-size:9px;">note_moy</span> recalculée dans la même transaction Prisma (RG08)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">5</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Vérification : nav n'expose ni Modération avis ni CRM leads (portées non déléguées)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Boutons Supprimer / Exporter absents de l'UI (RG23)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">SR-04 — Admin / Super Admin : validation, facturation, sponsoring, console d'administration <span style="font:600 9.5px/1 'Inter',sans-serif;color:#9AA3AF;">(réf. E2E-5)</span></p>
+  <table style="width:100%;border-collapse:collapse;font:400 10px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead><tr>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:6%;">#</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:44%;">Étape</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;">Résultat attendu · règles</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:12%;">Statut</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">1</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Établissements : filtre « En attente », ouverture d'une demande</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Table unique filtrée ; toutes les infos du formulaire public visibles</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">2</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">« Valider » sur un établissement dont l'abonnement n'est pas payé</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">409 <em>facture_non_payee</em> (<em>AdminEtablissementService</em>) → modale renvoyant à la facturation (RG14)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">3</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Abonnement &amp; facturation : formule + tarif, génération facture, « Marquer payée »</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Facture F2026-NNNNNN via <em>FacturationService</em> (verrou <span style="font-family:ui-monospace,monospace;font-size:9px;">FOR UPDATE</span>), TVA 20 %, reçu HTML téléchargeable (RG14, RG18)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">4</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Retour à la fiche → « Valider » de nouveau</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Débloqué : établissement actif, entrée d'audit (RG03, RG15, RG26)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">5</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">« Vérifier une modification de fiche » : approuver</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Fiche publique mise à jour dès le rendu SSR suivant, la clé de cache <span style="font-family:ui-monospace,monospace;font-size:9px;">fiche:{slug}</span> ayant été purgée (RG20, RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">6</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Blog : approuver un article en attente + mise à la une</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Article publié sur <span style="font-family:ui-monospace,monospace;font-size:9px;">/blog</span> une fois la clé <span style="font-family:ui-monospace,monospace;font-size:9px;">articles:public</span> purgée (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">7</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Utilisateurs &amp; rôles : réinitialiser un mot de passe secrétariat</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Sessions Passport du compte détruites dans Redis, mot de passe temporaire envoyé, entrée d'audit sévérité <em>avertissement</em> (RG25, RG26)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">8</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Journal d'audit : filtrer par rôle / sévérité — tentative <span style="font-family:ui-monospace,monospace;font-size:9px;">POST</span> sur <span style="font-family:ui-monospace,monospace;font-size:9px;">/api/v1/admin/audit</span></td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Lecture OK ; écriture → 404 (aucune méthode d'écriture déclarée dans le controller), immuabilité vérifiée (RG26)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">9</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Statistiques plateforme : filtres période / ville / type</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">6 KPI, courbe et classements cohérents avec le jeu d'essai</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#E9A23B;font-weight:700;">Réserve mineure</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">SR-05 — Commercial : prospect → transformation → commission <span style="font:600 9.5px/1 'Inter',sans-serif;color:#9AA3AF;">(réf. E2E-6)</span></p>
+  <table style="width:100%;border-collapse:collapse;font:400 10px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 14px;">
+    <thead><tr>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:6%;">#</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:44%;">Étape</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;">Résultat attendu · règles</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:12%;">Statut</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">1</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Connexion ; ne voit que ses prospects affectés</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Cloisonnement <em>ProspectGuard</em>, 403 sur un prospect non affecté (RG17)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">2</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Avance un prospect jusqu'à « Transformé »</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Compte + fiche établissement créés (RG17)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">3</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Première facture payée du nouvel établissement</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Commission <em>a_valider</em> (<em>CommissionService</em>) ; passage à <em>reglee</em> refusé sans validation Direction (RG18)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#2E9E5B;font-weight:700;">Conforme</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. Recette transverse (non-fonctionnel)</h2>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>Concurrence</strong> — deux vues sponsorisées simultanées près du plafond : compteur exact, jamais dépassé (deux <span style="font-family:ui-monospace,monospace;font-size:10px;">PrismaClient</span> sur <span style="font-family:ui-monospace,monospace;font-size:10px;">$queryRaw FOR UPDATE</span>, RG12) — <span style="color:#2E9E5B;font-weight:700;">Conforme</span>.</li>
+    <li style="margin-bottom:5px;"><strong>Numérotation des factures</strong> — séquence <span style="font-family:ui-monospace,monospace;font-size:10px;">F2026-NNNNNN</span> continue et sans trou sous charge parallèle (RG14) — <span style="color:#2E9E5B;font-weight:700;">Conforme</span>.</li>
+    <li style="margin-bottom:5px;"><strong>Double proposition de fiche</strong> — deux appels concurrents à <em>FicheProposalService.submit()</em> : la seconde reçoit 409 <em>proposition_deja_en_attente</em> (RG27) — <span style="color:#2E9E5B;font-weight:700;">Conforme</span>.</li>
+    <li style="margin-bottom:5px;"><strong>Format fr-MA</strong> — virgule décimale (4,8), espace fine des milliers (8 420), MAD suffixé, dates 24 h — <span style="color:#2E9E5B;font-weight:700;">Conforme</span>.</li>
+    <li style="margin-bottom:5px;"><strong>Vie privée (loi 09-08)</strong> — purges du conteneur <em>scheduler</em> (<span style="font-family:ui-monospace,monospace;font-size:10px;">@nestjs/schedule</span>) : anonymisation 12 mois demandes + traces, purge journal d'audit 3 ans (RG26) — <span style="color:#2E9E5B;font-weight:700;">Conforme</span>.</li>
+    <li style="margin-bottom:5px;"><strong>Sécurité</strong> — HTTPS (TLS 1.3) forcé, HSTS, CSP, sessions Passport en cookie HttpOnly persistées dans Redis + CSRF double-submit + Argon2id, throttling Redis (livrable 14 v2.5 §6) — <span style="color:#2E9E5B;font-weight:700;">Conforme</span>.</li>
+    <li style="margin-bottom:5px;"><strong>Isolation des environnements</strong> — la recette s'exécute dans le projet Compose <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360-staging</span> : vérifié qu'aucune écriture n'atteint les volumes ni la base de production, et que le redéploiement du seul conteneur <em>api</em> (<span style="font-family:ui-monospace,monospace;font-size:10px;">up -d --no-deps api</span>) laisse les sessions ouvertes et les files BullMQ intactes (livrable 14 v2.5 §4.1, §4.3) — <span style="color:#2E9E5B;font-weight:700;">Conforme</span>.</li>
+    <li><strong>Accessibilité &amp; responsive</strong> — navigation clavier, contrastes AA, cibles ≥ 44 px, rendu mobile des back-offices — <span style="color:#E9A23B;font-weight:700;">Réserve mineure</span> (voir R-02).</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. Réserves</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 14px;">
+    <thead><tr>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:8%;">Réf.</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:12%;">Gravité</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;">Description · traitement convenu</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;font-weight:700;">R-01</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#E9A23B;font-weight:700;">Mineure</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Statistiques admin (SR-04 §9) : le libellé de période « 12 mois » n'inclut pas le mois courant partiel. Correctif planifié en maintenance corrective, sans impact sur les décisions.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;font-weight:700;">R-02</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#E9A23B;font-weight:700;">Mineure</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Rendu mobile des back-offices : densité et alignements à affiner (kanban, graphiques, bannières). Chantier UI en cours ; sans effet sur les fonctions ni les règles de gestion.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;font-weight:700;">R-03</td><td style="border:1px solid #E1E5EA;padding:5px 7px;color:#5A6472;font-weight:700;">Évolution</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Matching lead ↔ offre (US-E14) livré en aperçu badgé « Lot 2 · V1.1 » ; hors périmètre MVP, planifié (avenant n° 1 §6).</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">Aucune réserve bloquante ni majeure. Les trois réserves sont mineures ou d'évolution et n'empêchent pas la mise en service.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. Procès-verbal de recette</h2>
+  <div style="border:1px solid #E1E5EA;border-radius:12px;padding:18px 20px;background:#fff;margin:0 0 14px;">
+    <p style="font:400 12px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">À l'issue des scénarios SR-01 à SR-05 (33 étapes) et de la recette transverse joués sur le staging conteneurisé hébergé chez Hostinger, <strong>32 cas sur 33 sont conformes</strong> aux exigences des livrables 3 et 13 v2.5. Sont ouvertes 2 réserves mineures et 1 évolution, sans caractère bloquant. En conséquence, le produit est prononcé :</p>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#E6F4EC;border:1px solid #B7E0C6;border-radius:10px;margin:0 0 14px;">
+      <span style="font:800 14px/1 'Inter',sans-serif;color:#1E7A44;">✓ RECETTE PRONONCÉE — avec réserves mineures</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;padding:12px 14px;">
+        <div style="font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#9AA3AF;margin-bottom:24px;">Pour le client — Direction écoles360</div>
+        <div style="border-top:1px solid #E1E5EA;padding-top:6px;font:400 10px/1.4 'Inter',sans-serif;color:#5A6472;">Nom, date et signature</div>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;padding:12px 14px;">
+        <div style="font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#9AA3AF;margin-bottom:24px;">Pour la maîtrise d'œuvre</div>
+        <div style="border-top:1px solid #E1E5EA;padding-top:6px;font:400 10px/1.4 'Inter',sans-serif;color:#5A6472;">Nom, date et signature</div>
+      </div>
+    </div>
+  </div>
+
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;"><strong>Prochaine étape</strong> — Livrable 16 v2.5 : documentation &amp; maintenance (guide administrateur, guide établissement / secrétaire, runbook d'exploitation reprenant le déploiement conteneurisé NestJS / React-Vite / Docker Compose du livrable 14 v2.5, et plan de maintenance corrective / évolutive traitant les réserves R-01 à R-03).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. Historique des révisions</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:12%;">Version</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:16%;">Date</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v1.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Version initiale — cadre et comptes de recette, 5 scénarios SR-01 à SR-05 (26 étapes), recette transverse (concurrence, factures, format fr-MA, 09-08, sécurité, responsive), 3 réserves (2 mineures, 1 évolution) et procès-verbal signé — recette prononcée avec réserves. Intègre le modèle v2.1 (avenant n° 1).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.4</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Migration Laravel 11 → Next.js 14 + hébergement Hostinger VPS KVM (livrables 7/13/14 v2.4). Périmètre : §1 recette conduite sur <span style="font-family:ui-monospace,monospace;font-size:10px;">staging.ecoles360.com</span> (livrable 14 v2.4 §2, même VPS KVM, port PM2 3001), re-seed par <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma migrate reset --force</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm db:seed</span> ; §2 SR-01 mentionne rendu RSC + balises SEO natives (Next.js) et Server Action revalidée par Zod ; SR-02 étendu à 8 étapes (blog en attente RG27 via <em>ArticleWorkflowService</em> et modification de fiche via <em>FicheProposalService</em>) ; SR-03 nav Secrétariat réduite à Tableau de bord · Demandes · Fiches (5<sup>e</sup> passe CLAUDE.md), 403 <em>LeadPolicy</em> avec entrée d'audit RG26 ; SR-04 étendu à 9 étapes (validation modification de fiche, décision d'article, réinitialisation de mot de passe RG25 avec sessions Auth.js invalidées, journal d'audit RG26 refusant 405 sur POST/PATCH/DELETE) ; SR-05 verrous <em>ProspectService</em> / <em>CommissionService</em> ; §3 recette transverse — concurrence testée avec deux <span style="font-family:ui-monospace,monospace;font-size:10px;">PrismaClient</span> sur <span style="font-family:ui-monospace,monospace;font-size:10px;">$queryRaw FOR UPDATE</span> (RG12 vues, RG14 factures, RG27 double proposition de fiche), sécurité TLS 1.3 + HSTS + CSP + Auth.js v5 + Argon2id + throttling Redis ; §4 réserves R-01 à R-03 inchangées ; §5 PV : 32 cas sur 33 conformes — recette prononcée avec réserves mineures.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.5</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Correction d'architecture : Next.js 14 → NestJS 10 + React 18/Vite ; conteneurisation Docker de la production (livrable 7 v2.5). <strong>Aucun changement de périmètre fonctionnel</strong> : mêmes scénarios SR-01 à SR-05, mêmes 33 étapes, mêmes réserves R-01 / R-02 / R-03, même verdict — recette prononcée avec réserves mineures, 32 cas sur 33 conformes. Seuls les termes techniques sont mis à jour. Périmètre : §1 la recette est conduite sur le <strong>staging conteneurisé</strong> (projet Compose distinct <span style="font-family:ui-monospace,monospace;font-size:10px;">-p ecoles360-staging</span>, volumes et réseau séparés, base <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360_staging</span>), re-seed par <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose exec api npx prisma migrate reset --force</span> puis <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose run --rm api node dist/cli.js db:seed</span>, sessions Passport persistées dans Redis ; §2 SR-01 — rendu <strong>SSR</strong> à la place du RSC, refus de la demande sans consentement par le <em>ValidationPipe</em> et les DTO class-validator ; SR-02 — invalidations React Query + purge du cache API, bornage du score refusé par le <em>ValidationPipe</em> ; SR-03 — portées vérifiées par le <em>ScopesGuard</em>, 403 par le <em>LeadGuard</em> ; SR-04 — publication visible dès le rendu SSR suivant après purge des clés <span style="font-family:ui-monospace,monospace;font-size:10px;">fiche:{slug}</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">articles:public</span>, sessions Redis détruites à la réinitialisation de mot de passe, écriture sur le journal d'audit refusée en <strong>404</strong> (aucune méthode d'écriture déclarée dans le controller Nest, là où Next.js répondait 405) ; SR-05 — cloisonnement porté par le <em>ProspectGuard</em> ; §3 concurrence conservée à l'identique (deux <span style="font-family:ui-monospace,monospace;font-size:10px;">PrismaClient</span> sur <span style="font-family:ui-monospace,monospace;font-size:10px;">$queryRaw FOR UPDATE</span> — RG12, RG14, RG27), purges exécutées par le conteneur <em>scheduler</em> (<span style="font-family:ui-monospace,monospace;font-size:10px;">@nestjs/schedule</span>), sécurité reformulée (Passport + Redis) et <strong>ajout d'un contrôle d'isolation des environnements</strong> (aucune écriture du staging vers les volumes de production ; redéploiement du seul conteneur <em>api</em> par <span style="font-family:ui-monospace,monospace;font-size:10px;">--no-deps</span> sans perte de session ni de job) ; §5 PV : même verdict, mention du staging conteneurisé.</td></tr>
+    </tbody>
+  </table>
+
+</x-import>
+</x-dc>
+</body>
+</html>

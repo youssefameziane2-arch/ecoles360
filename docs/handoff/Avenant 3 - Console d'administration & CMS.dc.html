@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Avenant 3 · Console d'administration &amp; CMS</span>
+    <span>v1.0 · septembre 2026 · Confidentiel — J2HB</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Avenant n° 3 — Cahier des charges</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">Avenant n° 3 — Console d'administration &amp; CMS</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">Transformer le profil Super Admin en véritable console d'administration : gestion des comptes, des rôles et des permissions ; journal d'audit de toutes les actions sensibles ; système de gestion de contenu pilotant le site public (blog, avis, FAQ, page « À propos ») ; page profil d'établissement intégralement éditable avec circuit d'approbation ; pilotage du statut sponsorisé.</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Version 1.0 · Septembre 2026 · Client / MOA : Plateforme J2HB · Modifie et complète le cahier des charges initial (livrable 3) et l'avenant n° 1 — les livrables antérieurs restent valides, leurs mises à jour v2.3 sont tracées en §5</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. Objet de l'avenant — avant / après</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Dans le cahier des charges v2, le back-office admin restait un outil de <strong>gestion commerciale</strong> : valider les établissements, encaisser les factures, modérer les avis signalés. Le site public, lui, était figé dans le code. L'avenant fait du profil Super Admin le <strong>poste de pilotage unique</strong> de la plateforme : plus aucune modification du site public ne nécessite d'intervention technique, et toute action sensible est tracée. Les modules CRM (avenant n° 1, RG21–RG23) et la prospection commerciale (RG17–RG20) restent inchangés.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:22%;">Élément</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:34%;">Avant (cahier des charges v2.1)</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Après (avenant 3)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Comptes</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Écran « Secrétaires » : création de comptes secrétaires et portées fiches / contacts / avis</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Écran « Secrétariat » (CRUD des comptes secrétariat, permissions par compte, suspension, réinitialisation de mot de passe) ; comptes établissement et commercial créés depuis leurs pages dédiées, à périmètre fixe</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Rôles</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Rôles implicites (admin, secrétaire, établissement, commercial) codés dans les Policies</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Quatre rôles nommés — <strong>Super Admin</strong>, secrétariat, commercial, établissement — et permissions unitaires portées par le compte</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Traçabilité</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Aucun journal consultable ; seuls les horodatages métier (factures, avis)</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Journal d'audit : acteur, rôle, action, cible, horodatage, sévérité ; filtres par rôle ; activité par profil et par établissement</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Contenu du site public</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Blog, FAQ, « À propos » et avis en avant écrits en dur dans le front-end</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">CMS : blog avec circuit de validation, avis approuvés et mis en avant, FAQ ordonnable, page « À propos » éditable</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Page profil établissement</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Formulaire « Ma fiche » restreint (identité, coordonnées, description, filières) ; validation Super Admin champ par champ</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Page profil <strong>intégralement</strong> éditable (tous les blocs publics) — admin publie directement, établissement et secrétariat soumettent une proposition avec comparatif</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Sponsoring</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Statut sponsorisé fixé en base, hors interface</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Bascule par établissement depuis le tableau et depuis la fiche, répercutée sur les résultats et la page profil</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. Périmètre fonctionnel — cinq volets</h2>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 5px;">2.1 Comptes, rôles &amp; permissions</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Quatre rôles nommés : <strong>Super Admin</strong> (accès total), <strong>secrétariat</strong> (périmètre délégué, rattaché à un établissement), <strong>commercial</strong> (prospection, ventes, blog, statistiques), <strong>établissement</strong> (sa fiche, ses avis, son abonnement, son blog). L'écran « Secrétariat » assure le cycle de vie complet des comptes secrétariat : création, édition, activation / suspension, suppression avec confirmation, recherche et filtre par statut, permissions unitaires (fiches, contacts, avis) basculées compte par compte, réinitialisation de mot de passe produisant un lien ou un mot de passe temporaire. Les comptes <em>établissement</em> et <em>commercial</em> ne sont pas créés là : l'établissement naît de l'écran « Établissements » (ou d'une demande d'inscription publique), le commercial de l'écran « Commerciaux » ; leurs permissions sont affichées en lecture seule avec la mention « périmètre fixe ». La réinitialisation de mot de passe est également accessible en une action depuis le tableau de bord (sélection du compte puis confirmation).</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 5px;">2.2 Journal d'audit</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Chaque action sensible produit une entrée immuable : acteur, rôle, action, cible, horodatage et sévérité (information, avertissement, erreur). L'écran « Journal d'audit » offre un filtre par rôle et deux lectures complémentaires : <strong>activité par profil</strong> (volume d'actions par compte) et <strong>statistiques par établissement</strong> (vues, clics, demandes de contact, avis). L'écran « Base de données » complète le dispositif par un explorateur <strong>en lecture seule</strong> des tables principales (établissements, utilisateurs, avis, articles, factures, leads) : aucune écriture n'y est possible, l'objectif est le contrôle et le diagnostic.</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 5px;">2.3 CMS — blog, avis, FAQ, « À propos »</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Le <strong>blog</strong> suit un circuit Brouillon → En attente → Approuvé / Refusé. L'éditeur porte titre, catégorie, chapeau, contenu et image <em>facultative</em> téléversée depuis le poste (plus de bibliothèque imposée), avec aperçu. Le Super Admin publie et peut mettre un article « à la une » de l'accueil ; l'établissement et le commercial disposent du même écran limité à leurs propres articles, où « publier » vaut <strong>soumission</strong>. Le blog est <strong>activable par compte</strong> : toujours actif pour le Super Admin, désactivé par défaut pour l'établissement et le commercial, qui l'activent depuis leur espace. Les <strong>avis</strong> passent d'une modération des seuls signalements à la gestion de l'ensemble du corpus (chips : tous, en attente, signalés, publiés, en avant) avec approbation, suppression et bascule « mettre en avant » alimentant la section « Ce que disent les parents » de l'accueil. L'écran « Contenu du site » porte la <strong>FAQ</strong> (création, modification, suppression, réordonnancement) et l'éditeur de la page <strong>« À propos »</strong> (histoire, mission, trois valeurs, coordonnées).</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 5px;">2.4 Page profil éditable &amp; circuit d'approbation</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Une <strong>page profil unique et partagée</strong> remplace l'ancien formulaire « Ma fiche » et l'écran de vérification avant / après. Elle reproduit exactement la page publique (galerie, encart « établissement multi-cycles », onglets À propos / Filières / Équipements / Tarifs / Équipe / Avis, colonne latérale) et se double d'un éditeur couvrant <strong>tous</strong> les blocs publics, sans exception :</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:28%;">Bloc éditable</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Contenu &amp; particularités</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Identité &amp; localisation</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Nom, type, ville, quartier, adresse, latitude / longitude — la mini-carte est <strong>cliquable</strong> et déplace le marqueur ; un lien « Voir sur Google Maps » est dérivé des coordonnées.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Contact</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Téléphone, e-mail, WhatsApp, site web, horaires d'ouverture (jour → plage), réseaux sociaux (Facebook, Instagram, LinkedIn, YouTube, TikTok, web) — masqués côté public si vides.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Galerie &amp; vidéo</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Photos téléversées depuis le poste, lien de la vidéo de présentation et son affiche (image téléversée).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Contenus rédactionnels</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Description, projet pédagogique (« Notre histoire »), chiffres clés (libellé + valeur), FAQ de l'établissement — ajoutable, modifiable, supprimable et <strong>réordonnable</strong>.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Offre</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Cycles proposés (multi-cycles), filières, langues, équipements, équipe, tarifs, gamme de prix, facilités de paiement et libellé de l'appel au devis.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Autres projets du propriétaire</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Publicité croisée : nom, catégorie, ville · quartier, description, image téléversée, lien.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Badges &amp; note — <span style="color:#E63946;">réservé Super Admin</span></td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Sponsorisé, Vérifié, Premium, note et nombre d'avis. Le bloc est visible mais grisé et désactivé pour l'établissement et le secrétariat, avec une microcopie explicative : ces attributs relèvent de la plateforme, jamais du client.</td></tr>
+    </tbody>
+  </table>
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:14px;background:#fff;margin:0 0 6px;">
+    <div style="display:flex;align-items:stretch;gap:0;">
+      <div style="flex:1;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;"><div style="background:#1D3557;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">ÉDITION</div><div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Établissement ou secrétariat modifie un ou plusieurs blocs de sa page profil</div></div>
+      <div style="display:flex;align-items:center;padding:0 3px;color:#C9D2DE;font:700 10px/1 'Inter',sans-serif;">→</div>
+      <div style="flex:1;border:1.5px solid #E63946;border-radius:8px;overflow:hidden;"><div style="background:#E63946;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">PROPOSITION</div><div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Demande déposée avec comparatif avant / après ; annulable par son auteur</div></div>
+      <div style="display:flex;align-items:center;padding:0 3px;color:#C9D2DE;font:700 10px/1 'Inter',sans-serif;">→</div>
+      <div style="flex:1;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;"><div style="background:#E9A23B;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">FILE SUPER ADMIN</div><div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">« Modifications de fiche à valider », en tête de l'écran Établissements</div></div>
+      <div style="display:flex;align-items:center;padding:0 3px;color:#C9D2DE;font:700 10px/1 'Inter',sans-serif;">→</div>
+      <div style="flex:1;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;"><div style="background:#2E9E5B;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">APPROUVÉE</div><div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Publication sur le site public et retrait de la file — action journalisée</div></div>
+      <div style="display:flex;align-items:center;padding:0 3px;color:#C9D2DE;font:700 10px/1 'Inter',sans-serif;">·</div>
+      <div style="flex:1;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;"><div style="background:#9AA3AF;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">REFUSÉE</div><div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">La version publiée reste inchangée ; l'auteur est informé</div></div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 8px;">Figure 1 — Circuit d'approbation d'une modification de fiche (RG27). Le Super Admin, lui, publie directement depuis la même page profil ; il peut également corriger une proposition avant publication. Rien n'apparaît sur le site public avant approbation.</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Tant qu'une proposition est en attente, la page profil affiche un bandeau « Modifications en attente de validation », l'aperçu du comparatif et un bouton « Annuler la demande ». Tous les boutons « Voir le profil » du back-office (tableau des établissements, fiche détail, tarification, historique des factures, top établissements, encaissements, fiches du secrétariat, ventes du commercial) ouvrent cette page interne.</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 5px;">2.5 Sponsoring</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Le statut sponsorisé devient une bascule d'interface, disponible dans le tableau des établissements et dans l'en-tête de la fiche détail (interdite tant que l'établissement est « en attente »). La répercussion est immédiate sur le site public : badge rouge « Sponsorisé », liseré d'accent et priorité de tri dans les résultats et la mise en avant de l'accueil. Le dispositif reste compatible avec les trois niveaux de sponsoring prévus par RG19.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. Nouvelles user stories</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:10%;">ID</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">User story (complète le livrable 2)</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:11%;">Priorité</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-SA12</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">En tant que Super Admin, créer, modifier, suspendre ou supprimer un compte secrétariat et régler ses permissions unitaires afin de déléguer sans ouvrir tout le back-office.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Must</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-SA13</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Réinitialiser le mot de passe de n'importe quel compte, depuis sa fiche ou en une action depuis le tableau de bord, afin de dépanner immédiatement un utilisateur.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Must</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-SA14</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Consulter le journal d'audit filtré par rôle, l'activité par profil et les statistiques par établissement afin de contrôler qui a fait quoi et quand.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Must</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-SA15</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Explorer les tables principales en lecture seule afin de diagnostiquer une anomalie sans passer par un accès base de données.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Should</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-SA16</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Approuver, refuser ou corriger un article de blog, et mettre un article à la une, afin de maîtriser la ligne éditoriale du site.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Must</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-SA17</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Gérer l'ensemble des avis (en attente, signalés, publiés) et mettre certains avis en avant sur l'accueil afin de valoriser des témoignages fiables.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Must</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-SA18</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Modifier la FAQ (avec réordonnancement) et la page « À propos » afin de faire évoluer le site sans intervention technique.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Must</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-SA19</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Éditer et publier directement n'importe quel bloc de la page profil d'un établissement, et traiter la file des modifications en attente avec comparatif avant / après.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Must</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-SA20</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Basculer le statut sponsorisé d'un établissement et en voir l'effet sur les résultats publics.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Should</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-E17</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">En tant qu'établissement, éditer tous les blocs de ma page profil et soumettre mes modifications, en suivant l'état de ma demande et en pouvant l'annuler.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Must</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-E18</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Activer mon blog, rédiger un article avec image facultative et le soumettre à validation afin de gagner en visibilité.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Should</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-S06</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">En tant que secrétaire, préparer les modifications de fiche dans les limites de mes permissions, sans jamais publier ni toucher aux badges et à la note.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Must</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">US-C05</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">En tant que commercial, disposer du blog et des statistiques afin d'alimenter ma prospection.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Could</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. Nouvelles règles de gestion — RG25 à RG27</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Trois règles s'ajoutent aux RG01–RG23 du livrable 8 (v2.1) — la RG24 restant réservée à l'avenant « compte parent léger », non encore formalisé. Elles sont opposables en recette (livrable 15) et couvertes par la matrice du livrable 13.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:10%;">Code</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Nouvelle règle de gestion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG25</td><td style="border:1px solid #E1E5EA;padding:6px 9px;"><strong>Comptes, rôles et permissions.</strong> Tout utilisateur porte exactement un rôle parmi Super Admin, secrétariat, commercial et établissement. Les comptes secrétariat sont créés, suspendus et supprimés par le Super Admin, qui règle leurs permissions unitaires (fiches, contacts, avis) ; un compte secrétariat est obligatoirement rattaché à un établissement. Les rôles établissement et commercial ont un <strong>périmètre fixe</strong>, non modifiable compte par compte. La réinitialisation de mot de passe est réservée au Super Admin et ne renvoie jamais l'ancien mot de passe. Un compte suspendu conserve ses données mais perd tout accès.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG26</td><td style="border:1px solid #E1E5EA;padding:6px 9px;"><strong>Journal d'audit et traçabilité.</strong> Toute action sensible — création, modification, suspension ou suppression de compte, réinitialisation de mot de passe, validation ou suspension d'établissement, encaissement de facture, approbation ou refus d'un avis, d'un article ou d'une modification de fiche, bascule du statut sponsorisé, édition d'un contenu CMS — génère une entrée d'audit horodatée mentionnant l'acteur, son rôle, l'action, la cible et une sévérité. Les entrées sont <strong>immuables</strong> (ni modifiables ni supprimables depuis l'interface) et conservées trois ans. La consultation du journal et de l'explorateur de base de données est réservée au Super Admin ; l'explorateur est strictement en lecture seule.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG27</td><td style="border:1px solid #E1E5EA;padding:6px 9px;"><strong>CMS et circuits d'approbation.</strong> Les contenus du site public (articles de blog, avis, FAQ, page « À propos ») sont pilotés depuis le back-office ; seuls les articles au statut <em>approuvé</em> et les avis au statut <em>publié</em> sont visibles publiquement, la mise en avant sur l'accueil étant une décision distincte du Super Admin. Un article rédigé par un établissement ou un commercial est <em>soumis</em>, jamais publié directement ; le blog est activable par compte. Pour la page profil : le Super Admin <strong>publie directement</strong> ; l'établissement et le secrétariat <strong>déposent une proposition</strong> horodatée, accompagnée du comparatif des champs modifiés, annulable par son auteur tant qu'elle est en attente — <strong>aucune modification n'est visible sur le site public avant approbation</strong>. Les badges (sponsorisé, vérifié, premium), la note et le nombre d'avis sont non éditables par le client et relèvent exclusivement de la plateforme.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. Impacts sur l'existant — traçabilité écoles360</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Répercussion tracée dans chaque artefact, en version <strong>v2.3</strong>. Chaque livrable concerné reçoit une ligne dans son « Historique des révisions ».</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:30%;">Artefact écoles360</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Modification apportée</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Maquettes — Espaces connectés &amp; site public</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Navigation admin étendue (Secrétariat, Blog, Contenu du site, Journal d'audit, Base de données) ; page profil éditable partagée + file des modifications à valider ; CMS blog / avis / FAQ / À propos ; bascule sponsorisé ; répercussion complète sur le site public (accueil, blog, à propos, résultats, page profil). <em>Maquettes validées — non modifiées par cet avenant.</em></td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Livrable 8 — Merise (v2.3)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Entités UTILISATEUR étendu, RÔLE, PERMISSION, ARTICLE, FAQ, PAGE_CMS, AUDIT_LOG ; PROPOSITION_FICHE enrichie de la charge utile complète et du comparatif ; dictionnaire de données, MCD, MLD, MPD et RG25–RG27.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Livrable 10 — Base de données (v2.3)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Migrations users / roles / permissions, articles, faq, pages_cms, audit_logs ; colonnes JSON de fiche (chiffres clés, FAQ, horaires, réseaux sociaux, autres projets, facilités, vidéo) ; seeders correspondants.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Livrable 11 — API (v2.3)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Endpoints admin utilisateurs / rôles / permissions / réinitialisation de mot de passe ; blog (CRUD + workflow), avis (approve / feature), FAQ, pages CMS, audit, sponsoring ; fiche : PATCH direct pour le Super Admin contre POST proposition puis approve / reject pour l'établissement et le secrétariat.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Livrable 12 — Front-end (v2.3)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Routes /admin/users, /admin/blog, /admin/content, /admin/journal, /admin/db ; page profil éditable partagée (une route par rôle vers un même écran) ; matrice écrans ↔ design system ↔ endpoints ↔ RG mise à jour.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Livrable 13 — Tests (v2.3)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Tests du workflow blog, des permissions par compte, de l'immuabilité de l'audit, des contenus CMS et du comparatif / approbation de fiche ; matrice de couverture étendue à RG01–RG27.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Livrables 14 à 16</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Sans changement d'architecture : mêmes chaînes CI-CD (14) ; scénarios de recette complétés (15) ; guides Super Admin, établissement et secrétariat enrichis des nouveaux écrans (16).</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. Périmètre &amp; planning révisés</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;"><strong>Arbitrage MoSCoW.</strong> Entrent au <strong>Lot 1 — MVP</strong> : la gestion des comptes secrétariat et des permissions (US-SA12, US-SA13), le journal d'audit (US-SA14), le CMS blog / avis / FAQ / À propos (US-SA16 → US-SA18) et la page profil éditable avec son circuit d'approbation (US-SA19, US-E17, US-S06) — ce dernier point conditionne l'autonomie éditoriale promise aux établissements. Passent au <strong>Lot 2 — V1.1</strong> : l'explorateur de base de données (US-SA15), le blog côté commercial (US-C05), les niveaux de sponsoring différenciés (RG19) et l'export du journal d'audit.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:34%;">Jalon</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Impact calendrier</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Base de données (livrable 10)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">+ 0,5 semaine — tables roles / permissions / articles / faq / pages_cms / audit_logs et colonnes JSON de fiche.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Back-end (livrable 11)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">+ 1,5 semaine — endpoints d'administration, workflow blog, service d'audit transversal, propositions de fiche avec comparatif.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Front-end (livrable 12)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">+ 2 semaines — cinq nouveaux écrans admin et la page profil éditable partagée (le poste le plus lourd de l'avenant).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Tests &amp; stabilisation (livrable 13)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">+ 0,5 semaine — suites permissions, audit, workflow éditorial et approbation de fiche.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Déploiement (livrable 14)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Sans impact — mêmes chaînes CI-CD ; prévoir la sauvegarde des images téléversées.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Recette (livrable 15)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">+ 2 scénarios : « le Super Admin publie un contenu » et « une modification de fiche est soumise puis approuvée ».</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Documentation (livrable 16)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Guide Super Admin étendu (comptes, audit, CMS, validation des fiches).</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">7. Historique des révisions</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:12%;">Version</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:18%;">Date</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Objet de la révision</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">v1.0</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Rédaction initiale de l'avenant n° 3 après validation des maquettes (six passes, août – septembre 2026) : comptes / rôles / permissions, journal d'audit, CMS, page profil éditable et circuit d'approbation, sponsoring ; RG25–RG27 ; répercussion v2.3 des livrables 8, 10, 11, 12 et 13.</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0;"><strong>Prochaine étape</strong> — répercussion v2.3 dans les livrables 8 (Merise), 10 (base de données), 11 (API), 12 (front-end) et 13 (tests), avec validation entre chaque, puis régénération des exports hors-ligne de l'ensemble des documents et des deux maquettes.</p>
+
+</x-import>
+</x-dc>
+</body>
+</html>

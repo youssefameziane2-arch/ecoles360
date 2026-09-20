@@ -1,0 +1,25 @@
+/* écoles360 — Spacing tokens. Base unit 4px. */
+:root {
+  --sp-0: 0; /* @kind spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 28px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-14: 56px;
+  --sp-16: 64px;
+
+  /* Common layout paddings */
+  --pad-card: 20px;      /* default card padding */
+  --pad-section: 40px;   /* desktop section gutter */
+  --pad-screen: 16px;    /* mobile screen gutter */
+  --gap-grid: 18px;      /* default grid gap (cards) */
+
+  /* Minimum touch target */
+  --touch-min: 44px;
+}

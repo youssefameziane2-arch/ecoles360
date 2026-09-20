@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Livrable 13 · Stratégie de tests</span>
+    <span>v2.5 · septembre 2026</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Livrable 13 / 16 — Réalisation</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">Stratégie de tests</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">Pyramide de tests du projet : unitaires et intégration <strong>Jest + Supertest</strong> côté API NestJS (services et controllers, base MySQL 8 réelle pilotée par Prisma), Vitest + React Testing Library + MSW côté composants, parcours Playwright de bout en bout — avec la matrice de traçabilité RG01–RG27 ↔ tests qui sert de socle à la recette.</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Version 2.5 · Septembre 2026 · S'appuie sur les livrables 10 v2.5 (<span style="font-family:ui-monospace,monospace;font-size:10px;">schema.prisma</span> + seeders en commandes NestJS), 11 v2.5 (modules <span style="font-family:ui-monospace,monospace;font-size:10px;">src/modules/**</span>, douze services, Guards, avenants n° 1 et n° 3) et 12 v2.5 (front-end React 18 + Vite — SSR ciblé du site public, SPA des back-offices) · Prépare les livrables 14 (déploiement CI-CD conteneurisé) et 15 (recette)</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. Stratégie et environnement de test</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Le risque du produit reste concentré dans les <strong>invariants d'argent et de confiance</strong> : abonnement et paiement à la vue (RG11–RG14), facturation légale et commissions (RG14, RG18), validation Super Admin des fiches (RG20, RG27), modération (RG06–RG08), portées déléguées (RG05), CRM leads de l'établissement (RG21–RG23 — avenant n° 1, données nominatives soumises à la loi 09-08) et console d'administration (RG25 rôles / permissions / réinitialisation de mot de passe, RG26 journal d'audit immuable, RG27 circuits éditoriaux CMS — avenant n° 3). La pyramide place donc l'essentiel de l'effort au plus près de ces invariants — tests rapides, déterministes, exécutés à chaque commit — et réserve le bout en bout aux parcours par acteur rejoués en recette (livrable 15).</p>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>Base de test = MySQL 8 réelle, jamais SQLite</strong> — les comportements testés (verrous <span style="font-family:ui-monospace,monospace;font-size:10px;">$queryRaw</span> <span style="font-family:ui-monospace,monospace;font-size:10px;">FOR UPDATE</span> de <em>ViewBillingService</em> et <em>FacturationService</em>, ENUM MySQL natif, contraintes CHECK, index FULLTEXT, collation utf8mb4) sont ceux du moteur de production (livrable 10 v2.5 §2.0). MySQL 8 et Redis 7 sont lancés par un <span style="font-family:ui-monospace,monospace;font-size:10px;">docker-compose.test.yml</span> local (ports isolés) ; en CI (livrable 14) ils sont fournis en tant que <em>services</em> GitHub Actions.</li>
+    <li style="margin-bottom:5px;"><strong>Base pilotée par Prisma</strong> — un <span style="font-family:ui-monospace,monospace;font-size:10px;">globalSetup</span> Jest appelle <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma migrate deploy</span> puis la commande de seed du L10 v2.5 (<span style="font-family:ui-monospace,monospace;font-size:10px;">SeedCommand</span> : rôles, villes, niveaux-filières, comptes et données de démonstration, leads, CMS, audit — jamais l'import open data des ~8 000 fiches). Les suites se partagent la base par worker Jest (<span style="font-family:ui-monospace,monospace;font-size:10px;">--runInBand</span> pour les suites de concurrence) ; chaque test écrit dans un sous-arbre de données <em>factory</em> disjoint pour éviter les collisions.</li>
+    <li style="margin-bottom:5px;"><strong>Jest côté API — l'outil par défaut de NestJS</strong> (il remplaçait Pest en v2.4 sous la forme de Vitest) : même pyramide, mêmes cibles, mais adossé au conteneur de dépendances du framework. Les tests unitaires montent un module réduit par <span style="font-family:ui-monospace,monospace;font-size:10px;">Test.createTestingModule()</span> et injectent les vrais services avec un <em>PrismaService</em> pointé sur la base de test ; les tests d'intégration HTTP passent par <strong>Supertest</strong> sur l'application Nest complète — pipes, guards, interceptors et filtres inclus, donc le contrat exact du livrable 11.</li>
+    <li style="margin-bottom:5px;"><strong>Front testé contre le contrat</strong> — Vitest + RTL + MSW, inchangés. Les mocks MSW reproduisent l'enveloppe <span style="font-family:ui-monospace,monospace;font-size:10px;">{data, meta, links}</span> et les erreurs <span style="font-family:ui-monospace,monospace;font-size:10px;">{code, message, details}</span> du livrable 11 §1 ; leurs <em>fixtures</em> sont générées depuis la spécification OpenAPI publiée sur <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/docs</span> — un écart de contrat casse les tests front avant d'atteindre la préproduction.</li>
+    <li><strong>Ordres de grandeur cibles</strong> — couverture de branches ≥ 90 % sur <span style="font-family:ui-monospace,monospace;font-size:10px;">api/src/modules/**/*.service.ts</span>, ≥ 85 % sur les guards (<span style="font-family:ui-monospace,monospace;font-size:10px;">api/src/common/guards/</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">api/src/modules/**/guards/</span> — RG05, RG23, RG25), ≥ 80 % sur les controllers ; une douzaine de parcours Playwright, pas plus — un parcours par risque, pas par écran.</li>
+  </ul>
+
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:14px;background:#fff;margin:0 0 6px;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+      <div style="width:40%;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">BOUT EN BOUT — PLAYWRIGHT</div>
+        <div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Cinq parcours par acteur sur staging seedée (§4) — lents, peu nombreux, rejoués en recette</div>
+      </div>
+      <div style="width:68%;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">INTÉGRATION HTTP — JEST + SUPERTEST + PRISMA TEST DB</div>
+        <div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Le contrat d'API du livrable 11 endpoint par endpoint sur l'application Nest complète : statuts, enveloppe, guards et portées, ValidationPipe, throttling, messages français</div>
+      </div>
+      <div style="width:96%;border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;">
+        <div style="background:#15233A;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">UNITAIRES — JEST (SERVICES NESTJS) · VITEST + RTL + MSW (COMPOSANTS)</div>
+        <div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Les invariants au plus près du code : ViewBillingService, FacturationService, SubscriptionService, CommissionService, ProspectService, LeadService, ReviewModerationService, ContactRequestService, FicheProposalService, ArticleWorkflowService, AuditService, CmsService · formats fr-MA, hooks, formulaires, gardes — exécutés à chaque commit</div>
+      </div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 12px;">Figure 1 — Pyramide de tests v2.5 : la base couvre les douze services (livrable 11 §4), le sommet rejoue les parcours réels des cinq acteurs (parent, établissement, secrétaire, admin / Super Admin, commercial). Jest + Supertest, outillage par défaut de NestJS, tiennent l'API ; RTL + MSW et Playwright sont inchangés.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. Tests back-end (Jest + Supertest + Prisma test DB)</h2>
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.1 — Unitaires : les douze services transactionnels (livrable 11 §4)</p>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;padding-left:20px;">
+    <li style="margin-bottom:4px;"><strong>ViewBillingService</strong> — comptage des vues facturables en paiement à la vue, jamais au-delà de <span style="font-family:ui-monospace,monospace;font-size:10px;">plafond_mensuel</span> ; aucun comptage pour un établissement en abonnement ou en essai gratuit ; job BullMQ <em>plafondAtteint</em> déclenché à l'unité du plafond (RG12).</li>
+    <li style="margin-bottom:4px;"><strong>FacturationService</strong> — numérotation séquentielle F2026-NNNNNN sans trou ni doublon (verrou <span style="font-family:ui-monospace,monospace;font-size:10px;">FOR UPDATE</span> testé en concurrence, §2.3) ; TVA 20 % ; origine exclusive abonnement / vue / sponsoring (RG14).</li>
+    <li style="margin-bottom:4px;"><strong>SubscriptionService</strong> — unicité de l'abonnement actif (RG11) ; remise annuelle −10 % correctement calculée ; expiration → retour à la fiche de base ; rappel J-7 déclenché par le conteneur <em>scheduler</em> (test de la méthode <span style="font-family:ui-monospace,monospace;font-size:10px;">@Cron</span> <span style="font-family:ui-monospace,monospace;font-size:10px;">abonnements:rappels</span>, livrable 10 §6.3).</li>
+    <li style="margin-bottom:4px;"><strong>CommissionService</strong> — commission calculée à la génération de facture (statut <span style="font-family:ui-monospace,monospace;font-size:10px;">a_valider</span>) ; passage à <span style="font-family:ui-monospace,monospace;font-size:10px;">reglee</span> impossible sans validation Direction explicite (RG18).</li>
+    <li style="margin-bottom:4px;"><strong>ProspectService</strong> — transitions du pipeline (<em>nouveau → … → transformé / perdu</em>) ; transformation crée un compte + une fiche liés au prospect (RG17).</li>
+    <li style="margin-bottom:4px;"><strong>LeadService</strong> (avenant 1) — scoring aux bornes : urgence 0–4 + adéquation budget 0–3 + complétude 0–3, score toujours dans 0–10 y compris après ajustement manuel (±3 refusé s'il sort des bornes) ; recalcul à chaque mise à jour de la fiche de besoin ; transitions du pipeline 6 statuts — passage à <em>perdu</em> refusé sans <span style="font-family:ui-monospace,monospace;font-size:10px;">raison_perte</span>, passage à <em>inscrit</em> fixe <span style="font-family:ui-monospace,monospace;font-size:10px;">converti_le</span> et accepte <span style="font-family:ui-monospace,monospace;font-size:10px;">acompte_mad</span> ; création automatique depuis une demande de contact avec fiche de besoin pré-remplie (RG21, RG22).</li>
+    <li style="margin-bottom:4px;"><strong>ReviewModerationService</strong> — publie / rejete + recalcul de <span style="font-family:ui-monospace,monospace;font-size:10px;">note_moy</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">nb_avis</span> dans la même transaction Prisma (RG08) ; signalement → retour en file (RG07) ; entrée d'audit écrite par <em>AuditService</em> (RG15, RG26).</li>
+    <li style="margin-bottom:4px;"><strong>ContactRequestService</strong> — consentement obligatoire (RG09) ; création automatique du <em>Lead</em> lié à la demande (RG21) ; jobs BullMQ <em>mail</em> + <em>alerts</em> émis (établissement + secrétariat).</li>
+    <li style="margin-bottom:4px;"><strong>FicheProposalService</strong> (avenant 3) — <strong>unicité</strong> d'une proposition en attente par établissement, testée sous concurrence (§2.3) — un second dépôt reçoit une <span style="font-family:ui-monospace,monospace;font-size:10px;">ConflictError("proposition_deja_en_attente")</span> ; annulation par l'auteur tant que la proposition est en attente ; publication directe pour le Super Admin, sinon file ; les badges de plateforme (sponsorisé, vérifié, premium, note, nombre d'avis) sont retirés de tout payload client, quel que soit le rôle (RG20, RG27).</li>
+    <li style="margin-bottom:4px;"><strong>ArticleWorkflowService</strong> (avenant 3) — transitions <em>brouillon → en_attente → approuvé / refusé</em>, slug unique, horodatages <span style="font-family:ui-monospace,monospace;font-size:10px;">soumis_le</span> / <span style="font-family:ui-monospace,monospace;font-size:10px;">publie_le</span> renseignés ; un compte non Super Admin ne peut atteindre <em>approuvé</em> par aucun chemin ; la mise en avant reste sans effet public hors statut approuvé ; désactivation du blog du compte (<span style="font-family:ui-monospace,monospace;font-size:10px;">blog_actif = false</span>) conserve les articles déjà approuvés (RG27).</li>
+    <li style="margin-bottom:4px;"><strong>AuditService</strong> (avenant 3) — <strong>immuabilité</strong> : aucune méthode publique de mise à jour ni de suppression n'est exposée, seule la création via le client Prisma étendu (<span style="font-family:ui-monospace,monospace;font-size:10px;">$extends</span>) est utilisée ; le rôle de l'acteur est figé au moment de l'écriture (RG26) — un changement de rôle ultérieur ne réécrit jamais l'entrée. Purge à trois ans testée sur données forgées de plus de 36 mois.</li>
+    <li><strong>CmsService</strong> (avenant 3) — FAQ : réordonnancement en une requête (liste d'identifiants ordonnée), l'ordre est recalculé de façon contiguë ; PageCms : blocs typés validés par DTO class-validator ; chaque écriture purge les clés de cache publiques (<span style="font-family:ui-monospace,monospace;font-size:10px;">faq:public</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pages:a-propos</span>) via le <span style="font-family:ui-monospace,monospace;font-size:10px;">CacheModule</span> Redis et laisse une entrée d'audit (RG26, RG27).</li>
+  </ul>
+
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// api/test/services/etablissement-validation.spec.ts — Jest + Prisma test DB
+import { Test } from "@nestjs/testing";
+import { ConflictException } from "@nestjs/common";
+import { PrismaService } from "@/prisma/prisma.service";
+import { AdminEtablissementService } from "@/modules/etablissements/admin-etablissement.service";
+import { EtablissementFactory, FactureFactory } from "../factories";
+import { resetDb, seedComptesDemo } from "../helpers";
+
+describe("Validation d'établissement", () =&gt; {
+  let service: AdminEtablissementService;
+  let db: PrismaService;
+  let admin: Awaited&lt;ReturnType&lt;typeof seedComptesDemo&gt;&gt;["admin"];
+
+  beforeAll(async () =&gt; {
+    const moduleRef = await Test.createTestingModule({          // conteneur de dépendances réel
+      providers: [AdminEtablissementService, PrismaService, AuditService],
+    }).compile();
+    service = moduleRef.get(AdminEtablissementService);
+    db = moduleRef.get(PrismaService);
+  });
+
+  beforeEach(async () =&gt; {
+    await resetDb();                                            // prisma migrate deploy + SeedCommand
+    ({ admin } = await seedComptesDemo(db));
+  });
+
+  it("refuse de valider un établissement dont l'abonnement n'est pas payé", async () =&gt; {
+    const eta = await EtablissementFactory.enAttente().create();
+    await FactureFactory.nonPayee().for(eta).create();          // RG14
+
+    await expect(service.valider(admin, eta.id))
+      .rejects.toThrow(new ConflictException("facture_non_payee"));   // livrable 11 §1
+
+    const rafraichi = await db.etablissement.findUnique({ where: { id: eta.id } });
+    expect(rafraichi?.statut).toBe("en_attente");
+  });
+});
+
+// api/test/services/view-billing.spec.ts — plafond mensuel non dépassé (RG12)
+it("plafonne le comptage des vues facturées en paiement à la vue", async () =&gt; {
+  const eta = await EtablissementFactory.validee().create();
+  await db.paiementVue.create({ data: {
+    etablissement_id: eta.id, periode: "2026-09",
+    prix_unitaire_mad: 8, plafond_mensuel: 3, compteur_mois_courant: 2,
+  }});
+
+  await viewBilling.comptabiliserVue(eta, { type: "vue", source: "fiche" }); // 3e vue : atteint le plafond
+  await viewBilling.comptabiliserVue(eta, { type: "vue", source: "fiche" }); // 4e vue : non comptée
+
+  const pv = await db.paiementVue.findFirstOrThrow({
+    where: { etablissement_id: eta.id, periode: "2026-09" },
+  });
+  expect(pv.compteur_mois_courant).toBe(3);                            // jamais &gt; plafond (RG12)
+});
+
+// api/test/guards/lead.guard.spec.ts — RG23 (avenant 1)
+it("refuse la suppression d'un lead par une secrétaire", async () =&gt; {
+  const { sara, etablissementGere } = await seedComptesDemo(db);
+  const lead = await LeadFactory.for(etablissementGere).create();
+  const ctx = contexteExecution({ user: sara, params: { id: lead.id } });
+
+  await expect(leadGuard.canActivate(ctx))
+    .rejects.toThrow(new ForbiddenException("lead_delete_reserve_admin_client"));
+
+  expect(await db.lead.findUnique({ where: { id: lead.id } })).not.toBeNull();
+});
+
+// api/test/services/article-workflow.spec.ts — RG27 (avenant 3)
+it("un compte établissement ne peut jamais publier son article sans décision Super Admin", async () =&gt; {
+  const { etablissement, admin } = await seedComptesDemo(db);
+  const brouillon = await articles.creer(etablissement, { titre: "Journée portes ouvertes" });
+
+  await articles.soumettre(etablissement, brouillon.id);               // brouillon → en_attente
+  await expect(articles.publier(etablissement, brouillon.id))          // interdit
+    .rejects.toThrow(new ForbiddenException("article_decide_reserve_admin"));
+
+  const decide = await articles.decider(admin, brouillon.id, "approuve"); // seul l'admin décide
+  expect(decide.statut).toBe("approuve");
+  expect(decide.publie_le).not.toBeNull();
+});
+
+// api/test/services/audit.spec.ts — RG26 (avenant 3, immuabilité)
+it("n'expose aucune méthode d'écriture directe sur JournalAudit hors AuditService", async () =&gt; {
+  const modele = "journalAudit" as const;
+  const client = db as unknown as Record&lt;string, Record&lt;string, unknown&gt;&gt;;
+  // Le client Prisma étendu (livrable 11 §4) supprime update, delete et deleteMany :
+  expect(client[modele].update).toBeUndefined();
+  expect(client[modele].delete).toBeUndefined();
+  expect(client[modele].deleteMany).toBeUndefined();
+});</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.2 — Intégration HTTP (Supertest) : le contrat, endpoint par endpoint</p>
+  <p style="font:400 11.5px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 6px;">L'application Nest est instanciée une fois par suite (<span style="font-family:ui-monospace,monospace;font-size:10px;">Test.createTestingModule({ imports: [AppModule] }).compile()</span> puis <span style="font-family:ui-monospace,monospace;font-size:10px;">app.init()</span>), avec le <span style="font-family:ui-monospace,monospace;font-size:10px;">ValidationPipe</span>, les guards, l'interceptor de sérialisation et le filtre d'exceptions réels — c'est donc bien le contrat du livrable 11 qui est éprouvé, pas une réimplantation. Les sessions sont forgées par un <em>agent</em> Supertest authentifié via <span style="font-family:ui-monospace,monospace;font-size:10px;">POST /api/v1/auth/login</span>, qui conserve le cookie pour les requêtes suivantes.</p>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;padding-left:20px;">
+    <li style="margin-bottom:4px;"><strong>Visibilité</strong> — seules les fiches validées sortent des listes publiques ; fiche en_attente ou suspendue → 404 (RG03) ; sponsorisées servies en tête (RG19).</li>
+    <li style="margin-bottom:4px;"><strong>Autorisations</strong> — pour chaque route protégée : 401 sans session, 403 mauvais rôle, 403 portée absente ou révoquée (RG05) ; compte suspendu rejeté par le <em>SessionGuard</em> ; un commercial ne lit que ses prospects affectés (RG17) ; un établissement ne lit jamais les données d'un autre — leads compris (RG23) ; suppression et export de leads : 403 pour la secrétaire, 200 pour l'Admin Client (<em>LeadGuard</em>, avenant 1) ; le Super Admin n'a aucune route vers le détail nominatif des leads, seulement vers les agrégats (livrable 11 §2, §3.4).</li>
+    <li style="margin-bottom:4px;"><strong>Avenant 3 — console d'administration</strong> — 403 sur <span style="font-family:ui-monospace,monospace;font-size:10px;">/admin/utilisateurs</span> pour tout non Super Admin (<em>RoleGuard</em>, RG25) ; création limitée au rôle <em>secrétariat</em>, 422 si <span style="font-family:ui-monospace,monospace;font-size:10px;">etablissement_rattache_id</span> manquant ; 409 sur une permission unitaire visant un rôle à périmètre fixe ; réinitialisation de mot de passe : entrée d'audit de sévérité <em>avertissement</em> écrite, sessions Redis du compte cible détruites (le cookie précédent renvoie 401 au coup suivant), ancien mot de passe jamais restitué ; refus d'action du Super Admin sur son propre compte.</li>
+    <li style="margin-bottom:4px;"><strong>Avenant 3 — journal &amp; audit</strong> — <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/v1/admin/audit</span> n'expose qu'un <span style="font-family:ui-monospace,monospace;font-size:10px;">@Get()</span> : <span style="font-family:ui-monospace,monospace;font-size:10px;">POST</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">PATCH</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">DELETE</span> reçoivent <span style="font-family:ui-monospace,monospace;font-size:10px;">404</span>, aucune méthode d'écriture n'étant déclarée dans le controller (RG26) ; filtres <span style="font-family:ui-monospace,monospace;font-size:10px;">?role=&amp;severite=&amp;cible=</span> testés ; réservé au Super Admin par <em>AuditGuard</em> — 403 pour tout autre rôle.</li>
+    <li style="margin-bottom:4px;"><strong>Avenant 3 — blog</strong> — dépôt d'un article requiert <span style="font-family:ui-monospace,monospace;font-size:10px;">blog_actif = true</span> sur le compte, sinon 403 ; un auteur non admin ne peut appeler <span style="font-family:ui-monospace,monospace;font-size:10px;">/admin/articles/{id}/decision</span> (<em>ArticleGuard</em>, 403) ; l'approbation purge la clé de cache <span style="font-family:ui-monospace,monospace;font-size:10px;">articles:public</span> — vérifié par un espion Jest sur le <span style="font-family:ui-monospace,monospace;font-size:10px;">CACHE_MANAGER</span> injecté.</li>
+    <li style="margin-bottom:4px;"><strong>Avenant 3 — CMS</strong> — FAQ : le réordonnancement <span style="font-family:ui-monospace,monospace;font-size:10px;">PUT /admin/faq/ordre</span> renumérote de façon contiguë même si la liste envoyée est trouée ; PageCms : blocs typés par DTO imbriqués (<span style="font-family:ui-monospace,monospace;font-size:10px;">@ValidateNested</span> — histoire, mission, 3 valeurs, coordonnées) : 422 sur un bloc manquant ou de mauvais type ; badges de plateforme (<span style="font-family:ui-monospace,monospace;font-size:10px;">/admin/etablissements/{id}/badges</span>) refusés au client s'ils sont poussés en payload de proposition de fiche — le <span style="font-family:ui-monospace,monospace;font-size:10px;">forbidNonWhitelisted</span> du ValidationPipe les rejette en 422 (RG27).</li>
+    <li style="margin-bottom:4px;"><strong>Validation</strong> — 422 : consentement manquant (RG09), note hors 1–5 (RG06), formule hors énumération / tarif manquant hors essai gratuit (RG13, RG14), téléphone marocain invalide, passage d'un lead à <em>perdu</em> sans raison ou score hors bornes 0–10 (RG21, RG22), rôle inconnu ou <span style="font-family:ui-monospace,monospace;font-size:10px;">role_id</span> inexistant pour la création d'un compte (RG25) — messages français portés par les décorateurs class-validator des DTO.</li>
+    <li><strong>Throttling</strong> — 429 au-delà des plafonds (avis / demandes 5 par heure et par IP, login et reset-password 5 par minute — livrable 11 §5), Redis nettoyé entre chaque suite via <span style="font-family:ui-monospace,monospace;font-size:10px;">FLUSHDB</span> sur la base 15 (base dédiée aux tests, jamais la 0 de production).</li>
+  </ul>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.3 — Concurrence</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Trois suites dédiées, exécutées sur MySQL avec <strong>deux instances <span style="font-family:ui-monospace,monospace;font-size:10.5px;">PrismaClient</span> distinctes</strong> et deux connexions simultanées — un rollback masquerait le comportement de verrou <span style="font-family:ui-monospace,monospace;font-size:10.5px;">FOR UPDATE</span>, seule voie qui matérialise les garanties des livrables 10–11 :</p>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;padding-left:20px;">
+    <li style="margin-bottom:4px;"><strong>Double comptage de vue</strong> à une unité du plafond (RG12) — deux appels <span style="font-family:ui-monospace,monospace;font-size:10px;">comptabiliserVue()</span> concurrents sur la même période : une seule transaction incrémente jusqu'au plafond, l'autre est ignorée ; aucune ne dépasse ; le job BullMQ <em>plafondAtteint</em> est déclenché exactement une fois.</li>
+    <li style="margin-bottom:4px;"><strong>Double numérotation de facture</strong> à la même seconde (RG14) — <em>FacturationService</em> appelé en parallèle, deux numéros consécutifs F2026-NNNNNN, jamais identiques, aucun trou.</li>
+    <li><strong>Double dépôt de proposition de fiche</strong> (RG27 — avenant 3) — deux appels <span style="font-family:ui-monospace,monospace;font-size:10px;">FicheProposalService.submit()</span> concurrents sur le même établissement : la première crée la proposition <em>en_attente</em>, la seconde est refusée par <span style="font-family:ui-monospace,monospace;font-size:10px;">ConflictError("proposition_deja_en_attente")</span> — l'unicité repose sur un verrou de ligne, l'index unique partiel n'existant pas en MySQL 8 (livrable 10 §2.12).</li>
+  </ul>
+
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// api/test/concurrence/double-comptage-vue.spec.ts — RG12
+import { PrismaClient } from "@/generated/prisma";
+import { ViewBillingService } from "@/modules/facturation/view-billing.service";
+
+// Deux clients distincts = deux connexions MySQL réelles (pas de pool partagé)
+const clientA = new PrismaClient({ log: [] });
+const clientB = new PrismaClient({ log: [] });
+const serviceA = new ViewBillingService(clientA as never, alertsQueue);
+const serviceB = new ViewBillingService(clientB as never, alertsQueue);
+
+describe("Comptage concurrent des vues facturables", () =&gt; {
+  beforeEach(async () =&gt; {
+    await resetDb();
+    await clientA.paiementVue.create({ data: {
+      etablissement_id: 1n, periode: "2026-09",
+      prix_unitaire_mad: 8, plafond_mensuel: 3, compteur_mois_courant: 2,
+    }});
+  });
+
+  it("deux vues simultanées à l'unité du plafond n'incrémentent qu'une fois", async () =&gt; {
+    const etaA = await clientA.etablissement.findFirstOrThrow({ where: { id: 1n } });
+    const etaB = await clientB.etablissement.findFirstOrThrow({ where: { id: 1n } });
+
+    await Promise.all([
+      serviceA.comptabiliserVue(etaA, { type: "vue", source: "fiche" }), // FOR UPDATE
+      serviceB.comptabiliserVue(etaB, { type: "vue", source: "fiche" }), //   sérialise
+    ]);
+
+    const pv = await clientA.paiementVue.findFirstOrThrow({
+      where: { etablissement_id: 1n, periode: "2026-09" },
+    });
+    expect(pv.compteur_mois_courant).toBe(3);                            // jamais 4
+  });
+});</div>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. Tests front-end (Vitest + React Testing Library + MSW)</h2>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:4px;"><strong>Formats fr-MA</strong> (<span style="font-family:ui-monospace,monospace;font-size:10px;">src/lib/formats.ts</span>) — virgule décimale (★ 4,8), espace fine des milliers (8 420), « 2 500 MAD/mois », dates fr-MA : testé exhaustivement — c'est la vitrine des conventions du produit.</li>
+    <li style="margin-bottom:4px;"><strong>Formulaires</strong> — demande de contact : bouton inactif sans consentement (RG09), erreurs 422 re-projetées champ par champ sur les Input du design system via <span style="font-family:ui-monospace,monospace;font-size:10px;">setError</span>, double soumission impossible via l'état <span style="font-family:ui-monospace,monospace;font-size:10px;">isPending</span> de la mutation ; dépôt d'avis : note obligatoire 1–5 (RG06) ; réponse à un avis : 409 <em>reponse_existante</em> affiché tel quel (RG07) ; proposition de fiche : la mutation React Query <em>useSubmitFicheProposal</em> poste sur <span style="font-family:ui-monospace,monospace;font-size:10px;">/mon-espace/fiche/propositions</span> et le 422 du <span style="font-family:ui-monospace,monospace;font-size:10px;">ValidationPipe</span> remonte aux inputs (RG20, RG27).</li>
+    <li style="margin-bottom:4px;"><strong>Client d'API</strong> — <span style="font-family:ui-monospace,monospace;font-size:10px;">apiFetch</span> (<span style="font-family:ui-monospace,monospace;font-size:10px;">fetch()</span> même origine + cookie de session Passport + en-tête CSRF, livrable 12 §4) : 401 déclenche <span style="font-family:ui-monospace,monospace;font-size:10px;">redirectToLogin</span>, 403 affiche un toast d'erreur, 409 un toast d'avertissement avec le message serveur (plafond_vue_atteint, facture_non_payee…), 429 un toast neutre — testés avec des <em>handlers</em> MSW qui reproduisent le format d'erreur du livrable 11 §1.</li>
+    <li style="margin-bottom:4px;"><strong>Gardes et navigation</strong> — après <span style="font-family:ui-monospace,monospace;font-size:10px;">POST /auth/login</span>, redirection par rôle (RG04, livrable 12 §3) ; SidebarNav du secrétariat filtrée par portées (nav réduite Tableau de bord · Demandes · Fiches) — section retirée = route protégée par la garde de surface côté front et par le <em>ScopesGuard</em> côté API (RG05).</li>
+    <li style="margin-bottom:4px;"><strong>États d'interface</strong> — Skeleton au premier chargement puis données ; EmptyState avec action ; ProfileUnavailable quand l'API renvoie une fiche sans formule active (RG13) ; badge « Sponsorisé » rendu pour les fiches servies en tête (RG19) ; kanban CRM (liste dense v2 CLAUDE.md 4<sup>e</sup> passe) : chips d'étape avec compteurs, barre de score /10, badge de température, flèche « Avancer » — boutons Supprimer / Exporter absents du miroir secrétariat (RG23).</li>
+    <li style="margin-bottom:4px;"><strong>Avenant 3 — nouveaux écrans</strong> — bandeau « Activez votre blog » quand <span style="font-family:ui-monospace,monospace;font-size:10px;">blog_actif = false</span> (US-E18, US-C05) ; éditeur d'article : uploadeur d'image (drag &amp; drop, aperçu dataURL, remplacer / retirer), soumission → statut <em>en_attente</em>, aucun bouton de publication directe ; écran « Vérifier une modification de fiche » : DiffPanel avant / après, aperçu profil avec champ surligné vert, actions Approuver / Modifier / Refuser (RG20, RG27) ; écran Journal d'audit : chips par rôle et sévérité, tableau paginé — aucun bouton d'écriture, aucun contrôle de suppression (RG26) ; centre de notifications role-aware sur la cloche de l'en-tête (CLAUDE.md 4<sup>e</sup> passe).</li>
+    <li><strong>Hooks de données</strong> — invalidations du livrable 12 §4 : traiter une demande rafraîchit compteurs et KPIs ; marquer une facture payée rafraîchit abonnement et débloque Valider / Réactiver (RG14) ; approuver une proposition invalide <span style="font-family:ui-monospace,monospace;font-size:10px;">['propositions-fiche']</span> et purge la clé API <span style="font-family:ui-monospace,monospace;font-size:10px;">fiche:{slug}</span>, si bien que le rendu SSR suivant sert la fiche à jour (RG20, RG27) ; approuver un article purge <span style="font-family:ui-monospace,monospace;font-size:10px;">articles:public</span> ; déplacer un lead ou ajouter un suivi invalide <span style="font-family:ui-monospace,monospace;font-size:10px;">['leads']</span> et recalcule le bloc CRM du dashboard et les badges de nav (RG21).</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. Bout en bout (Playwright) — parcours par acteur</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Exécutés contre le staging conteneurisé (livrable 14, projet Compose <span style="font-family:ui-monospace,monospace;font-size:10.5px;">ecoles360-staging</span>) après <span style="font-family:ui-monospace,monospace;font-size:10.5px;">docker compose exec api npx prisma migrate reset --force</span> et <span style="font-family:ui-monospace,monospace;font-size:10.5px;">docker compose run --rm api node dist/cli.js db:seed</span>, avec les comptes de démonstration seedés (livrable 10 §3) — en desktop et en viewport mobile (produit mobile first). Ces scénarios deviennent les scénarios de recette du livrable 15.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:22%;">Acteur (compte seedé)</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:42%;">Parcours joué</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Vérifications clés</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;"><strong>Parent</strong> (sans compte)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Accueil → recherche « Lycée · Casablanca » → fiche Al Massira → demande de contact avec consentement → confirmation.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Sponsorisées en tête avec badge (RG19) ; ★ 4,8 · 142 avis ; SEO vérifié sur le HTML rendu côté serveur (title, description, schema.org LocalBusiness — RG08) ; refus sans consentement (RG09).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;"><strong>Établissement</strong><br><span style="font-family:ui-monospace,monospace;font-size:9px;">contact@almassira.ma</span></td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Connexion → tableau de bord → demande nouvelle traitée → CRM Leads : lead « nouveau » → fiche de besoin complétée → contacté → proposition envoyée → inscrit (acompte) → page profil éditable : modification déposée en proposition → Abonnement &amp; facturation : téléchargement du dernier reçu → soumettre un article de blog.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Demande traitée rafraîchit KPIs (RG09) ; score recalculé après complétion (RG22) ; conversion horodatée, bloc CRM du dashboard à jour (RG21) ; bandeau « proposition en attente » affiché tant que non validée (RG20, RG27) ; formule et vues en lecture seule (RG14) ; article passe en <em>en_attente</em>, jamais public sans décision (RG27).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;"><strong>Secrétaire</strong><br><span style="font-family:ui-monospace,monospace;font-size:9px;">sara.s@ecoles360.com</span></td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Connexion → « Bonjour Sara 👋 » → nav réduite (Tableau de bord · Demandes · Fiches) → traite une demande de contact → dépose une proposition de fiche → tentative de suppression / export d'un lead depuis l'URL directe (403).</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Nav confinée aux portées fiches + contacts (RG05, CLAUDE.md 5<sup>e</sup> passe) ; proposition passe en attente sans toucher la fiche publique (RG20) ; boutons Supprimer / Exporter absents de l'UI et API 403 (RG23) ; note moyenne recalculée après décision de modération (RG08).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;"><strong>Super Admin</strong><br><span style="font-family:ui-monospace,monospace;font-size:9px;">direction@ecoles360.com</span></td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Connexion → Établissements (en attente) → tarification par client → génère la facture → marque payée → retour Établissements → Valider débloqué → écran Vérifier une modification de fiche : approuver → article en attente : approuver + mise à la une → Journal d'audit : entrées correspondantes filtrées par rôle → réinitialiser le mot de passe d'un compte secrétariat.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Valider bloqué (409 <em>facture_non_payee</em>) tant que non payé (RG14) ; reçu téléchargeable ; commission générée (RG18) ; fiche visible publiquement après validation (RG03) ; article visible sur <span style="font-family:ui-monospace,monospace;font-size:9px;">/blog</span> une fois la clé <span style="font-family:ui-monospace,monospace;font-size:9px;">articles:public</span> purgée (RG27) ; entrées horodatées au journal avec rôle et sévérité (RG26) ; sessions Redis du compte cible détruites, mot de passe temporaire envoyé (RG25).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;"><strong>Commercial</strong> (compte seedé rôle commercial)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Connexion → Prospects → relance d'un prospect « Chaud » → transformation → compte et fiche établissement créés → première facture générée par le Super Admin → commission passée en <em>a_valider</em>.</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Ne voit que ses prospects affectés (RG17) ; pipeline mis à jour ; commission liée à la 1<sup>re</sup> facture de ce client bloquée jusqu'à validation Direction (RG18).</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. Matrice de traçabilité RG ↔ tests</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 10px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:8%;">RG</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:42%;">Règle (rappel)</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Couverture</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG01</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Un établissement, une ville (12 villes au lancement)</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Intégr. filtre <span style="font-family:ui-monospace,monospace;font-size:9px;">?ville=</span> · contrainte FK (L10 v2.4)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG02</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Type unique parmi les 6 types</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Intégr. validation DTO <span style="font-family:ui-monospace,monospace;font-size:9px;">@IsEnum</span> · RTL TypePicker</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG03</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Statuts de fiche ; seules les validées sont publiques</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Intégr. 404 non validée · E2E admin</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG04</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Rôle unique par compte (relation <span style="font-family:ui-monospace,monospace;font-size:9px;">users.role_id</span>)</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Intégr. SessionGuard + RolesGuard · RTL redirections</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG05</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Portées déléguées des secrétaires, révocables</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Intégr. 403 portée absente / révoquée · RTL nav filtrée · E2E Sara</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG06</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Avis créé en_attente, jamais publié directement</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Intégr. POST avis · RTL formulaire note 1–5</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG07</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Une réponse max par avis ; signalement → file</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. ReviewModerationService · Intégr. 409 <em>reponse_existante</em></td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG08</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">note_moy et nb_avis recalculés à chaque décision</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. même transaction Prisma · E2E secrétaire</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG09</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Demande → un établissement ; consentement obligatoire ; notifie établ. + secrétariat</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. ContactRequestService · Intégr. BullMQ · RTL consentement · E2E parent</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG10</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Interactions tracées (appel, WhatsApp, vue, vue sponsorisée)</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Intégr. <span style="font-family:ui-monospace,monospace;font-size:9px;">/evenements</span> · RTL badge · E2E tri</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG11</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Un abonnement actif max ; remise −10 % si annuel réglé en une fois</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. SubscriptionService · Intégr. 409 <em>abonnement_deja_actif</em></td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG12</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Paiement à la vue : comptage plafonné par mois</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. ViewBillingService · concurrence §2.3 (2 clients Prisma) · RTL notification plafond</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG13</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Essai gratuit 1 mois toutes options ; sans souscription à l'échéance → fiche de base</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. SubscriptionService (expiration) · Intégr. fiche de base · RTL ProfileUnavailable</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG14</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Aucun tarif public ; facture F2026-NNNNNN, TVA 20 % ; validation bloquée si non payée</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. FacturationService · concurrence §2.3 · Intégr. 409 <em>facture_non_payee</em> · E2E admin</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG15</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Journal d'audit des actions sensibles</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. AuditService via <span style="font-family:ui-monospace,monospace;font-size:9px;">$extends</span> Prisma · Intégr. entrée écrite · E2E admin</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG16</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Photos par fiche sous quota d'offre</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Intégr. upload (quota, MIME, poids, retrait EXIF via <em>sharp</em>)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG17</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Prospect suivi en pipeline ; affecté à un commercial ; relances historisées</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. ProspectService · Intégr. 403 hors périmètre commercial · E2E commercial</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG18</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Commission calculée à la facturation ; réglée seulement après validation Direction</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. CommissionService · Intégr. statut bloqué sans validation · E2E admin/commercial</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG19</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Sponsoring 3 niveaux ; rotation équitable à niveau égal</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Intégr. ordre de tri par niveau · RTL badge Sponsorisé · E2E parent</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG20</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Modification de fiche (secrétaire / établ.) en attente de validation Super Admin</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. FicheProposalService · Intégr. fiche publique inchangée avant validation · E2E secrétaire</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG21</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Lead + fiche de besoin FC-1 → FC-11 ; pipeline 6 statuts ; relances et historique horodaté</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. LeadService (transitions, perdu motivé) · Intégr. POST <span style="font-family:ui-monospace,monospace;font-size:9px;">/leads</span>, 422 · RTL kanban + timeline · E2E établissement</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG22</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Score /10 auto (urgence 0–4 + budget 0–3 + complétude 0–3), ajustable, borné</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. LeadService aux bornes · Intégr. PATCH <span style="font-family:ui-monospace,monospace;font-size:9px;">/score</span> 422 hors bornes · RTL barre de score</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG23</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Données leads = propriété établissement (09-08) ; suppression / export Admin Client seul ; Super Admin agrégats</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. LeadGuard · Intégr. 403 secrétaire, cloisonnement inter-établissements · E2E secrétaire</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG25</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Console d'administration — rôles nommés (superadmin, secrétariat, commercial, établissement), permissions unitaires, réinit. mot de passe, périmètre fixe des rôles autres que secrétariat</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. RoleGuard · Intégr. 403 non admin, 409 permission sur rôle fixe, 403 sur son propre compte, sessions Redis détruites · E2E admin</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG26</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Journal d'audit immuable ; rôle de l'acteur figé à l'écriture ; sévérité info / avertissement / erreur ; purge à 3 ans</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. AuditService (absence de méthode d'écriture directe, rôle figé, purge 3 ans) · Intégr. 404 sur POST/PATCH/DELETE (aucune route déclarée), 403 AuditGuard · E2E admin</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;font-weight:700;">RG27</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">CMS — blog (brouillon → en_attente → approuvé), avis (mise en avant), FAQ (réordonnable), page « À propos », page profil (proposition ↔ publication directe admin), badges de plateforme</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Unit. ArticleWorkflowService · FicheProposalService · CmsService (purge des clés de cache Redis) · Intégr. <em>blog_actif</em> requis, ArticleGuard, badges retirés des payloads clients par <span style="font-family:ui-monospace,monospace;font-size:9px;">forbidNonWhitelisted</span> · concurrence §2.3 · RTL éditeur d'article + DiffPanel · E2E établissement + admin</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. Exécution et qualité continue</h2>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>En local</strong> — <span style="font-family:ui-monospace,monospace;font-size:10.5px;">docker compose -f docker-compose.test.yml up -d</span> (MySQL 8 + Redis 7 isolés), puis <span style="font-family:ui-monospace,monospace;font-size:10.5px;">pnpm --filter api test</span> (Jest — unitaires + Supertest), <span style="font-family:ui-monospace,monospace;font-size:10.5px;">pnpm --filter web test</span> (Vitest + RTL + MSW), <span style="font-family:ui-monospace,monospace;font-size:10.5px;">pnpm test:e2e</span> (Playwright headless), <span style="font-family:ui-monospace,monospace;font-size:10.5px;">pnpm lint</span> (ESLint + Prettier + TypeScript <span style="font-family:ui-monospace,monospace;font-size:10.5px;">--noEmit</span>). ESLint et Prettier tournent aussi en pré-commit local via <span style="font-family:ui-monospace,monospace;font-size:10.5px;">husky</span> + <span style="font-family:ui-monospace,monospace;font-size:10.5px;">lint-staged</span>.</li>
+    <li style="margin-bottom:5px;"><strong>En CI (GitHub Actions, détaillée au livrable 14)</strong> — à chaque <span style="font-family:ui-monospace,monospace;font-size:10.5px;">push</span> et chaque <span style="font-family:ui-monospace,monospace;font-size:10.5px;">pull request</span> :
+      <ul style="margin:4px 0 0;padding-left:18px;">
+        <li><strong>job api</strong> — services <span style="font-family:ui-monospace,monospace;font-size:10px;">mysql:8</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">redis:7</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm install --frozen-lockfile</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm prisma migrate deploy</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm db:seed</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm --filter api test:cov --coverageThreshold=90</span> (Jest + Supertest).</li>
+        <li><strong>job web</strong> — <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm lint</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm --filter web test --run</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm --filter web build</span> — <span style="font-family:ui-monospace,monospace;font-size:10px;">vite build</span> échoue si type ou import cassé ; côté API, <span style="font-family:ui-monospace,monospace;font-size:10px;">nest build</span> joue le même rôle.</li>
+        <li><strong>job e2e</strong> — chaque nuit et avant toute mise en production, contre le staging conteneurisé re-seedé (<span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm playwright install --with-deps</span> puis <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm test:e2e</span>).</li>
+        <li><strong>job images</strong> — exécuté <strong>après</strong> et seulement après le succès des jobs précédents : construction des images <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360-api</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360-web</span> et publication sur <span style="font-family:ui-monospace,monospace;font-size:10px;">ghcr.io</span>, taguées par SHA de commit — une image existe donc si, et seulement si, ses tests sont passés (livrable 14).</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:5px;"><strong>Politique de blocage</strong> — aucun <span style="font-family:ui-monospace,monospace;font-size:10px;">merge</span> vers <span style="font-family:ui-monospace,monospace;font-size:10px;">main</span> si un test échoue ou si la couverture des services passe sous les seuils (§1) ; un bug corrigé = un test de non-régression ajouté, référencé dans le commit.</li>
+    <li><strong>Traçabilité</strong> — la matrice du §5 est l'entrée de la recette : chaque scénario du livrable 15 cite les RG couvertes, chaque RG reste couverte à au moins deux niveaux de la pyramide.</li>
+  </ul>
+
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;"><strong>Prochaine étape</strong> — Livrable 14 : déploiement et CI-CD (production conteneurisée en Docker Compose sur VPS Hostinger KVM 2 sous Ubuntu 24 LTS — api, worker, scheduler, web, mysql, redis, nginx —, images construites en CI et publiées sur ghcr.io, déploiement et rollback par tag, sauvegardes externalisées, PRA RPO 24 h / RTO 4 h).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">7. Historique des révisions</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:12%;">Version</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:16%;">Date</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v1.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Version initiale — pyramide et matrice RG01–RG16 du modèle crédits / packs / abonnement Premium unique (Pest côté back).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">CreditService remplacé par ViewBillingService ; ajout CommissionService, ProspectService, PropositionFicheService aux suites unitaires ; nouveaux scénarios E2E admin (validation bloquée par facture non payée) et commercial (pipeline / transformation) ; matrice étendue RG01–RG20.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.1</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Avenant n° 1 — extension CRM : LeadService ajouté aux suites unitaires (scoring aux bornes, transitions du pipeline, perdu motivé) ; fonctionnels LeadPolicy (403 secrétaire sur suppression / export, cloisonnement) ; RTL kanban, score, miroir secrétariat sans export ; parcours E2E établissement étendu à la conversion d'un lead, parcours secrétaire aux relances du jour ; matrice étendue RG21–RG23.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.3</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Avenant n° 3 — console d'administration &amp; CMS : ajout aux suites unitaires de FicheProposalService (unicité proposition, publication directe admin), ArticleWorkflowService (transitions, décision réservée admin), AuditService (immuabilité, rôle figé, purge 3 ans) et CmsService (FAQ réordonnable, revalidateTag) ; fonctionnels RolePolicy (permission sur rôle à périmètre fixe → 409), AuditPolicy (405 sur POST/PATCH/DELETE, 403 hors admin), ArticlePolicy.decider (403 hors admin), <em>blog_actif</em> requis pour publier, badges de plateforme retirés des payloads clients ; RTL éditeur d'article + uploadeur image, écran Vérifier une modification de fiche (DiffPanel), Journal d'audit filtrable ; parcours E2E Super Admin étendu à la décision d'article, à la réinitialisation de mot de passe et à la vérification du journal ; matrice étendue RG25–RG27.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.4</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Migration Laravel 11 → Next.js 14 (livrable 7 v2.4). Périmètre : §1 Pest remplacé par Vitest côté serveur (environnement <span style="font-family:ui-monospace,monospace;font-size:10px;">node</span>, types partagés avec les schémas Zod et le client Prisma), Vitest + RTL + MSW inchangés côté composants (environnement <span style="font-family:ui-monospace,monospace;font-size:10px;">jsdom</span>), Playwright inchangé ; base MySQL 8 réelle en test (jamais SQLite) lancée par <span style="font-family:ui-monospace,monospace;font-size:10px;">docker-compose.test.yml</span> local et en service GitHub Actions en CI ; <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma migrate deploy</span> puis seeders TypeScript essentiels avant chaque suite ; §2 exemples de tests réécrits en TypeScript (factories Prisma, ConflictError / ForbiddenError, spy sur <em>revalidateTag</em>) ; §2.3 concurrence testée avec <strong>deux instances <span style="font-family:ui-monospace,monospace;font-size:10px;">PrismaClient</span> distinctes</strong> sur transaction <span style="font-family:ui-monospace,monospace;font-size:10px;">$queryRaw FOR UPDATE</span> (double comptage RG12, double numérotation RG14, double proposition RG27) ; §3 front — client <span style="font-family:ui-monospace,monospace;font-size:10px;">apiFetch</span> (fetch same-origin + cookies Auth.js) remplace Axios/Sanctum ; §4 parcours E2E rejoués contre le staging seedé par les seeders TypeScript du L10 v2.4 (mêmes comptes de démonstration : <span style="font-family:ui-monospace,monospace;font-size:10px;">direction@ecoles360.com</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">sara.s@ecoles360.com</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">contact@almassira.ma</span>) ; §5 matrice RG01–RG27 inchangée dans sa couverture (mêmes RG, formulations mises à jour côté colonne « Couverture ») ; §6 CI GitHub Actions — jobs back / front / e2e (services <span style="font-family:ui-monospace,monospace;font-size:10px;">mysql:8</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">redis:7</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm install --frozen-lockfile</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm prisma migrate deploy</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm test:server --coverage --min=90</span>) ; ESLint et Prettier remplacent Laravel Pint en pré-commit.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.5</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Correction d'architecture : Next.js 14 → NestJS 10 + React 18/Vite ; conteneurisation Docker de la production (livrable 7 v2.5). Périmètre : §1 <strong>Vitest côté serveur remplacé par Jest</strong>, outillage par défaut de NestJS, avec <strong>Supertest</strong> pour l'intégration HTTP — les tests unitaires montent un module réduit par <span style="font-family:ui-monospace,monospace;font-size:10px;">Test.createTestingModule()</span> ; base MySQL 8 réelle inchangée (jamais SQLite) ; <span style="font-family:ui-monospace,monospace;font-size:10px;">globalSetup</span> Jest appelant <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma migrate deploy</span> puis la <span style="font-family:ui-monospace,monospace;font-size:10px;">SeedCommand</span> du L10 v2.5 ; seuils de couverture repointés sur <span style="font-family:ui-monospace,monospace;font-size:10px;">api/src/modules/**</span> et les guards ; fixtures MSW générées depuis l'OpenAPI de <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/docs</span> au lieu des schémas Zod ; figure 1 mise à jour ; §2 exemples réécrits (injection NestJS, <span style="font-family:ui-monospace,monospace;font-size:10px;">ConflictException</span> / <span style="font-family:ui-monospace,monospace;font-size:10px;">ForbiddenException</span>, <em>LeadGuard</em> éprouvé via un contexte d'exécution) ; §2.2 intégration HTTP jouée par Supertest sur l'application Nest complète — pipes, guards, interceptors et filtres réels, agent authentifié par <span style="font-family:ui-monospace,monospace;font-size:10px;">POST /auth/login</span> —, policies devenues guards (<em>RoleGuard</em>, <em>AuditGuard</em>, <em>ArticleGuard</em>), 405 Next.js devenu 404 Nest sur les méthodes non déclarées, espion sur <span style="font-family:ui-monospace,monospace;font-size:10px;">CACHE_MANAGER</span> à la place du spy <span style="font-family:ui-monospace,monospace;font-size:10px;">revalidateTag</span>, messages 422 portés par class-validator, badges de plateforme rejetés par <span style="font-family:ui-monospace,monospace;font-size:10px;">forbidNonWhitelisted</span> ; §2.3 <strong>concurrence conservée à l'identique</strong> — deux instances <span style="font-family:ui-monospace,monospace;font-size:10px;">PrismaClient</span> distinctes sur <span style="font-family:ui-monospace,monospace;font-size:10px;">$queryRaw FOR UPDATE</span> (double comptage RG12, double numérotation RG14, double proposition RG27) ; §3 front inchangé dans son principe (Vitest + RTL + MSW), terminologie alignée — session Passport, <span style="font-family:ui-monospace,monospace;font-size:10px;">redirectToLogin</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">isPending</span>, mutation React Query à la place de la Server Action, invalidation Query + purge du cache API ; §4 <strong>cinq parcours acteur inchangés</strong>, rejoués contre le staging conteneurisé (<span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose exec</span> / <span style="font-family:ui-monospace,monospace;font-size:10px;">run</span> pour le reset et le seed), SSR substitué à RSC dans les vérifications SEO ; §5 <strong>matrice RG01–RG27 inchangée dans sa couverture</strong>, seuls les noms d'artefacts changent (guards, <span style="font-family:ui-monospace,monospace;font-size:10px;">@IsEnum</span>, SessionGuard, cache Redis) ; §6 jobs CI renommés <em>api</em> / <em>web</em> (<span style="font-family:ui-monospace,monospace;font-size:10px;">nest build</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">vite build</span>) et ajout du <strong>job <em>images</em></strong> qui construit et pousse les images sur ghcr.io <strong>après</strong> les tests.</td></tr>
+    </tbody>
+  </table>
+
+</x-import>
+</x-dc>
+</body>
+</html>

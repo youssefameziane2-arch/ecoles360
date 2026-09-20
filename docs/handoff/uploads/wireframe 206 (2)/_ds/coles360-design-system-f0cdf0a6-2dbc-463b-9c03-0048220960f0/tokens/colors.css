@@ -1,0 +1,72 @@
+/* écoles360 — Color tokens
+   Brand rule: 60-30-10 — ~60% white, ~30% black/gray, ~10% red.
+   Red stays an accent; never used in large flat fills. */
+:root {
+  /* ---- Base palette ---- */
+
+  /* Surfaces / white-dominant */
+  --c-white:        #FFFFFF;  /* dominant surface */
+  --c-surface-soft: #F5F6F8;  /* page / section background */
+  --c-surface-mute: #F1F3F6;  /* chips, progress track, subtle fills */
+  --c-placeholder-bg: #E3E7EC; /* image placeholders */
+  --c-chart-bar:    #C9D2DE;  /* neutral data bars */
+
+  /* Ink (near-black + grays) */
+  --c-ink:          #1A1A1A;  /* primary text & dark UI (admin sidebar) */
+  --c-ink-700:      #3A424E;  /* strong body text */
+  --c-gray-600:     #5A6472;  /* secondary text */
+  --c-gray-400:     #9AA3AF;  /* muted text, captions */
+  --c-gray-300:     #AEB6C2;  /* placeholder glyphs */
+
+  /* Borders / hairlines */
+  --c-border:       #ECEEF1;  /* default card / hairline border */
+  --c-border-input: #E1E5EA;  /* form control border */
+  --c-border-soft:  #F1F3F6;  /* faint divider inside cards */
+  --c-border-strong:#D4DAE2;  /* outline buttons, stronger edge */
+
+  /* Brand red (the 10% accent) */
+  --c-red:          #E63946;  /* primary actions, active state, Sponsorisé */
+  --c-red-hover:    #D12C39;  /* hover/press darken */
+  --c-red-tint:     #FDE8EA;  /* red badge / pill background */
+
+  /* Navy (secondary accent) */
+  --c-navy:         #1D3557;  /* links, secondary buttons, dark panels */
+  --c-navy-hover:   #16293F;
+  --c-navy-tint:    #E7EDF5;  /* navy badge background */
+  --c-navy-soft:    #AFC0D6;  /* navy-panel muted text */
+
+  /* Semantic — success (green) */
+  --c-green:        #2E9E5B;  /* validations, WhatsApp, success */
+  --c-green-hover:  #268A4E;
+  --c-green-tint:   #E6F4EC;  /* success badge background */
+
+  /* Semantic — warning (amber) */
+  --c-amber:        #E9A23B;  /* alerts, low credit balance, ratings */
+  --c-amber-text:   #C2841F;  /* amber text on tint for contrast */
+  --c-amber-tint:   #FCF1DE;  /* warning badge background */
+
+  /* ---- Semantic aliases ---- */
+  --surface-page:   var(--c-surface-soft);
+  --surface-card:   var(--c-white);
+  --surface-sunken: var(--c-surface-mute);
+  --surface-dark:   var(--c-ink);
+
+  --text-strong:    var(--c-ink);
+  --text-body:      var(--c-ink-700);
+  --text-muted:     var(--c-gray-600);
+  --text-subtle:    var(--c-gray-400);
+  --text-on-dark:   var(--c-white);
+  --text-link:      var(--c-navy);
+
+  --border-card:    var(--c-border);
+  --border-field:   var(--c-border-input);
+  --border-divider: var(--c-border-soft);
+
+  --accent:         var(--c-red);
+  --accent-hover:   var(--c-red-hover);
+  --accent-tint:    var(--c-red-tint);
+
+  --success:        var(--c-green);
+  --warning:        var(--c-amber);
+  --info:           var(--c-navy);
+}

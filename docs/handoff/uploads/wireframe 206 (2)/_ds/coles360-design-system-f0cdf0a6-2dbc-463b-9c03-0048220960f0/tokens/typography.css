@@ -1,0 +1,40 @@
+/* écoles360 — Typography tokens
+   Single family (Inter). Confident, tight headings; calm, readable body.
+   Headings lean heavy (700–800) with negative tracking. */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-base: var(--font-sans);
+
+  /* Weights */
+  --fw-regular:  400; /* @kind font */
+  --fw-medium:   500; /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold:     700; /* @kind font */
+  --fw-heavy:    800; /* @kind font */
+
+  /* Type scale (px) — mirrors the product maquette */
+  --fs-hero:    46px;  /* marketing H1 */
+  --fs-h1:      30px;  /* page / profile title */
+  --fs-h2:      28px;  /* section heading */
+  --fs-h3:      16px;  /* card / panel heading */
+  --fs-title:   24px;  /* dashboard title */
+  --fs-lead:    18px;  /* hero subline */
+  --fs-body:    15px;  /* default body */
+  --fs-sm:      14px;  /* dense UI text */
+  --fs-xs:      13px;  /* captions, helper */
+  --fs-2xs:     12px;  /* labels, micro */
+  --fs-eyebrow: 11px;  /* uppercase labels, badges */
+
+  /* Line heights */
+  --lh-tight:   1.1;   /* @kind font */
+  --lh-snug:    1.2;   /* @kind font */
+  --lh-normal:  1.5;   /* @kind font */
+  --lh-relaxed: 1.7;   /* @kind font */
+
+  /* Letter spacing */
+  --ls-hero:    -1px;
+  --ls-heading: -0.5px;
+  --ls-tight:   -0.6px;
+  --ls-eyebrow: 0.4px;  /* uppercase eyebrow / table head */
+  --ls-caps:    1px;    /* dark-nav section label */
+}

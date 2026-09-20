@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Livrable 8 · Merise (MCD / MLD / MPD)</span>
+    <span>v2.3 · septembre 2026</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Livrable 8 / 16 — Conception technique</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">Modélisation des données — Merise</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">MCD, MLD et MPD MySQL 8 : règles de gestion, dictionnaire de données, schémas conceptuel et logique, contraintes physiques d'intégrité.</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Version 2.3 · Septembre 2026 · Intègre le modèle commercial v2, les apports du cahier des charges fonctionnel J2HB (prospects, commissions, sponsoring, validation Super Admin), l'avenant n° 1 (CRM leads établissement — RG21 à RG23) et l'avenant n° 3 (console d'administration &amp; CMS — RG25 à RG27) · S'appuie sur le livrable 7 (architecture technique) · Prépare les livrables 10 (base de données) et 11 (back-end / API)</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. Démarche et périmètre</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">La modélisation suit la méthode Merise sur ses trois niveaux d'abstraction. Elle couvre les huit modules back-end identifiés au livrable 7 (annuaire &amp; recherche, fiches &amp; médias, avis &amp; modération, mise en relation, abonnement &amp; facturation, comptes / rôles / permissions, statistiques &amp; traçage, notifications), étendus par le présent livrable à la gestion commerciale (prospects, commissions) et au sponsoring — apports du cahier des charges fonctionnel J2HB — puis, depuis l'avenant n° 1, au CRM leads des établissements (fiche de besoin, pipeline à 6 statuts, scoring) et, depuis l'avenant n° 3, à la console d'administration et au système de gestion de contenu (rôles et permissions unitaires, journal d'audit, articles de blog, FAQ, pages éditoriales, page profil intégralement éditable sous circuit d'approbation), et formalise les invariants des cinq flux clés (recherche, contact, vue sponsorisée, modération, abonnement).</p>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:16%;">Niveau</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:20%;">Modèle</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu produit dans ce livrable</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Conceptuel</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">MCD</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Entités, associations et cardinalités, indépendamment de toute technologie (sections 3 et 4).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Logique</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">MLD relationnel</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Traduction en relations : clés primaires, clés étrangères, tables d'association (section 5).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Physique</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">MPD MySQL 8</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Types InnoDB / utf8mb4, index, contraintes, règles transactionnelles (sections 6 et 7).</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 10.5px/1.55 'Inter',sans-serif;color:#5A6472;margin:0 0 10px;"><strong>Convention de lecture des cardinalités</strong> (formalisme Merise) : le couple (min, max) porté près d'une entité exprime sa participation à l'association — ex. ÉTABLISSEMENT (1,1) — SITUER — (0,n) VILLE : « un établissement est situé dans une et une seule ville ; une ville accueille zéro ou plusieurs établissements ».</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. Règles de gestion</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Les règles ci-dessous dérivent du benchmark (livrable 1), du cahier des charges (livrable 3) et des flux du livrable 7. Elles fondent les cardinalités du MCD et les contraintes du MPD.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:10%;">Code</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Règle de gestion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG01</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Un établissement est situé dans une et une seule ville ; une ville accueille zéro ou plusieurs établissements.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG02</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Un établissement est d'un <strong>type unique</strong> parmi six (crèche, primaire, collège, lycée, université, formation) et <strong>propose un ou plusieurs niveaux / filières</strong> (ex. maternelle, bilingue, mission française, sciences, BTS…) ; un niveau / filière est proposé par zéro ou plusieurs établissements.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG03</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Une fiche établissement porte un statut de cycle de vie : en_attente → validee ↔ masquee / suspendue. Seules les fiches validées sont visibles côté public.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG04</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Un compte utilisateur possède un rôle unique (admin, secretaire, etablissement). Un compte « établissement » gère exactement une fiche ; une fiche est gérée par au plus un compte (fiches d'amorçage open data non revendiquées).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG05</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Un secrétaire dispose de permissions déléguées par portée (fiches, contacts, avis), attribuées et révoquées par un admin ; chaque portée est vérifiée côté serveur à chaque requête (Policy).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG06</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Un avis est déposé par un parent sans compte (nom + contact vérifié) sur un seul établissement, avec une note de 1 à 5. Il n'est publié qu'après modération (statuts en_attente, publie, rejete).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG07</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Un avis publié peut recevoir au plus une réponse de l'établissement, et peut être signalé plusieurs fois ; tout signalement replace l'avis en file de modération.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG08</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">La note moyenne et le nombre d'avis d'un établissement sont recalculés à chaque publication, rejet ou retrait d'avis (dénormalisation contrôlée pour la recherche).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG09</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Une demande de contact est adressée à un seul établissement ; son enregistrement notifie l'établissement et le secrétariat et alimente les statistiques, sans décompte lié à une formule de monétisation.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG10</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Chaque interaction traçable (appel, WhatsApp, vue de fiche, vue de page profil) est historisée ; seule la vue de page profil est comptabilisée pour la facturation d'un établissement en paiement à la vue (RG12).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG11</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Un établissement dispose d'au plus un abonnement actif à la fois (essai gratuit, mensuel ou annuel) ; l'abonnement annuel réglé en une seule fois bénéficie d'une remise de 10 % sur le prix mensuel × 12.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG12</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Un établissement peut opter pour le paiement à la vue : chaque vue facturable de sa page profil est comptabilisée dans la limite d'un plafond mensuel ; au-delà, les vues supplémentaires du mois ne sont plus facturées.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG13</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Un nouvel établissement bénéficie d'un essai gratuit unique d'un mois avec toutes les options, sans engagement ni moyen de paiement ; sans souscription d'une formule payante à l'échéance, la fiche repasse en fiche de base.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG14</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Aucun tarif n'est public : le prix de l'abonnement et le prix par vue sont fixés par le Super Admin, propres à chaque établissement ; toute souscription ou modification tarifaire génère une facture, encaissée avant activation ou réactivation de la fiche.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG15</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Toute action sensible (validation, suspension, décision de modération, changement de permissions) est journalisée : auteur, action, cible, horodatage (journal d'audit, livrable 7 §3).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG16</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Une photo appartient à une seule fiche ; le nombre de photos autorisé dépend de l'offre (1 photo en fiche de base, galerie illimitée en offre payante — livrable 9 §4). Les données parents collectées sont minimisées (loi 09-08).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG17</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Une demande d'inscription (formulaire public ou saisie manuelle) crée un prospect suivi selon un pipeline (Nouveau, À contacter, Chaud, Relance, Transformé, Perdu) ; un prospect est affecté à un et un seul commercial, qui lui adresse zéro ou plusieurs relances horodatées.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG18</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Toute vente conclue par un commercial (abonnement, paiement à la vue, sponsoring) génère une commission calculée sur le montant encaissé ; elle n'est réglée qu'après validation de la Direction.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG19</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Le sponsoring d'un établissement est vendu par campagne à un niveau (Premium, Gold ou Silver) sur un périmètre ville / catégorie / mot-clé et une période donnée ; à niveau égal, la rotation entre établissements sponsorisés est équitable.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG20</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Toute modification d'une fiche établissement par un secrétaire ou l'établissement lui-même est enregistrée en proposition et n'est publiée qu'après validation d'un Super Admin ; les modifications faites directement par un Super Admin sont publiées sans validation intermédiaire.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG21</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Chaque demande de contact reçue par un établissement devient un lead doté d'une fiche de besoin (FC-1 → FC-11) ; un lead peut aussi être saisi manuellement (appel, WhatsApp, salon). Il suit le pipeline établissement à 6 statuts (nouveau, contacté, qualifié, proposition envoyée, inscrit / converti, perdu) ; les relances sont programmables et l'historique horodaté (commentaires, relances) est conservé par lead — avenant n° 1.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG22</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Le score / 10 d'un lead est calculé automatiquement (urgence 0–4, adéquation budget / offre 0–3, complétude de la fiche 0–3) et reste ajustable manuellement ; la température (froid → très chaud) est une dimension du scoring FC-9, pas un statut de pipeline — avenant n° 1.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG23</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Les données de la fiche de besoin appartiennent à l'établissement et relèvent de la loi 09-08 (consentement, droit de suppression) ; la suppression et l'export sont réservés à l'Admin Client — la secrétaire traite sans supprimer ni exporter ; le Super Admin J2HB n'accède qu'aux statistiques agrégées, jamais au détail nominatif — avenant n° 1.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG25</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Tout utilisateur porte exactement un rôle parmi <strong>Super Admin, secrétariat, commercial et établissement</strong> (précise et remplace l'énumération de la RG04). Les comptes secrétariat sont créés, suspendus et supprimés par le Super Admin, qui règle leurs permissions unitaires (fiches, contacts, avis) ; un compte secrétariat est obligatoirement rattaché à un établissement. Les rôles établissement et commercial ont un périmètre fixe, non modifiable compte par compte. La réinitialisation de mot de passe est réservée au Super Admin et ne restitue jamais l'ancien mot de passe ; un compte suspendu conserve ses données mais perd tout accès — avenant n° 3.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG26</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Toute action sensible (cycle de vie d'un compte, réinitialisation de mot de passe, validation ou suspension d'établissement, encaissement de facture, approbation ou refus d'un avis, d'un article ou d'une modification de fiche, bascule du statut sponsorisé, édition d'un contenu éditorial) génère une entrée d'audit horodatée : acteur, rôle, action, cible et sévérité (information / avertissement / erreur). Les entrées sont <strong>immuables</strong> (insertion seule) et conservées trois ans ; la consultation du journal et de l'explorateur de tables est réservée au Super Admin, ce dernier étant strictement en lecture seule — avenant n° 3. Étend la RG15.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">RG27</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Les contenus du site public (articles de blog, avis, FAQ, pages éditoriales) sont pilotés depuis le back-office : seuls les articles <em>approuvés</em> et les avis <em>publiés</em> sont visibles, la mise en avant sur l'accueil étant une décision distincte du Super Admin ; un article rédigé par un établissement ou un commercial est <em>soumis</em>, jamais publié directement, et le blog est activable par compte. Pour la page profil, le Super Admin publie directement tandis que l'établissement et le secrétariat déposent une proposition horodatée accompagnée du comparatif des champs modifiés, annulable tant qu'elle est en attente : <strong>rien n'est visible publiquement avant approbation</strong>. Les badges (sponsorisé, vérifié, premium), la note et le nombre d'avis ne sont pas éditables par le client — avenant n° 3. Étend la RG20 à l'ensemble des blocs de la fiche.</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 10.5px/1.55 'Inter',sans-serif;color:#5A6472;margin:0 0 6px;">La RG24 reste réservée à l'avenant « compte parent léger », non encore formalisé ; la numérotation est conservée pour préserver la traçabilité des références.</p>
+  <p style="font:400 10.5px/1.55 'Inter',sans-serif;color:#5A6472;margin:0 0 10px;">Les espaces publicitaires (bannières, encarts entre résultats — CDC J2HB) sont hors périmètre de modélisation V1 : vendus par emplacement et période, indépendamment d'une fiche établissement, ils seront modélisés lors de leur mise en œuvre (phase 2).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. Dictionnaire de données (extrait)</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Extrait des propriétés structurantes ; le dictionnaire exhaustif (≈ 120 propriétés) est tenu dans le référentiel du projet et sera annexé au livrable 10.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:22%;">Code</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:32%;">Désignation</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:26%;">Type / domaine</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Entité porteuse</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">eta_slug</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Identifiant public SEO de la fiche</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">AN(160), unique</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ÉTABLISSEMENT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">eta_type</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Type d'établissement (RG02)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. 6 valeurs : crèche, primaire, collège, lycée, université, formation</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ÉTABLISSEMENT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">eta_statut</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Statut de la fiche (RG03)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énumération</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ÉTABLISSEMENT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">eta_budget_min / max</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Fourchette de frais annuels</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">N, MAD</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ÉTABLISSEMENT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">eta_note_moy</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Note moyenne dénormalisée (RG08)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Décimal (2,1)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ÉTABLISSEMENT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">eta_lat / eta_lng</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Coordonnées carte (Leaflet / OSM)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Décimal (10,7)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ÉTABLISSEMENT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">usr_role</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Rôle du compte (RG04)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énumération</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UTILISATEUR</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">per_portee</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Portée déléguée (RG05)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. fiches / contacts / avis</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">PERMISSION</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">avi_note</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Note attribuée par le parent</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">N, 1 à 5</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">AVIS</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">avi_statut</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Statut de modération (RG06)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énumération</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">AVIS</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">avi_verifie</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Badge « Parent vérifié »</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Booléen</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">AVIS</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">dem_canal</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Canal de la demande</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. formulaire / appel / whatsapp</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">DEMANDE_CONTACT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">dem_statut</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Suivi de traitement</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. nouvelle / en_cours / traitee</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">DEMANDE_CONTACT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">evt_type</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Type d'événement tracé (RG10)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. appel / whatsapp / vue / vue_spons</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ÉVÉNEMENT_TRACE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">abo_formule</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Formule active (RG11, RG13)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. essai_gratuit / mensuel / annuel</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ABONNEMENT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">abo_tarif_mad</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Tarif négocié par client, nul si essai (RG14)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Décimal, nullable</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ABONNEMENT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">vue_prix_unitaire</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Prix par vue négocié par client</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Décimal (6,2) MAD</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">PAIEMENT_VUE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">vue_plafond_mensuel</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Plafond de vues facturées par mois (RG12)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">N &gt; 0</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">PAIEMENT_VUE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">fac_numero</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Numéro de facture séquentiel légal</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">AN(20), unique</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">FACTURE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">pros_statut_pipeline</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Étape du pipeline commercial (RG17)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. 6 valeurs (nouveau → transformé / perdu)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">PROSPECT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">com_taux_pct</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Taux de commission appliqué (RG18)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Décimal (4,1) %</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">COMMISSION</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">spo_niveau</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Niveau de sponsoring (RG19)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. Premium / Gold / Silver</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">SPONSORING</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">prop_statut</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Décision Super Admin (RG20)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. en_attente / validee / rejetee</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">PROPOSITION_FICHE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">lea_fiche_besoin</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Fiche de besoin candidat FC-1 → FC-11 (RG21)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">JSON</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">LEAD</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">lea_score</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Score de qualification, auto + ajustable (RG22)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">N, 0 à 10</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">LEAD</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">lea_statut_pipeline</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Étape du pipeline lead (RG21)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. 6 valeurs (nouveau → inscrit / perdu)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">LEAD</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">sui_type</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Nature du suivi (RG21)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. commentaire / relance</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">SUIVI_LEAD</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">aud_action</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Action sensible journalisée (RG15)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">AN(60)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">JOURNAL_AUDIT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">aud_severite</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Sévérité de l'événement (RG26)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. info / avertissement / erreur</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">JOURNAL_AUDIT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">rol_code</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Rôle nommé porté par un compte (RG25)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. superadmin / secretariat / commercial / etablissement</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">RÔLE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">rol_perimetre_fixe</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Permissions non modifiables compte par compte (RG25)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Booléen</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">RÔLE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">usr_statut</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">État du compte (RG25)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. actif / suspendu</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UTILISATEUR</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">usr_blog_actif</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Blog activé pour ce compte (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Booléen, faux par défaut</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UTILISATEUR</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">art_statut</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Circuit éditorial de l'article (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Énum. brouillon / en_attente / approuve / refuse</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ARTICLE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">art_a_la_une</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Mise en avant sur l'accueil (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Booléen</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ARTICLE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">avi_en_avant</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Avis mis en avant sur l'accueil (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Booléen</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">AVIS</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">faq_ordre</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Rang d'affichage réordonnable (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">N ≥ 0</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">FAQ</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">cms_cle</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Identifiant de la page éditoriale (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">AN(60), unique — ex. « a-propos »</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">PAGE_CMS</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">cms_blocs</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Blocs éditables de la page (histoire, mission, valeurs, coordonnées)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">JSON</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">PAGE_CMS</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">eta_blocs_profil</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Blocs éditables de la page profil : chiffres clés, FAQ, horaires, réseaux sociaux, autres projets, facilités, vidéo (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">JSON (une colonne par bloc)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ÉTABLISSEMENT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;">prop_payload</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Version complète proposée de la fiche, tous blocs (RG27)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">JSON</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">PROPOSITION_FICHE</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. MCD — Modèle conceptuel de données</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">Pour la lisibilité au format A4, le MCD est présenté en cinq vues complémentaires formant un modèle unique : l'entité ÉTABLISSEMENT, pivot du modèle, est rappelée en grisé dans les vues suivantes. Les identifiants sont soulignés ; seules les propriétés structurantes sont figurées.</p>
+
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:14px;background:#fff;margin:0 0 6px;">
+    <div style="display:grid;grid-template-columns:1fr 86px 1.12fr 86px 1fr;gap:10px 0;align-items:center;">
+
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">VILLE</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_ville</span><br>nom, slug<br>région</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">SITUER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="grid-row:1 / span 3;grid-column:3;border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;box-shadow:0 1px 0 #E7EDF5;">
+        <div style="background:#1D3557;color:#fff;font:700 9.5px/1 'Inter',sans-serif;letter-spacing:.5px;padding:7px 9px;">ÉTABLISSEMENT</div>
+        <div style="padding:7px 9px;font:400 8.5px/1.6 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_etablissement</span><br>slug, nom, type (6 val.), statut<br>description, adresse, lat / lng<br>tél, whatsapp, email<br>budget_min / max<br>note_moy, nb_avis<br>source (open data / direct)<br>sponsorisé (o/n)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">RECEVOIR</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">AVIS</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_avis</span><br>auteur_nom, contact<br>note (1–5), commentaire<br>statut, vérifié (o/n)<br>réponse, date_réponse<br>déposé_le</div>
+      </div>
+
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">NIVEAU_FILIÈRE</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_niveau</span><br>libellé<br>catégorie</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">PROPOSER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,n</span>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">ADRESSER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">DEMANDE_CONTACT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_demande</span><br>parent_nom, parent_tél<br>message, canal<br>statut, consentement 09-08<br>reçue_le, traitée_le</div>
+      </div>
+
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">PHOTO</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_photo</span><br>chemin, ordre<br>poids, alt</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">ILLUSTRER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">TRACER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ÉVÉNEMENT_TRACE</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_événement</span><br>type (appel / whatsapp / vue / vue_sponsorisée)<br>source, horodatage</div>
+      </div>
+
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 86px 1.12fr 86px 1fr;margin-top:10px;align-items:center;">
+      <div></div><div></div><div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <div style="width:1px;height:10px;background:#C9D2DE;"></div>
+      </div>
+      <div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 86px 1.12fr 86px 1fr;align-items:center;">
+      <div></div><div></div><div></div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">SIGNALER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;margin-top:8px;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">SIGNALEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_signalement</span><br>motif, contact<br>statut, signalé_le</div>
+      </div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 16px;">Figure 1 — MCD, vue 1/2 : référentiel de l'annuaire, confiance (avis, signalements — SIGNALER se lit : un avis reçoit 0,n signalements, un signalement porte sur 1,1 avis) et mise en relation. Les demandes et événements alimentent les statistiques et le décompte de crédits (vue 2).</p>
+
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:14px;background:#fff;margin:0 0 6px;">
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;">
+
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">PERMISSION</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_permission</span><br>portée (fiches / contacts / avis)<br>accordée_par, accordée_le<br>révoquée_le</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">DÉLÉGUER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9.5px/1 'Inter',sans-serif;letter-spacing:.5px;padding:7px 9px;">UTILISATEUR</div>
+        <div style="padding:7px 9px;font:400 8.5px/1.6 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_utilisateur</span><br>nom, email, mot_de_passe<br>rôle (admin / secrétaire / établissement)<br>statut, dernière_connexion</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">GÉRER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ÉTABLISSEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_etablissement</span><br>(rappel — voir vue 1/2)</div>
+      </div>
+
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">NOTIFICATION</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_notification</span><br>type (solde_bas / échéance / demande / modération)<br>canal, envoyée_le, lue_le</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">NOTIFIER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;">
+          <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+          <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+          <span style="background:#FDE8EA;color:#C8313F;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">MODÉRER</span>
+          <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+          <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+        </div>
+        <div style="border:1px dashed #F3C9CD;border-radius:7px;padding:5px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#8A5A5E;background:#FDF5F5;text-align:center;">porte : décision, motif, date</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">AVIS</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_avis</span><br>(rappel — voir vue 1/2)</div>
+      </div>
+
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">JOURNAL_AUDIT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_entrée</span><br>action, cible_type, cible_id<br>détails (JSON), adresse_ip<br>horodatage</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">JOURNALISER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div></div><div></div><div></div>
+    </div>
+
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">PROPOSITION_FICHE</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_proposition</span><br>#proposée_par, champs_modifiés (JSON)<br>statut, décision_motif<br>proposée_le, traitée_le</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">CONCERNER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ÉTABLISSEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_etablissement</span><br>(rappel — voir vue 1/2)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#FDE8EA;color:#C8313F;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">VALIDER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">UTILISATEUR</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_utilisateur</span><br>(rappel — rôle Super Admin)</div>
+      </div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 12px;">Figure 2 — MCD, vue 2/2 : comptes, permissions déléguées, validation des modifications de fiche (Super Admin, RG20) et traçabilité (notifications, journal d'audit). Les entités grisées sont des rappels de la vue 1.</p>
+
+  <div style="border:1px solid #E1E5EA;background:#F5F6F8;border-radius:8px;padding:12px 16px;margin:0 0 12px;">
+    <p style="font:700 11.5px/1.5 'Inter',sans-serif;color:#1D3557;margin:0 0 6px;">Points de lecture du MCD</p>
+    <ul style="font:400 11px/1.6 'Inter',sans-serif;color:#2A313B;margin:0;padding-left:18px;">
+      <li style="margin-bottom:4px;"><strong>GÉRER (0,1 — 0,1)</strong> : une fiche issue de l'amorçage open data existe sans compte tant qu'elle n'est pas revendiquée (RG04) ; un compte « établissement » gère au plus une fiche.</li>
+      <li style="margin-bottom:4px;"><strong>VALIDER (0,n — 0,n)</strong> : toute modification de fiche par un secrétaire ou l'établissement est d'abord enregistrée en PROPOSITION_FICHE ; seul un Super Admin la valide ou la rejette (RG20) — ses propres modifications sont publiées directement.</li>
+      <li style="margin-bottom:4px;"><strong>MODÉRER (0,n — 0,1)</strong> : association porteuse de données (décision, motif, date) entre l'utilisateur habilité (admin ou secrétaire avec portée avis) et l'avis traité (RG05, RG06).</li>
+      <li style="margin-bottom:4px;"><strong>TRAITER et ACCORDER</strong> : le traitement d'une demande (traitée_par) et l'octroi d'une permission (accordée_par) sont des associations UTILISATEUR absorbées en attributs — elles deviennent des clés étrangères au MLD.</li>
+      <li><strong>SIGNALER, TRACER, ADRESSER</strong> : entités faibles à fort volume rattachées en (1,1) à leur parent — elles alimentent la file de modération et les statistiques.</li>
+    </ul>
+  </div>
+
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">La monétisation (abonnement, paiement à la vue, sponsoring) et la gestion commerciale (prospects, relances, commissions) forment un troisième sous-modèle, présenté séparément pour la lisibilité.</p>
+
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:14px;background:#fff;margin:0 0 6px;">
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;">
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ÉTABLISSEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_etablissement</span><br>(rappel — voir vue 1/2)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">TRANSFORMER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+      </div>
+      <div style="border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9.5px/1 'Inter',sans-serif;letter-spacing:.5px;padding:7px 9px;">PROSPECT</div>
+        <div style="padding:7px 9px;font:400 8.5px/1.6 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_prospect</span><br>etablissement_nom, ville, type_visé<br>contact_nom, fonction, tél, email<br>formule_visée, message, source<br>statut_pipeline, créé_le</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">AFFECTER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">UTILISATEUR</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_utilisateur</span><br>(rappel — rôle commercial)</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;margin-top:10px;">
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">RELANCE</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_relance</span><br>note<br>prévue_le, effectuée_le</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">RELANCER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">PROSPECT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_prospect</span><br>(rappel — ci-dessus)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">EFFECTUER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">UTILISATEUR</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_utilisateur</span><br>(rappel — rôle commercial)</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;margin-top:10px;">
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ÉTABLISSEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_etablissement</span><br>(rappel — voir vue 1/2)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">SOUSCRIRE</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ABONNEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_abonnement</span><br>formule (essai_gratuit / mensuel / annuel)<br>tarif_MAD°, remise_pct°<br>début, échéance, statut</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;align-items:center;">
+          <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+          <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+          <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">FACTURER</span>
+          <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+          <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1 / 0,n</span>
+        </div>
+        <div style="font:400 7.5px/1.4 'Inter',sans-serif;color:#8B99AC;text-align:center;">↔ PAIEMENT_VUE (0,1)<br>↔ SPONSORING (0,1)</div>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">FACTURE</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_facture</span><br>numéro (unique), objet<br>montant_HT, TVA, TTC<br>statut_paiement, émise_le, payée_le</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;margin-top:10px;">
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ÉTABLISSEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_etablissement</span><br>(rappel — voir vue 1/2)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">ACTIVER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">PAIEMENT_VUE</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_paiement_vue</span><br>prix_unitaire_MAD, plafond_mensuel<br>compteur_mois_courant<br>période, statut</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+      </div>
+      <div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;margin-top:10px;">
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ÉTABLISSEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_etablissement</span><br>(rappel — voir vue 1/2)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">BÉNÉFICIER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">SPONSORING</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_sponsoring</span><br>niveau (Premium / Gold / Silver)<br>ville°, catégorie°, mot_clé°<br>début, fin, tarif_MAD</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+      </div>
+      <div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;margin-top:10px;">
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">FACTURE</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_facture</span><br>(rappel — ci-dessus)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">GÉNÉRER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">COMMISSION</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_commission</span><br>taux_pct, montant_MAD<br>statut (à_valider / validée / réglée)<br>validée_par°, validée_le°</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">VERSER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">UTILISATEUR</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_utilisateur</span><br>(rappel — rôle commercial)</div>
+      </div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 16px;">Figure 3 — MCD, vue 3/4 : pipeline commercial (prospect, relances, affectation) et monétisation v2 (abonnement, paiement à la vue, sponsoring, facture, commission). Aucun tarif n'est stocké au niveau public — les montants sont propres à chaque établissement (RG14).</p>
+
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">L'avenant n° 1 ajoute un quatrième sous-modèle : le CRM leads de l'établissement. Chaque demande de contact peut devenir un lead doté d'une fiche de besoin structurée (FC-1 → FC-11) ; un lead peut aussi être saisi manuellement (appel, WhatsApp, salon). Ses suivis — commentaires horodatés et relances programmées — forment l'historique exigé par la RG21.</p>
+
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:14px;background:#fff;margin:0 0 6px;">
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;">
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ÉTABLISSEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_etablissement</span><br>(rappel — voir vue 1/2)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">QUALIFIER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9.5px/1 'Inter',sans-serif;letter-spacing:.5px;padding:7px 9px;">LEAD</div>
+        <div style="padding:7px 9px;font:400 8.5px/1.6 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_lead</span><br>candidat_nom, pour_qui (soi / enfant)<br>tél, whatsapp (o/n), email°<br>ville°, cycle°, niveau°, budget_min / max°<br>urgence, source, température (FC-9)<br>fiche_besoin (JSON, FC-1 → FC-11)<br>score /10 (RG22), statut_pipeline (6 val.)<br>issue° (inscrit / perdu), raison_perte°<br>acompte_MAD°, converti_le°, créé_le</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">ORIGINER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">DEMANDE_CONTACT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_demande</span><br>(rappel — voir vue 1/2)</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;margin-top:10px;">
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">SUIVI_LEAD</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_suivi</span><br>type (commentaire / relance)<br>note<br>prévue_le°, effectuée_le°</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">SUIVRE</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">LEAD</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_lead</span><br>(rappel — ci-dessus)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">RÉDIGER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">UTILISATEUR</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_utilisateur</span><br>(rappel — Admin Client / secrétaire)</div>
+      </div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 16px;">Figure 4 — MCD, vue 4/4 (avenant n° 1) : CRM leads établissement. QUALIFIER : un établissement qualifie 0,n leads, un lead appartient à un seul établissement (RG23) ; ORIGINER : un lead provient d'au plus une demande de contact (RG21) ; SUIVRE / RÉDIGER : chaque suivi (commentaire ou relance) porte sur un lead et est rédigé par un utilisateur de l'établissement (Admin Client ou secrétaire). Pipeline distinct du pipeline commercial J2HB (Figure 3).</p>
+
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">L'avenant n° 3 ajoute un cinquième sous-modèle : la console d'administration et le système de gestion de contenu. Le rôle, jusque-là simple énumération portée par le compte, devient une entité à part entière (RG25) ; les contenus éditoriaux du site public (articles, FAQ, pages) sont modélisés avec leur circuit de validation (RG27) ; le journal d'audit, jusqu'ici seule table technique, est rattaché explicitement à son acteur (RG26).</p>
+
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:14px;background:#fff;margin:0 0 6px;">
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;">
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">RÔLE</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_role</span><br>code (4 val.), libellé<br>périmètre_fixe (o/n)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">PORTER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9.5px/1 'Inter',sans-serif;letter-spacing:.5px;padding:7px 9px;">UTILISATEUR</div>
+        <div style="padding:7px 9px;font:400 8.5px/1.6 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_utilisateur</span><br>nom, email, mot_de_passe<br>statut (actif / suspendu)<br>#établissement_rattaché°<br>blog_actif (o/n)<br>dernière_connexion°, créé_le</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">DÉTENIR</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">PERMISSION</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_permission</span><br>portée (fiches / contacts / avis)<br>#accordée_par, accordée_le<br>révoquée_le°</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 86px 1.05fr 86px 1fr;gap:10px 0;align-items:center;margin-top:10px;">
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">UTILISATEUR</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_utilisateur</span><br>(rappel — auteur / validateur)</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">RÉDIGER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">1,1</span>
+      </div>
+      <div style="border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9.5px/1 'Inter',sans-serif;letter-spacing:.5px;padding:7px 9px;">ARTICLE</div>
+        <div style="padding:7px 9px;font:400 8.5px/1.6 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_article</span><br>titre, slug, catégorie<br>chapeau, contenu, image°<br>statut (4 val.), à_la_une (o/n)<br>#établissement°, #validé_par°<br>soumis_le°, publié_le°</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,1</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="background:#E7EDF5;color:#1D3557;font:700 7.5px/1 'Inter',sans-serif;padding:4px 5px;border-radius:9px;white-space:nowrap;">RATTACHER</span>
+        <div style="flex:1;height:1px;background:#C9D2DE;"></div>
+        <span style="font:600 7.5px/1 'Inter',sans-serif;color:#5A6472;">0,n</span>
+      </div>
+      <div style="border:1px dashed #C9D2DE;border-radius:8px;overflow:hidden;background:#F5F6F8;">
+        <div style="background:#8B99AC;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">ÉTABLISSEMENT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#5A6472;"><span style="text-decoration:underline;font-weight:600;">id_etablissement</span><br>(rappel — blocs de profil JSON)</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:start;margin-top:10px;">
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">FAQ</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_faq</span><br>question, réponse<br>ordre, publiée (o/n)<br>#modifiée_par°, modifiée_le°</div>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">PAGE_CMS</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_page</span><br>clé unique (ex. a-propos)<br>titre, blocs (JSON)<br>#modifiée_par°, modifiée_le°</div>
+      </div>
+      <div style="border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;letter-spacing:.5px;padding:6px 8px;">JOURNAL_AUDIT</div>
+        <div style="padding:6px 8px;font:400 8.5px/1.55 'Inter',sans-serif;color:#2A313B;"><span style="text-decoration:underline;font-weight:600;">id_audit</span><br>#acteur°, rôle_acteur<br>action, cible_type, cible_id<br>sévérité (3 val.), détails (JSON)<br>adresse_ip°, créé_le</div>
+      </div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 16px;">Figure 5 — MCD, vue 5/5 (avenant n° 3) : comptes, rôles, permissions et contenus éditoriaux. PORTER : un utilisateur porte un et un seul rôle, un rôle est porté par 0,n utilisateurs (RG25) ; DÉTENIR : les permissions unitaires ne sont instanciées que pour les rôles à périmètre non fixe (secrétariat) ; RÉDIGER : un article a un auteur unique et 0,1 validateur ; RATTACHER : un article peut être rattaché à un établissement (blog client) ou n'appartenir qu'à la plateforme (RG27). Le JOURNAL_AUDIT est en insertion seule et conserve le rôle de l'acteur au moment de l'action, indépendamment des évolutions ultérieures de son compte (RG26).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. MLD — Modèle logique relationnel</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Traduction du MCD en relations (3<sup>e</sup> forme normale, dénormalisations signalées). Notation : <span style="text-decoration:underline;">clé primaire soulignée</span>, #clé étrangère. Les associations (0,1)/(1,1) sont absorbées, PROPOSER (n,n) devient une table d'association, MODÉRER est absorbée dans avis avec ses données portées.</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#FAFBFC;padding:12px 14px;font:400 10px/1.75 ui-monospace,monospace;color:#2A313B;margin:0 0 8px;">
+    <div><strong>utilisateur</strong> (<span style="text-decoration:underline;">id</span>, #role_id, #etablissement_rattache_id°, nom, email, mot_de_passe, statut, blog_actif, derniere_connexion_le, cree_le)</div>
+    <div><strong>role</strong> (<span style="text-decoration:underline;">id</span>, code unique, libelle, perimetre_fixe)</div>
+    <div><strong>ville</strong> (<span style="text-decoration:underline;">id</span>, nom, slug unique, region)</div>
+    <div><strong>etablissement</strong> (<span style="text-decoration:underline;">id</span>, #ville_id, #proprietaire_user_id°, slug unique, nom, type, statut, description, adresse, lat, lng, tel, whatsapp, email, budget_min, budget_max, note_moy*, nb_avis*, source, sponsorise, verifie, premium, chiffres_json, faq_json, horaires_json, socials_json, autres_projets_json, facilites_json, video_url°, video_poster°, valide_le°, cree_le)</div>
+    <div><strong>niveau_filiere</strong> (<span style="text-decoration:underline;">id</span>, libelle, categorie)</div>
+    <div><strong>etablissement_niveau</strong> (<span style="text-decoration:underline;">#etablissement_id, #niveau_id</span>)</div>
+    <div><strong>photo</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, chemin, ordre, poids, alt)</div>
+    <div><strong>avis</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, auteur_nom, auteur_contact, note, commentaire, statut, verifie, #modere_par°, decision_motif°, modere_le°, en_avant, reponse°, reponse_le°, depose_le)</div>
+    <div><strong>signalement</strong> (<span style="text-decoration:underline;">id</span>, #avis_id, motif, contact°, statut, signale_le)</div>
+    <div><strong>demande_contact</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, parent_nom, parent_tel, message, canal, statut, consentement, #traitee_par°, recue_le, traitee_le°)</div>
+    <div><strong>evenement_trace</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, type, source°, survenu_le)</div>
+    <div><strong>abonnement</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, formule, tarif_mad°, remise_pct°, debut, echeance, statut)</div>
+    <div><strong>paiement_vue</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, prix_unitaire_mad, plafond_mensuel, compteur_mois_courant, periode, statut)</div>
+    <div><strong>sponsoring</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, niveau, ville°, categorie°, mot_cle°, debut, fin, tarif_mad)</div>
+    <div><strong>facture</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, numero unique, objet, #abonnement_id°, #paiement_vue_id°, #sponsoring_id°, montant_ht, tva, total_ttc, statut_paiement, pdf_chemin°, emise_le, payee_le°)</div>
+    <div><strong>prospect</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id°, #commercial_id°, etablissement_nom, ville, type_vise, contact_nom, contact_fonction, telephone, email, formule_visee, message, source, statut_pipeline, cree_le)</div>
+    <div><strong>relance</strong> (<span style="text-decoration:underline;">id</span>, #prospect_id, #commercial_id, note, prevue_le°, effectuee_le°)</div>
+    <div><strong>commission</strong> (<span style="text-decoration:underline;">id</span>, #facture_id, #commercial_id, taux_pct, montant_mad, statut, #validee_par°, validee_le°)</div>
+    <div><strong>lead</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, #demande_contact_id°, #cree_par°, candidat_nom, pour_qui, tel, whatsapp, email°, ville°, cycle°, niveau°, budget_min°, budget_max°, urgence, source, fiche_besoin_json, score, statut_pipeline, raison_perte°, acompte_mad°, converti_le°, cree_le)</div>
+    <div><strong>lead_suivi</strong> (<span style="text-decoration:underline;">id</span>, #lead_id, #auteur_id°, type, note, prevue_le°, effectuee_le°, cree_le)</div>
+    <div><strong>proposition_fiche</strong> (<span style="text-decoration:underline;">id</span>, #etablissement_id, #proposee_par, payload_json, champs_modifies_json, statut, decision_motif°, #validee_par°, proposee_le, traitee_le°, annulee_le°)</div>
+    <div><strong>article</strong> (<span style="text-decoration:underline;">id</span>, #auteur_id, #etablissement_id°, #validee_par°, titre, slug unique, categorie, chapeau, contenu, image_chemin°, statut, a_la_une, soumis_le°, publie_le°, cree_le)</div>
+    <div><strong>faq_item</strong> (<span style="text-decoration:underline;">id</span>, question, reponse, ordre, publiee, #modifiee_par°, modifiee_le°)</div>
+    <div><strong>page_cms</strong> (<span style="text-decoration:underline;">id</span>, cle unique, titre, blocs_json, #modifiee_par°, modifiee_le°)</div>
+    <div><strong>permission</strong> (<span style="text-decoration:underline;">id</span>, #user_id, portee, #accordee_par, accordee_le, revoquee_le°) — unique (user_id, portee)</div>
+    <div><strong>notification</strong> (<span style="text-decoration:underline;">id</span>, #user_id, type, contenu, canal, envoyee_le°, lue_le°)</div>
+    <div><strong>journal_audit</strong> (<span style="text-decoration:underline;">id</span>, #user_id°, role_acteur, action, cible_type, cible_id, severite, details_json°, adresse_ip°, cree_le)</div>
+  </div>
+  <p style="font:400 10px/1.55 'Inter',sans-serif;color:#5A6472;margin:0 0 10px;">° : attribut nullable · * : dénormalisation contrôlée (RG08), recalculée par le service de modération. S'ajoutent les tables techniques Laravel (sessions, personal_access_tokens Sanctum, jobs / failed_jobs pour la queue database, password_reset_tokens), générées par le framework et hors périmètre Merise. Les clés #commercial_id, #proposee_par et #validee_par référencent toutes la table utilisateur (rôles commercial ou admin/Super Admin) ; prospect.etablissement_id n'est renseigné qu'après transformation (RG17) ; lead.demande_contact_id n'est renseigné que lorsque le lead provient d'une demande du site (RG21) et lead.score est borné à l'intervalle 0–10 (RG22). Depuis l'avenant n° 3 : le rôle est extrait dans la relation <em>role</em> (RG25) — l'ancienne colonne énumérée utilisateur.role est remplacée par #role_id ; les blocs de la page profil sont portés par des colonnes JSON de <em>etablissement</em>, dont <em>proposition_fiche.payload_json</em> conserve la version proposée complète tandis que <em>champs_modifies_json</em> n'en stocke que le comparatif (RG27) ; <em>journal_audit.user_id</em> est nullable et doublé de <em>role_acteur</em> afin de conserver la traçabilité après suppression d'un compte (RG26).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. MPD — Modèle physique MySQL 8</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Toutes les tables sont en InnoDB / utf8mb4_unicode_ci (transactions, verrouillage de ligne — livrable 7 §1). Clés primaires BIGINT UNSIGNED AUTO_INCREMENT, horodatages TIMESTAMP gérés par Eloquent. Les migrations Laravel du livrable 10 implémentent ce modèle à l'identique.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:17%;">Table</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:47%;">Colonnes principales (types physiques)</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Index &amp; contraintes clés</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">etablissements</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">slug VARCHAR(160), nom VARCHAR(180), type ENUM(6), statut ENUM, description TEXT, lat/lng DECIMAL(10,7), budget_min/max INT UNSIGNED, note_moy DECIMAL(2,1), nb_avis INT UNSIGNED, sponsorise TINYINT(1), verifie TINYINT(1), premium TINYINT(1), chiffres / faq / horaires / socials / autres_projets / facilites JSON NULL, video_url VARCHAR(200) NULL, video_poster VARCHAR(200) NULL</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UNIQUE(slug) ; INDEX(ville_id, type, statut) et INDEX(statut, note_moy) pour la recherche filtrée / triée ; FULLTEXT(nom, description) ; FK ville_id RESTRICT</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">etablissement_niveau</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">etablissement_id, niveau_id BIGINT UNSIGNED</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">PK composite ; FK CASCADE (les deux sens)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">avis</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">note TINYINT UNSIGNED CHECK (1–5), commentaire TEXT, statut ENUM('en_attente','publie','rejete'), verifie TINYINT(1), reponse TEXT NULL</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(etablissement_id, statut, depose_le) ; FK modere_par → users SET NULL ; FK etablissement CASCADE</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">demande_contacts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">parent_nom VARCHAR(120), parent_tel VARCHAR(30), message TEXT, canal ENUM, statut ENUM, consentement TINYINT(1) NOT NULL</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(etablissement_id, statut, recue_le) ; rétention limitée (loi 09-08, §7)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">evenement_traces</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">type ENUM('appel','whatsapp','vue','vue_sponsorisee'), source VARCHAR(40), survenu_le TIMESTAMP</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(etablissement_id, type, survenu_le) — agrégations stats par période ; purge / agrégation planifiée</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">abonnements</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">formule ENUM('essai_gratuit','mensuel','annuel'), tarif_mad DECIMAL(10,2) NULL, remise_pct DECIMAL(4,1) NULL, debut / echeance DATE, statut ENUM</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(etablissement_id, statut) ; unicité applicative « 1 actif max » (Policy + contrainte de service, RG11) ; tarif_mad NULL uniquement si formule='essai_gratuit'</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">paiements_vue</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">prix_unitaire_mad DECIMAL(6,2), plafond_mensuel INT UNSIGNED, compteur_mois_courant INT UNSIGNED DEFAULT 0, periode CHAR(7)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UNIQUE(etablissement_id, periode) ; compteur incrémenté sous verrou FOR UPDATE, plafonné (RG12)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">sponsorings</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">niveau ENUM('premium','gold','silver'), ville_id / type NULL, mot_cle VARCHAR(80) NULL, debut / fin DATE, tarif_mad DECIMAL(10,2)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(niveau, ville_id, debut, fin) — sert la rotation équitable à niveau égal (RG19)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">factures</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">numero VARCHAR(20), objet VARCHAR(160), montant_ht / tva / total_ttc DECIMAL(10,2), statut_paiement ENUM('non_payee','payee')</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UNIQUE(numero) ; CHECK d'exclusivité abonnement_id / paiement_vue_id / sponsoring_id ; conservation légale 10 ans</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">prospects</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">statut_pipeline ENUM(6 valeurs), formule_visee VARCHAR(40), source ENUM('formulaire','telephone','manuel')</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(statut_pipeline, commercial_id) ; FK etablissement_id NULL jusqu'à transformation (RG17)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">relances / commissions</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">relances : note TEXT, prevue_le / effectuee_le DATETIME ; commissions : taux_pct DECIMAL(4,1), montant_mad DECIMAL(10,2), statut ENUM</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(prospect_id, commercial_id) ; commissions.statut passe à réglée seulement après validation Direction (RG18)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">propositions_fiche</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">payload JSON, champs_modifies JSON, statut ENUM('en_attente','validee','rejetee'), decision_motif VARCHAR(200) NULL, annulee_le TIMESTAMP NULL</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(etablissement_id, statut) ; FK validee_par → users SET NULL ; une seule proposition en_attente par établissement (contrainte de service, RG27)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">leads</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">candidat_nom VARCHAR(120), pour_qui ENUM('soi','enfant'), tel VARCHAR(30), whatsapp TINYINT(1), urgence ENUM('imminente','semaine','mois','rentree','flexible'), fiche_besoin JSON, score TINYINT UNSIGNED CHECK (0–10), statut_pipeline ENUM(6 valeurs), raison_perte VARCHAR(120) NULL, acompte_mad DECIMAL(10,2) NULL</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(etablissement_id, statut_pipeline) — kanban ; INDEX(etablissement_id, score) — leads chauds ≥ 7 ; FK etablissement CASCADE ; FK demande_contact_id SET NULL (RG21)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">lead_suivis</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">type ENUM('commentaire','relance'), note TEXT, prevue_le / effectuee_le DATETIME NULL</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(lead_id, cree_le) — timeline ; INDEX(prevue_le) — « relances du jour » ; FK lead_id CASCADE ; FK auteur_id → users SET NULL</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">permissions</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">portee ENUM('fiches','contacts','avis'), revoquee_le TIMESTAMP NULL</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UNIQUE(user_id, portee) ; FK accordee_par → users</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">roles</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">code ENUM('superadmin','secretariat','commercial','etablissement'), libelle VARCHAR(40), perimetre_fixe TINYINT(1)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UNIQUE(code) ; FK users.role_id RESTRICT ; permissions unitaires refusées si perimetre_fixe = 1 (RG25)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">articles</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">titre VARCHAR(180), slug VARCHAR(200), categorie VARCHAR(60), chapeau VARCHAR(300), contenu MEDIUMTEXT, image_chemin VARCHAR(200) NULL, statut ENUM('brouillon','en_attente','approuve','refuse'), a_la_une TINYINT(1) DEFAULT 0</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UNIQUE(slug) ; INDEX(statut, publie_le) — liste publique ; INDEX(etablissement_id, statut) — blog scopé ; FK auteur_id → users SET NULL ; a_la_une n'a d'effet que si statut='approuve' (RG27)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">faq_items</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">question VARCHAR(200), reponse TEXT, ordre SMALLINT UNSIGNED, publiee TINYINT(1) DEFAULT 1</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(publiee, ordre) — restitution ordonnée ; réordonnancement par réécriture transactionnelle du champ ordre (RG27)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">pages_cms</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">cle VARCHAR(60), titre VARCHAR(160), blocs JSON</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">UNIQUE(cle) ; lignes créées par seeder (a-propos), jamais supprimables depuis l'interface</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">journal_audits</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">role_acteur VARCHAR(20), action VARCHAR(60), cible_type VARCHAR(60), cible_id BIGINT, severite ENUM('info','avertissement','erreur') DEFAULT 'info', details JSON</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">INDEX(cible_type, cible_id), INDEX(user_id, cree_le), INDEX(role_acteur, cree_le) — filtre par rôle ; alimentée par observers, insertion seule, purge à 3 ans (RG26)</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">Extrait de DDL — comptage transactionnel des vues facturées et commissions</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">CREATE TABLE paiements_vue (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  etablissement_id BIGINT UNSIGNED NOT NULL,
+  prix_unitaire_mad DECIMAL(6,2) NOT NULL,
+  plafond_mensuel INT UNSIGNED NOT NULL,
+  periode CHAR(7) NOT NULL,              -- 'AAAA-MM'
+  compteur_mois_courant INT UNSIGNED NOT NULL DEFAULT 0,
+  statut ENUM('actif','suspendu') NOT NULL DEFAULT 'actif',
+  CONSTRAINT fk_pv_eta FOREIGN KEY (etablissement_id)
+    REFERENCES etablissements(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_pv_periode (etablissement_id, periode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE commissions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  facture_id BIGINT UNSIGNED NOT NULL,
+  commercial_id BIGINT UNSIGNED NOT NULL,
+  taux_pct DECIMAL(4,1) NOT NULL,
+  montant_mad DECIMAL(10,2) NOT NULL,
+  statut ENUM('a_valider','validee','reglee') NOT NULL DEFAULT 'a_valider',
+  valide_par BIGINT UNSIGNED NULL,
+  valide_le TIMESTAMP NULL,
+  CONSTRAINT fk_com_facture FOREIGN KEY (facture_id)
+    REFERENCES factures(id) ON DELETE CASCADE,
+  CONSTRAINT fk_com_commercial FOREIGN KEY (commercial_id)
+    REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</div>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">7. Intégrité, invariants et cycle de vie des données</h2>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:6px;"><strong>Comptage atomique des vues facturées (RG12)</strong> : chaque vue facturable en paiement à la vue exécute une transaction MySQL — SELECT … FOR UPDATE sur la ligne paiement_vue de la période en cours, incrément du compteur, arrêt de la facturation au-delà du plafond_mensuel. RG09/RG10 (décompte de contact, traçage des événements) restent gérés par demande_contacts et evenement_traces, indépendamment de la formule de monétisation.</li>
+    <li style="margin-bottom:6px;"><strong>Cohérence de la note (RG08)</strong> : note_moy et nb_avis sont recalculés dans la même transaction que la décision de modération ; aucun avis en_attente ou rejete n'entre dans l'agrégat.</li>
+    <li style="margin-bottom:6px;"><strong>Règles de suppression</strong> : CASCADE pour les entités faibles (photos, avis, relances, propositions_fiche…) ; RESTRICT sur ville ; SET NULL pour les références d'auteur (modere_par, traitee_par, validee_par) afin de préserver l'historique après départ d'un utilisateur. Le journal d'audit est en insertion seule.</li>
+    <li style="margin-bottom:6px;"><strong>Conformité loi 09-08 (RG16)</strong> : minimisation (nom + téléphone uniquement pour les parents), champ consentement obligatoire, purge planifiée des demandes traitées au-delà de la durée déclarée et anonymisation des événements de traçage agrégés (scheduler quotidien, livrable 7 §3).</li>
+    <li style="margin-bottom:6px;"><strong>Validation des modifications de fiche (RG20, étendue RG27)</strong> : une modification par un secrétaire ou un établissement crée une ligne proposition_fiche (statut en_attente) portant la version complète proposée (payload) et son comparatif (champs_modifies) ; seule la validation d'un Super Admin applique les blocs sur etablissements et journalise la décision. Une seule proposition en attente est admise par établissement ; son auteur peut l'annuler (annulee_le) tant qu'elle n'est pas traitée. Les modifications d'un Super Admin s'appliquent directement.</li>
+    <li style="margin-bottom:6px;"><strong>Périmètre fixe des rôles (RG25)</strong> : l'insertion d'une permission unitaire est refusée lorsque le rôle du compte porte perimetre_fixe = 1 (établissement, commercial) ; seuls les comptes secrétariat en détiennent. La suppression d'un rôle est bloquée par RESTRICT tant qu'un compte le porte ; la suspension d'un compte (statut = suspendu) conserve ses lignes métier et invalide ses jetons Sanctum.</li>
+    <li style="margin-bottom:6px;"><strong>Immuabilité du journal d'audit (RG26)</strong> : la table journal_audits n'accepte que des insertions — aucune route ni aucun service n'expose de mise à jour ou de suppression unitaire ; role_acteur est figé à l'écriture et user_id passe à NULL en cas de suppression du compte, préservant la lisibilité de l'historique. La purge automatique intervient à trois ans (scheduler quotidien). L'explorateur de tables du back-office n'ouvre que des requêtes de lecture, sur une connexion dédiée en lecture seule.</li>
+    <li style="margin-bottom:6px;"><strong>Visibilité des contenus éditoriaux (RG27)</strong> : la requête publique du blog filtre statut = approuve, celle des avis statut = publie ; les indicateurs a_la_une et en_avant ne sont lus qu'en complément de ce filtre, de sorte qu'un contenu dépublié disparaît immédiatement de l'accueil sans traitement supplémentaire. Le réordonnancement de la FAQ réécrit les rangs dans une seule transaction.</li>
+    <li style="margin-bottom:6px;"><strong>Commission subordonnée à la validation (RG18)</strong> : une commission est calculée dès la génération de la facture (statut à_valider) mais ne passe à réglée qu'après validation explicite de la Direction, jamais automatiquement à l'émission ou au paiement client.</li>
+    <li style="margin-bottom:6px;"><strong>Scoring lead borné et traçable (RG22)</strong> : le score / 10 (urgence 0–4, adéquation budget 0–3, complétude 0–3) est recalculé par le service à chaque mise à jour de la fiche de besoin ; l'ajustement manuel est journalisé et le score reste contraint à l'intervalle 0–10 (CHECK). Le passage au statut perdu exige une raison_perte — elle alimente les statistiques de conversion (US-SA11).</li>
+    <li style="margin-bottom:6px;"><strong>Propriété des données leads (RG23)</strong> : la fiche de besoin relève de la loi 09-08 (consentement, minimisation) ; la suppression et l'export sont réservés à l'Admin Client (LeadPolicy, livrable 11), la secrétaire traite sans supprimer ni exporter ; le Super Admin J2HB n'accède qu'aux agrégats (taux de conversion, délais, raisons de perte), jamais au détail nominatif.</li>
+    <li><strong>Volumétrie cible V1</strong> (dimensionnement des index) : ≈ 8 000 fiches (amorçage open data), ≈ 50 000 avis/an, ≈ 200 000 événements de traçage/mois agrégés en statistiques journalières — la table brute est purgée à 12 mois.</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">8. Correspondance modules API ↔ relations</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Cette matrice fait le pont vers les livrables 10 (migrations / seeders) et 11 (contrat d'API) : chaque module du back-end Laravel s'appuie sur un sous-ensemble borné du modèle.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:34%;">Module (livrable 7 §3)</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Relations principales</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Annuaire &amp; recherche</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">etablissements, villes, niveau_filieres, etablissement_niveau</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Fiches &amp; médias</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">etablissements, photos, propositions_fiche</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Avis &amp; modération</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">avis, signalements, journal_audits</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Mise en relation</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">demande_contacts, evenement_traces</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Abonnement &amp; facturation</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">abonnements, paiements_vue, factures</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Gestion commerciale &amp; prospects</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">prospects, relances, commissions</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">CRM leads établissement (avenant 1)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">leads, lead_suivis — origine : demande_contacts</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Sponsoring</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">sponsorings</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Comptes, rôles &amp; permissions</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">users, roles, permissions, tables Sanctum</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">CMS &amp; contenus éditoriaux (avenant 3)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">articles, faq_items, pages_cms, avis (en_avant), etablissements (blocs JSON), propositions_fiche</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Journal d'audit &amp; exploration (avenant 3)</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">journal_audits — lecture seule sur l'ensemble des tables listées ci-dessus</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Statistiques &amp; traçage</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">evenement_traces, agrégats journaliers (vues matérialisées applicatives)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Notifications</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">notifications, jobs (queue database)</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;"><strong>Prochaine étape</strong> — Livrable 9 : cahier des charges complet (modèle économique v2 — essai gratuit, abonnement, paiement à la vue, sponsoring — et stratégie SEO), puis livrable 10 : implémentation de ce MPD en migrations et seeders Laravel (données d'amorçage open data).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">9. Historique des révisions</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:12%;">Version</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:16%;">Date</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v1.1</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Version corrigée initiale — modèle crédits / packs / abonnement Premium unique.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Remplacement du modèle crédits par le modèle v2 (RG11–RG14 révisées : essai gratuit, abonnement mensuel/annuel −10 %, paiement à la vue plafonné, tarification par client) ; ajout des entités PROSPECT, RELANCE, COMMISSION, SPONSORING, PROPOSITION_FICHE et des règles RG17–RG20 (cahier des charges fonctionnel J2HB : pipeline commercial, commissions, sponsoring 3 niveaux, validation Super Admin) ; espaces publicitaires notés hors périmètre V1.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.1</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Avenant n° 1 — extension CRM côté établissement : entités LEAD (fiche de besoin FC-1 → FC-11, scoring / 10, pipeline 6 statuts) et SUIVI_LEAD (commentaires, relances programmables) rattachées à ÉTABLISSEMENT et DEMANDE_CONTACT (Figure 4) ; règles RG21 à RG23 ; dictionnaire, MLD, MPD (tables leads, lead_suivis) et matrice modules ↔ relations étendus.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.3</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Avenant n° 3 — console d'administration &amp; CMS : entités RÔLE, ARTICLE, FAQ, PAGE_CMS et JOURNAL_AUDIT modélisées, UTILISATEUR étendu (rôle en entité, statut, rattachement, blog activable), PROPOSITION_FICHE enrichie de la version proposée complète et de son comparatif, ÉTABLISSEMENT doté des blocs de profil en JSON (chiffres clés, FAQ, horaires, réseaux sociaux, autres projets, facilités, vidéo) et AVIS d'un indicateur de mise en avant (Figure 5) ; règles RG25 à RG27 ; dictionnaire, MLD, MPD (tables roles, articles, faq_items, pages_cms, journal_audits enrichie), invariants et matrice modules ↔ relations étendus.</td></tr>
+    </tbody>
+  </table>
+
+</x-import>
+</x-dc>
+</body>
+</html>

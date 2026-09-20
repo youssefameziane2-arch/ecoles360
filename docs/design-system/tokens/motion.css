@@ -1,0 +1,25 @@
+/* écoles360 — Motion tokens. Subtle, flat, confiance & sérieux. No bounce. */
+:root {
+  --ease-standard: cubic-bezier(.4, 0, .2, 1);  /* @kind other */
+  --ease-out: cubic-bezier(0, 0, .2, 1);        /* @kind other */
+  --dur-fast: 120ms;   /* @kind other */ /* hover / press */
+  --dur-base: 180ms;   /* @kind other */ /* toggles, tabs */
+  --dur-slow: 280ms;   /* @kind other */ /* modal / toast in */
+}
+
+@keyframes e360-shimmer {
+  0%   { background-position: -180% 0; }
+  100% { background-position: 180% 0; }
+}
+@keyframes e360-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes e360-pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes e360-toast-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}

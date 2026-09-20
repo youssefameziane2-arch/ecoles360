@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Livrable 3 · Cahier des charges initial</span>
+    <span>v2.0 · juillet 2026</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Livrable 3 / 16 — Phase de cadrage</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">Cahier des charges initial</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">écoles360 — annuaire payant des établissements scolaires privés au Maroc.</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Version 2.0 · Juillet 2026 · Consolide les livrables 1 (benchmark) et 2 (user stories &amp; besoins) et intègre le cahier des charges fonctionnel J2HB « Administration des annuaires » (juillet 2026). Le cahier des charges complet (modèle économique détaillé, stratégie SEO) fait l'objet du livrable 9.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. Présentation du projet</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Au Maroc, les familles choisissent un établissement privé à partir de canaux dispersés et non spécialisés (bouche-à-oreille, groupes Facebook, Google Maps, annuaires génériques) tandis que les établissements manquent d'un canal digital qualifié pour se faire connaître. Le benchmark (livrable 1) confirme qu'aucune plateforme marocaine ne couvre la chaîne complète <strong>recherche → comparaison → confiance → contact</strong>.</p>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;"><strong>écoles360</strong> est un annuaire web spécialisé qui met en relation les parents (accès gratuit) et les établissements privés — de la crèche à la formation professionnelle — via des fiches riches, des avis vérifiés et modérés et un contact direct (appel, WhatsApp, formulaire). La plateforme se finance par la visibilité payante des établissements : essai gratuit d'un mois, puis abonnement (mensuel ou annuel) ou paiement à la vue, complétés par le sponsoring — <strong>aucun tarif n'est affiché publiquement</strong>, les prix étant définis par client par l'équipe commerciale. Le projet s'inscrit dans le programme d'annuaires spécialisés J2HB (autoecoles.ma, loueurvoiture.com, ecoles360.ma), chaque annuaire restant totalement indépendant : domaine, base de données, administration, clients et paramètres propres.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. Objectifs</h2>
+  <ul style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;padding-left:20px;">
+    <li style="margin-bottom:6px;"><strong>Pour les parents</strong> : trouver et contacter en confiance un établissement adapté, en moins de 5 minutes, depuis un mobile.</li>
+    <li style="margin-bottom:6px;"><strong>Pour les établissements</strong> : offrir un canal d'acquisition mesurable (vues, contacts, taux de conversion) avec un retour sur investissement lisible.</li>
+    <li style="margin-bottom:6px;"><strong>Pour la plateforme</strong> : constituer l'annuaire de référence de l'éducation privée marocaine et un revenu récurrent (abonnements) complété par le paiement à la vue, le sponsoring et une équipe commerciale outillée (prospects, relances, commissions).</li>
+  </ul>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Indicateurs de succès V1 : couverture initiale de l'annuaire sur les principales villes (amorçage open data), premiers établissements payants, taux de demandes de contact traitées &gt; 90 %, délai de modération d'un avis signalé &lt; 48 h.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. Périmètre</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11.5px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#1F7A45;background:#E6F4EC;border:1px solid #CDE8D8;padding:8px 10px;width:50%;">Inclus dans la V1</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#C8313F;background:#FDE8EA;border:1px solid #F4C4CB;padding:8px 10px;">Hors périmètre V1 (versions ultérieures)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #E1E5EA;padding:10px 12px;vertical-align:top;">
+          <ul style="margin:0;padding-left:16px;">
+            <li style="margin-bottom:5px;">Site public : recherche (6 types × villes), filtres, fiches riches, avis vérifiés, contact direct, pages ville, inscription établissement.</li>
+            <li style="margin-bottom:5px;">Espace établissement : tableau de bord, fiche, statistiques, avis, abonnement &amp; facturation.</li>
+            <li style="margin-bottom:5px;">Espace secrétariat : demandes de contact, fiches gérées, modération déléguée.</li>
+            <li style="margin-bottom:5px;">Back-office admin : validation, suspension, secrétaires &amp; permissions, modération.</li>
+            <li style="margin-bottom:5px;">Monétisation : essai gratuit 1 mois (toutes options), abonnement mensuel/annuel (−10 % si paiement en une fois), paiement à la vue, tarification par client, facturation.</li>
+            <li style="margin-bottom:5px;">Gestion commerciale : prospects, pipeline (Nouveau → Transformé/Perdu), affectation aux commerciaux, relances, commissions.</li>
+            <li style="margin-bottom:5px;">Sponsoring Premium / Gold / Silver (ville, catégorie, mot-clé) ; validation Super Admin de toute modification de fiche.</li>
+            <li>Langue : français (Maroc), MAD.</li>
+          </ul>
+        </td>
+        <td style="border:1px solid #E1E5EA;padding:10px 12px;vertical-align:top;">
+          <ul style="margin:0;padding-left:16px;">
+            <li style="margin-bottom:5px;">Paiement en ligne intégré (V1 : facturation et encaissement hors plateforme, virement / paiement à la commande).</li>
+            <li style="margin-bottom:5px;">Version arabe (RTL) — prévue en phase 2, l'architecture front doit la permettre.</li>
+            <li style="margin-bottom:5px;">Application mobile native (la V1 est un site web responsive mobile-first).</li>
+            <li style="margin-bottom:5px;">Messagerie interne temps réel parents ↔ établissements (V1 : formulaire + statuts).</li>
+            <li style="margin-bottom:5px;">Prise de rendez-vous en ligne avec agenda.</li>
+            <li style="margin-bottom:5px;">Espaces publicitaires (bannières, encarts entre résultats) — phase 2.</li>
+            <li>Comparateur côte à côte multi-fiches.</li>
+          </ul>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. Acteurs et description fonctionnelle</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Cinq acteurs — <strong>parent</strong> (public, gratuit), <strong>établissement</strong> (client), <strong>secrétaire</strong> (opérateur à permissions déléguées), <strong>commercial</strong> (prospection, relances et ventes, rémunéré à la commission), <strong>administrateur / Super Admin</strong> (plateforme ; valide toute modification importante et fixe les tarifs par client) — et huit modules fonctionnels : annuaire &amp; recherche, fiche établissement, avis &amp; modération, mise en relation, monétisation, gestion commerciale &amp; prospects, back-offices &amp; rôles, notifications. Le détail (27 user stories priorisées MoSCoW, critères d'acceptation, exigences non fonctionnelles) figure au livrable 2 ; le périmètre V1 correspond aux stories <strong>Must</strong>.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. Modèle économique (synthèse)</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Offre</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:22%;">Tarif</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Essai gratuit</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">1 mois offert avec toutes les options : fiche enrichie, photos/vidéos illimitées, badge « Vérifié », statistiques détaillées, demandes illimitées. Sans engagement ni carte bancaire.</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">0 MAD pendant 1 mois</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Abonnement</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Fiche enrichie complète en continu ; facturation mensuelle ou annuelle, remise de <strong>10 %</strong> si l'année est réglée en une seule fois.</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Défini par client avec le conseiller — aucun tarif public</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Paiement à la vue</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Paiement au résultat : facturation selon les vues réelles de la page profil, plafond mensuel ajustable, sans abonnement.</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Prix par vue défini par client</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Sponsoring</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Mise en tête des résultats par ville, catégorie ou mot-clé, trois niveaux : Premium &gt; Gold &gt; Silver, rotation équitable à niveau égal.</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Vendu par campagne, tarif négocié</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 11px/1.55 'Inter',sans-serif;color:#5A6472;margin:0 0 10px;">Règles : aucun prix n'est affiché sur le site public — le Super Admin fixe les tarifs par client (abonnement, prix par vue) ; l'abonnement annuel réglé en une fois bénéficie de −10 % ; les vues facturées sont comptabilisées sur la page profil et plafonnées ; à l'échéance d'une formule sans renouvellement, la fiche enrichie repasse en fiche de base. Chaque vente (abonnement, vues, sponsoring) déclenche la commission du commercial affecté, validée par la Direction avant paiement. Le détail (projections, politique tarifaire, CGV) est traité au livrable 9.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. Contraintes</h2>
+  <ul style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;padding-left:20px;">
+    <li style="margin-bottom:6px;"><strong>Légales</strong> : loi 09-08 relative à la protection des données personnelles (déclaration CNDP, consentement, droits d'accès et de suppression) ; mentions légales et CGU publiées.</li>
+    <li style="margin-bottom:6px;"><strong>Identité visuelle</strong> : respect strict du design system écoles360 (navy #1D3557, rouge #E63946 en accent unique, Inter, composants documentés) — livrable 5, déjà réalisé.</li>
+    <li style="margin-bottom:6px;"><strong>Techniques</strong> : web responsive mobile-first ; compatibilité navigateurs récents ; performances adaptées aux connexions mobiles marocaines ; architecture permettant l'ajout ultérieur de l'arabe (RTL).</li>
+    <li style="margin-bottom:6px;"><strong>Projet</strong> : cadre académique (PFE) — équipe réduite, jalons fixés par le calendrier universitaire, encadrant à consulter à chaque fin de phase.</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">7. Livrables et démarche</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">La démarche suit 16 livrables en quatre phases. À la date de la présente révision (v2.0), les livrables <strong>1 à 13 sont réalisés et validés</strong> ; la phase de mise en service (14 à 16) reste à mener. Les livrables 4 à 6 (wireframes, design system, maquettes haute-fidélité) ont précédé la contractualisation, les maquettes interactives ayant servi à stabiliser le besoin.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:24%;">Phase</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Livrables</th>
+        <th style="text-align:center;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:16%;">État</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Analyse &amp; cadrage</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">1. Benchmark · 2. User stories &amp; besoins · 3. Cahier des charges initial</td><td style="border:1px solid #E1E5EA;padding:7px 9px;text-align:center;color:#1F7A45;font-weight:700;">Réalisé</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Conception UX/UI</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">4. Wireframes · 5. Design system · 6. Maquettes haute-fidélité interactives</td><td style="border:1px solid #E1E5EA;padding:7px 9px;text-align:center;color:#1F7A45;font-weight:700;">Réalisé</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Conception technique</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">7. Architecture technique · 8. Merise (MCD/MLD/MPD) · 9. Cahier des charges complet (modèle éco + SEO)</td><td style="border:1px solid #E1E5EA;padding:7px 9px;text-align:center;color:#1F7A45;font-weight:700;">Réalisé</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Réalisation &amp; mise en service</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">10. Base de données · 11. Back-end (API) · 12. Front-end · 13. Tests · 14. Déploiement / CI-CD · 15. Recette · 16. Documentation &amp; maintenance</td><td style="border:1px solid #E1E5EA;padding:7px 9px;text-align:center;color:#B57708;font-weight:700;">10–13 réalisés · 14–16 à venir</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">8. Planning macro</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:30%;">Jalon</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu validé avec l'encadrant</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:20%;">Échéance indicative</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:600;">J1 — Cadrage validé</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Livrables 1 à 6 (analyse + conception UX/UI, prototype démontrable)</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Atteint — juillet 2026</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:600;">J2 — Conception technique</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Architecture, Merise, cahier des charges complet</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Atteint — juillet 2026</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:600;">J3 — Socle opérationnel</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">BD + API : authentification, annuaire, fiches, recherche</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">+ 5 semaines</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:600;">J4 — Produit complet</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Front branché (4 surfaces), avis + modération, crédits + facturation</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">+ 9 semaines</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:600;">J5 — Mise en service</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Tests, déploiement CI/CD, recette sur scénarios V1, documentation</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">+ 12 semaines</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 11px/1.55 'Inter',sans-serif;color:#5A6472;margin:0 0 10px;">Les échéances sont exprimées en relatif à la validation du présent cahier des charges ; le calendrier précis est arrêté avec l'encadrant.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">9. Critères de validation de la V1</h2>
+  <ul style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;padding-left:20px;">
+    <li style="margin-bottom:6px;">Toutes les user stories <strong>Must</strong> du livrable 2 sont livrées et recettées sur leurs critères d'acceptation.</li>
+    <li style="margin-bottom:6px;">Les parcours de bout en bout fonctionnent : parent (recherche → fiche → contact), établissement (demande d'inscription par téléphone ou formulaire → fiche → abonnement → statistiques), admin (validation → modération), secrétaire (demandes → traitement).</li>
+    <li style="margin-bottom:6px;">Les règles de monétisation sont opérationnelles (essai gratuit d'un mois, abonnement avec remise annuelle de 10 %, comptage des vues facturées, tarifs définis par client, facturation).</li>
+    <li style="margin-bottom:6px;">Le pipeline commercial fonctionne : réception du prospect (formulaire ou appel), affectation à un commercial, relances tracées, transformation et calcul de la commission.</li>
+    <li style="margin-bottom:6px;">Les exigences non fonctionnelles du livrable 2 sont vérifiées (performance mobile, sécurité RBAC, conformité 09-08, sauvegardes).</li>
+    <li>La recette (livrable 15) est prononcée conjointement avec l'encadrant sur la base de ces critères.</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">10. Historique des révisions</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:12%;">Version</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:16%;">Date</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v1.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Rédaction initiale — consolidation des livrables 1 et 2, modèle économique à packs de crédits.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Intégration du cahier des charges fonctionnel J2HB : nouveau modèle commercial (essai gratuit 1 mois toutes options, abonnement mensuel/annuel avec −10 % si paiement en une fois, paiement à la vue ; aucun prix public, tarifs fixés par client), acteur Commercial (prospects, pipeline, commissions), sponsoring Premium/Gold/Silver, validation Super Admin des modifications, espaces publicitaires reportés en phase 2 ; inscription établissement en deux voies (téléphone / formulaire enrichi) et bandeau d'assistance (téléphone / WhatsApp) sur le site public.</td></tr>
+    </tbody>
+  </table>
+
+</x-import>
+</x-dc>
+</body>
+</html>

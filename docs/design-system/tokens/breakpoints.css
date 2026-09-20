@@ -1,0 +1,13 @@
+/* écoles360 — Breakpoints. Mobile-first.
+   Paliers: <600 · ≥600 · ≥900 · ≥1200 · ≥1440.
+   Tables collapse to stacked cards below md (900). Phone canvas ~390, desktop ~1280. */
+:root {
+  --bp-sm: 600px;   /* large phone / small tablet */
+  --bp-md: 900px;   /* tablet — tables → cards below this */
+  --bp-lg: 1200px;  /* desktop */
+  --bp-xl: 1440px;  /* wide desktop */
+
+  --device-mobile: 390px;
+  --device-desktop: 1280px;
+  --sidebar-w: 248px;
+}

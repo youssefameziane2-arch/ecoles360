@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Livrable 10 · Base de données</span>
+    <span>v2.5 · septembre 2026</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Livrable 10 / 16 — Réalisation</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">Base de données — schéma Prisma, seeders et exploitation</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">Implémentation du MPD en <span style="font-family:ui-monospace,monospace;font-size:12px;">schema.prisma</span> unique sur MySQL 8, jeux de données (référentiels, comptes de démonstration) en <strong>commandes NestJS</strong>, stratégie d'import open data en commande idempotente, paramètres globaux paramétrables et procédures d'exploitation conteneurisées (sauvegarde, restauration, purge loi 09-08 pilotée par BullMQ + <span style="font-family:ui-monospace,monospace;font-size:12px;">@nestjs/schedule</span>).</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Version 2.5 · Septembre 2026 · Implémente à l'identique le MPD v2.3 du livrable 8 (§6) — modèle commercial, apports J2HB, CRM leads de l'avenant n° 1 (RG21–RG23) et console d'administration / CMS de l'avenant n° 3 (RG25–RG27) · Aligné sur la stack NestJS 10 fixée au livrable 7 v2.5 · Prépare le livrable 11 (back-end / API NestJS)</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. Rappel du MPD et conventions Prisma</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Le modèle physique est celui du <strong>livrable 8 (v2.3)</strong> : 23 relations métier en 3<sup>e</sup> forme normale (dénormalisations contrôlées note_moy / nb_avis), toutes en <strong>InnoDB / utf8mb4_unicode_ci</strong>, clés primaires BIGINT UNSIGNED auto-incrémentées. S'y ajoutent la table users (compte applicatif, rôle porté par <span style="font-family:ui-monospace,monospace;font-size:10px;">role_id</span>) et la table <span style="font-family:ui-monospace,monospace;font-size:10px;">password_reset_tokens</span> ; ni les sessions ni les files n'ont de table SQL — les sessions Passport sont persistées dans <strong>Redis 7</strong> (<span style="font-family:ui-monospace,monospace;font-size:10px;">connect-redis</span>), ce qui les rend révocables (RG25), et les files BullMQ vivent dans le même Redis. S'y ajoute enfin une table de paramètres de facturation globaux introduite au §5. Les tarifs propres à chaque établissement (abonnement, prix par vue, sponsoring) vivent sur leurs tables respectives, jamais dans un barème public. Le fichier unique <span style="font-family:ui-monospace,monospace;font-size:10.5px;">prisma/schema.prisma</span> remplace les 31 migrations Laravel de la v2.3 ; les commandes <span style="font-family:ui-monospace,monospace;font-size:10.5px;">prisma migrate dev</span> (développement) et <span style="font-family:ui-monospace,monospace;font-size:10.5px;">prisma migrate deploy</span> (staging / production) génèrent et appliquent les migrations SQL versionnées. En production, <span style="font-family:ui-monospace,monospace;font-size:10.5px;">prisma migrate deploy</span> est exécuté <strong>au démarrage du conteneur <em>api</em></strong>, avant le bootstrap NestJS : la base est donc toujours à la version de l'image déployée, et un retour au tag précédent redéploie une image dont les migrations sont déjà appliquées (livrable 14). Les conventions ci-dessous garantissent la correspondance stricte modèle Prisma ↔ MPD.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:26%;">Convention</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Règle adoptée</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">Nommage des tables</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Modèles Prisma en <em>PascalCase</em> ; tables physiques en snake_case pluriel via <span style="font-family:ui-monospace,monospace;font-size:10px;">@@map("etablissements")</span>, colonnes via <span style="font-family:ui-monospace,monospace;font-size:10px;">@map("cree_le")</span>. Les noms physiques restent identiques au MLD (<span style="font-family:ui-monospace,monospace;font-size:10px;">etablissements, demande_contacts, journal_audits, etablissement_niveau</span>).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">Clés</td><td style="border:1px solid #E1E5EA;padding:6px 9px;"><span style="font-family:ui-monospace,monospace;font-size:10px;">id BigInt @id @default(autoincrement()) @db.UnsignedBigInt</span> ; clés étrangères en <span style="font-family:ui-monospace,monospace;font-size:10px;">{entite}_id BigInt @db.UnsignedBigInt</span> + relation nommée avec <span style="font-family:ui-monospace,monospace;font-size:10px;">onDelete: Cascade | Restrict | SetNull</span> (livrable 8 §7).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">Horodatages</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Noms français du MPD conservés (<span style="font-family:ui-monospace,monospace;font-size:10px;">cree_le, recue_le, maj_le…</span>) via <span style="font-family:ui-monospace,monospace;font-size:10px;">@map</span> ; Prisma <span style="font-family:ui-monospace,monospace;font-size:10px;">DateTime @default(now()) @db.Timestamp(0)</span> ; les modèles en insertion seule (audit, traces) omettent délibérément <span style="font-family:ui-monospace,monospace;font-size:10px;">@updatedAt</span>.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">Énumérations</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Blocs <span style="font-family:ui-monospace,monospace;font-size:10px;">enum</span> Prisma projetés en ENUM MySQL natif ; valeurs sans accents ni majuscules (<span style="font-family:ui-monospace,monospace;font-size:10px;">creche, publie, vue_sponsorisee</span>), consommées directement en TypeScript côté services (livrable 11) — plus besoin d'un Enum PHP dupliqué.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">FULLTEXT &amp; CHECK</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">FULLTEXT déclaré via <span style="font-family:ui-monospace,monospace;font-size:10px;">@@fulltext([nom, description])</span> (feature preview <span style="font-family:ui-monospace,monospace;font-size:10px;">fullTextIndex</span> activée dans le generator) ; les contraintes CHECK — non gérées par le DSL Prisma — sont ajoutées par un fichier SQL supplémentaire dans le même dossier de migration (<span style="font-family:ui-monospace,monospace;font-size:10px;">prisma migrate</span> exécute tout <span style="font-family:ui-monospace,monospace;font-size:10px;">*.sql</span> présent).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">Moteur &amp; charset</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Datasource <span style="font-family:ui-monospace,monospace;font-size:10px;">mysql</span> ; le serveur MySQL 8 est configuré (my.cnf) en <span style="font-family:ui-monospace,monospace;font-size:10px;">default-storage-engine=InnoDB</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">character-set-server=utf8mb4</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">collation-server=utf8mb4_unicode_ci</span> — appliqués à toute table créée par Prisma.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:700;">Réversibilité</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">Chaque migration versionnée dans <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma/migrations/</span> ; retour arrière contrôlé par <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma migrate resolve</span> + migration inverse manuelle pour les reprises de données (§2.12) ; la chaîne complète est validée par <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma migrate reset --skip-seed</span> puis <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm --filter api db:seed</span> en CI, sur la MySQL 8 réelle levée par <span style="font-family:ui-monospace,monospace;font-size:10px;">docker-compose.test.yml</span> (livrable 14).</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Le schéma est écrit dans un ordre <em>topologique</em> — référentiels d'abord, pivot Etablissement ensuite, puis ses satellites ; Facture après Abonnement, PaiementVue et Sponsoring pour ses rattachements optionnels ; Prospect, Relance et Commission (etablissement_id nullable) ferment la chaîne commerciale ; les modèles du CRM leads de l'avenant n° 1 (Lead, LeadSuivi) closent la séquence ; l'avenant n° 3 ajoute Role, les champs JSON de la page profil, les entités éditoriales (Article, FaqItem, PageCms) et enrichit JournalAudit / Avis / PropositionFiche. La table de correspondance ci-dessous conserve la numérotation 01–31 des migrations Laravel v2.3 pour la traçabilité par règle de gestion — chaque numéro correspond désormais à un modèle (ou à un enrichissement de modèle) dans le fichier unique <span style="font-family:ui-monospace,monospace;font-size:10.5px;">schema.prisma</span>.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10px/1.45 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:6%;">N°</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:44%;">Modèle Prisma (bloc du <span style="font-family:ui-monospace,monospace;">schema.prisma</span>)</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Objet — règles de gestion couvertes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">01</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">User (compte applicatif — rôle porté par role_id)</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Compte, statut, dernière connexion (RG04) — <em>role_id</em> présent dès l'origine du schéma</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">02–03</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Ville · NiveauFiliere</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Référentiels de recherche (RG01, RG02)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">04</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Etablissement</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Pivot du modèle : 6 types, statuts, index de recherche (RG01–RG04, RG08)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">05–06</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">EtablissementNiveau · Photo</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Association (n,n) niveaux / filières ; galerie (RG02, RG16)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">07–08</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Avis · Signalement</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Avis modérés, réponse unique, signalements (RG06–RG08)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">09–10</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">DemandeContact · EvenementTrace</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Mise en relation, traçage des interactions (RG09, RG10, loi 09-08)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">11–12</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Abonnement · PaiementVue</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Formule active, tarif par client, plafond de vues (RG11, RG12, RG13, RG14)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">13–14</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Facture · Sponsoring</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Facturation séquentielle à origine exclusive, campagnes de sponsoring (RG14, RG19)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">15–17</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Prospect · Relance · Commission</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Pipeline commercial, relances, commissions (RG17, RG18)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">18</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">PropositionFiche</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Modifications en attente de validation Super Admin (RG20)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">19–21</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Permission · Notification · JournalAudit</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Portées déléguées, notifications, audit (RG05, RG15, RG20)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">22</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">ParametreFacturation</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Constantes globales paramétrables admin (§5)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">23</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Lead</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Lead établissement : colonnes clés + fiche de besoin JSON (FC-1 → FC-11), score /10, pipeline 6 statuts (RG21–RG23 — avenant 1)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">24</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">LeadSuivi</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Historique par lead : commentaires horodatés, relances programmables (RG21 — avenant 1)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">25</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Role</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Quatre rôles nommés + indicateur de périmètre fixe (RG25 — avenant 3)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">26</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">User — enrichissement <em>role_id, etablissement_rattache_id, blog_actif</em></td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Rôle porté par la relation Role, rattachement d'établissement (secrétariat / établissement), blog activable par compte (RG25 — avenant 3). La reprise de données de l'ancien ENUM users.role est exécutée par une migration SQL supplémentaire.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">27</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Etablissement — blocs profil éditables</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Champs JSON : chiffres clés, FAQ, horaires, réseaux sociaux, autres projets, facilités, vidéo + badges vérifié / premium (RG27 — avenant 3)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">28</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">Article</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">Blog : circuit brouillon → en attente → approuvé / refusé, mise à la une, blog scopé par établissement (RG27 — avenant 3)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">29–30</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">FaqItem · PageCms</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">FAQ réordonnable et pages éditoriales à blocs JSON (RG27 — avenant 3)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:4px 8px;">31</td><td style="border:1px solid #E1E5EA;padding:4px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">JournalAudit · Avis · PropositionFiche — enrichis</td><td style="border:1px solid #E1E5EA;padding:4px 8px;">JournalAudit : rôle de l'acteur, sévérité, acteur nullable ; Avis : mise en avant ; PropositionFiche : version proposée complète et annulation (RG26, RG27 — avenant 3)</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. schema.prisma — extraits fidèles au MPD</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Extraits du fichier <span style="font-family:ui-monospace,monospace;font-size:10.5px;">prisma/schema.prisma</span> ; types, index, relations et contraintes reprennent le livrable 8 §6 à l'identique. Le fichier complet — datasource, generator, tous les modèles et blocs enum — est versionné dans <span style="font-family:ui-monospace,monospace;font-size:10.5px;">api/prisma/</span> et copié dans l'image applicative à l'étape de build (livrable 14).</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.0 — Bloc d'en-tête : datasource, generator, features</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// prisma/schema.prisma — en-tête (RG25 : provider mysql · previewFeatures pour FULLTEXT)
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex", "fullTextSearch"]
+  output          = "../src/generated/prisma"          // client typé exposé par PrismaService
+}</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.1 — Socle : User (compte applicatif) et référentiels</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 01 — User : compte applicatif (RG04 ; rôle porté par role_id, RG25)
+model User {
+  id                       BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  name                     String      @db.VarChar(120)
+  email                    String      @unique @db.VarChar(160)
+  email_verifie_le         DateTime?   @db.Timestamp(0)
+  passwordHash             String      @map("password") @db.VarChar(255)   // Argon2id (livrable 7 §6)
+  role_id                  BigInt      @db.UnsignedBigInt
+  etablissement_rattache_id BigInt?    @db.UnsignedBigInt
+  blog_actif               Boolean     @default(false)
+  statut                   UserStatut  @default(actif)
+  derniere_connexion_le    DateTime?
+  cree_le                  DateTime    @default(now()) @db.Timestamp(0)
+
+  role                     Role        @relation(fields: [role_id], references: [id], onDelete: Restrict)
+  etablissementRattache    Etablissement? @relation("SecretariatRattachement",
+                             fields: [etablissement_rattache_id], references: [id], onDelete: SetNull)
+  // aucune relation de session : les sessions Passport vivent dans Redis (connect-redis)
+  @@map("users")
+}
+
+enum UserStatut { actif suspendu }
+
+// 02 — Ville (RG01)
+model Ville {
+  id     BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  nom    String  @db.VarChar(100)
+  slug   String  @unique @db.VarChar(120)
+  region String? @db.VarChar(100)
+  etablissements Etablissement[]
+  @@map("villes")
+}
+
+// 03 — NiveauFiliere (RG02 — distinct des 6 types d'établissement)
+model NiveauFiliere {
+  id        BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  libelle   String              @unique @db.VarChar(80)
+  categorie NiveauFiliereCat
+  etablissements EtablissementNiveau[]
+  @@map("niveau_filieres")
+}
+
+enum NiveauFiliereCat { niveau filiere }</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.2 — Etablissement, pivot du modèle</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 04 — Etablissement (les blocs profil de l'avenant 3 sont regroupés ici — voir §2.12)
+model Etablissement {
+  id                    BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  ville_id              BigInt              @db.UnsignedBigInt                 // RG01
+  proprietaire_user_id  BigInt?             @db.UnsignedBigInt                 // RG04 — NULL
+  slug                  String              @unique @db.VarChar(160)           //   tant que non
+  nom                   String              @db.VarChar(180)                   //   revendiquée
+  type                  EtablissementType                                       // RG02 — 6 types
+  statut                EtablissementStatut @default(en_attente)                // RG03
+  description           String?             @db.Text
+  adresse               String?             @db.VarChar(255)
+  quartier              String?             @db.VarChar(100)
+  lat                   Decimal?            @db.Decimal(10, 7)
+  lng                   Decimal?            @db.Decimal(10, 7)                  // Leaflet / OSM
+  tel                   String?             @db.VarChar(30)
+  whatsapp              String?             @db.VarChar(30)
+  email                 String?             @db.VarChar(160)
+  budget_min            Int?                @db.UnsignedInt                     // MAD / an
+  budget_max            Int?                @db.UnsignedInt
+  note_moy              Decimal             @default(0) @db.Decimal(2, 1)       // RG08 — dénormalisé
+  nb_avis               Int                 @default(0) @db.UnsignedInt
+  source                EtablissementSource @default(direct)
+  sponsorise            Boolean             @default(false)
+  valide_le             DateTime?           @db.Timestamp(0)
+  cree_le               DateTime            @default(now()) @db.Timestamp(0)
+
+  // Blocs profil éditables (avenant 3, RG27) — regroupés ici, voir §2.12
+  verifie               Boolean             @default(false)
+  premium               Boolean             @default(false)
+  chiffres              Json?                                                    // [{label, valeur}]
+  faq                   Json?                                                    // [{q, r}] ordonnable
+  horaires              Json?                                                    // {jour: plage}
+  socials               Json?
+  autres_projets        Json?
+  facilites             Json?
+  video_url             String?             @db.VarChar(200)
+  video_poster          String?             @db.VarChar(200)
+  gamme_label           String?             @db.VarChar(80)
+  devis_label           String?             @db.VarChar(120)
+
+  ville                 Ville               @relation(fields: [ville_id], references: [id], onDelete: Restrict)
+  proprietaire          User?               @relation("Proprietaire",
+                          fields: [proprietaire_user_id], references: [id], onDelete: SetNull)
+  secretariat           User[]              @relation("SecretariatRattachement")
+  niveaux               EtablissementNiveau[]
+  photos                Photo[]
+  avis                  Avis[]
+  demandes              DemandeContact[]
+  traces                EvenementTrace[]
+  abonnements           Abonnement[]
+  paiementsVue          PaiementVue[]
+  factures              Facture[]
+  sponsorings           Sponsoring[]
+  prospect              Prospect?                                                // 0..1
+  propositionsFiche     PropositionFiche[]
+  leads                 Lead[]
+  articles              Article[]
+
+  @@index([ville_id, type, statut], map: "idx_eta_recherche")   // résultats filtrés
+  @@index([statut, note_moy(sort: Desc)], map: "idx_eta_tri")   // tri par note
+  @@fulltext([nom, description], map: "ft_eta_nom_desc")        // recherche texte
+  @@map("etablissements")
+}
+
+enum EtablissementType   { creche primaire college lycee universite formation }
+enum EtablissementStatut { en_attente validee masquee suspendue }
+enum EtablissementSource { open_data direct }</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.3 — Association (n,n) et médias</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 05 — EtablissementNiveau (PROPOSER, PK composite, CASCADE deux sens)
+model EtablissementNiveau {
+  etablissement_id BigInt @db.UnsignedBigInt
+  niveau_id        BigInt @db.UnsignedBigInt
+  etablissement    Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  niveau           NiveauFiliere @relation(fields: [niveau_id],        references: [id], onDelete: Cascade)
+  @@id([etablissement_id, niveau_id])
+  @@map("etablissement_niveau")
+}
+
+// 06 — Photo (RG16 — 1 photo en fiche gratuite : quota contrôlé par service, livrable 11)
+model Photo {
+  id               BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt @db.UnsignedBigInt
+  chemin           String @db.VarChar(255)
+  ordre            Int    @default(0) @db.UnsignedTinyInt
+  poids            Int?   @db.UnsignedInt          // octets
+  alt              String? @db.VarChar(160)
+  etablissement    Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  @@map("photos")
+}</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.4 — Confiance : avis et signalements</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 07 — Avis (RG06, RG07 — MODÉRER absorbée : modere_par, decision_motif, modere_le · en_avant : avenant 3)
+model Avis {
+  id                BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id  BigInt      @db.UnsignedBigInt
+  auteur_nom        String      @db.VarChar(120)
+  auteur_contact    String      @db.VarChar(160)         // e-mail ou téléphone vérifié
+  note              Int         @db.UnsignedTinyInt      // CHECK 1..5 posé par migration SQL supplémentaire
+  commentaire       String      @db.Text
+  statut            AvisStatut  @default(en_attente)
+  verifie           Boolean     @default(false)          // badge « Parent vérifié »
+  en_avant          Boolean     @default(false)          // avenant 3 — RG27
+  modere_par        BigInt?     @db.UnsignedBigInt
+  decision_motif    String?     @db.VarChar(255)
+  modere_le         DateTime?   @db.Timestamp(0)
+  reponse           String?     @db.Text                 // RG07 — au plus une réponse
+  reponse_le        DateTime?   @db.Timestamp(0)
+  depose_le         DateTime    @default(now()) @db.Timestamp(0)
+
+  etablissement     Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  moderateur        User?         @relation("AvisModerateur",
+                       fields: [modere_par], references: [id], onDelete: SetNull)
+  signalements      Signalement[]
+  @@index([etablissement_id, statut, depose_le(sort: Desc)], map: "idx_avis_fiche")
+  @@map("avis")
+}
+
+enum AvisStatut { en_attente publie rejete }
+
+// -- CHECK CHK_AVIS_NOTE (fichier SQL joint à la migration Prisma)
+//    ALTER TABLE avis ADD CONSTRAINT chk_avis_note CHECK (note BETWEEN 1 AND 5);
+
+// 08 — Signalement (RG07 — tout signalement replace l'avis en file de modération)
+model Signalement {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  avis_id    BigInt   @db.UnsignedBigInt
+  motif      String   @db.VarChar(255)
+  contact    String?  @db.VarChar(160)
+  statut     SignalementStatut @default(nouveau)
+  signale_le DateTime @default(now()) @db.Timestamp(0)
+  avis       Avis     @relation(fields: [avis_id], references: [id], onDelete: Cascade)
+  @@map("signalements")
+}
+
+enum SignalementStatut { nouveau traite }</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.5 — Mise en relation et traçage</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 09 — DemandeContact (RG09 — minimisation loi 09-08 : nom + téléphone uniquement)
+model DemandeContact {
+  id                BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id  BigInt   @db.UnsignedBigInt
+  parent_nom        String   @db.VarChar(120)
+  parent_tel        String   @db.VarChar(30)
+  message           String?  @db.Text
+  canal             DemandeCanal
+  statut            DemandeStatut @default(nouvelle)
+  consentement      Boolean                              // case obligatoire côté formulaire
+  traitee_par       BigInt?  @db.UnsignedBigInt
+  recue_le          DateTime @default(now()) @db.Timestamp(0)
+  traitee_le        DateTime? @db.Timestamp(0)
+  etablissement     Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  secretaire        User?    @relation("DemandeTraitee",
+                       fields: [traitee_par], references: [id], onDelete: SetNull)
+  leads             Lead[]                                // 0..N — le lead peut naître d'une demande
+  @@index([etablissement_id, statut, recue_le(sort: Desc)], map: "idx_dem_inbox")
+  @@map("demande_contacts")
+}
+
+enum DemandeCanal  { formulaire appel whatsapp }
+enum DemandeStatut { nouvelle en_cours traitee }
+
+// 10 — EvenementTrace (RG10 — fort volume : agrégé puis purgé à 12 mois, §6.3)
+model EvenementTrace {
+  id                BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id  BigInt        @db.UnsignedBigInt
+  type              EvenementType
+  source            String?       @db.VarChar(40)     // resultats / fiche / une
+  survenu_le        DateTime      @default(now()) @db.Timestamp(0)
+  etablissement     Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  @@index([etablissement_id, type, survenu_le], map: "idx_evt_stats")
+  @@map("evenement_traces")
+}
+
+enum EvenementType { appel whatsapp vue vue_sponsorisee }</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.6 — Abonnement et paiement à la vue</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 11 — Abonnement (RG11, RG13, RG14 — tarif par client, jamais public ; essai gratuit sans tarif)
+model Abonnement {
+  id                BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id  BigInt         @db.UnsignedBigInt
+  formule           AbonnementFormule
+  tarif_mad         Decimal?       @db.Decimal(10, 2)   // NULL si essai_gratuit — CHECK ci-dessous
+  remise_pct        Decimal?       @db.Decimal(4, 1)    // 10 % si annuel réglé en une fois
+  debut             DateTime       @db.Date
+  echeance          DateTime       @db.Date
+  statut            AbonnementStatut @default(actif)
+  etablissement     Etablissement  @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  factures          Facture[]
+  @@index([etablissement_id, statut], map: "idx_abo_actif")   // « 1 actif max » : service
+  @@map("abonnements")
+}
+
+enum AbonnementFormule { essai_gratuit mensuel annuel }
+enum AbonnementStatut  { essai actif expire resilie }
+
+// -- CHECK CHK_ABO_TARIF (fichier SQL joint) :
+// ALTER TABLE abonnements ADD CONSTRAINT chk_abo_tarif CHECK (
+//   (formule = 'essai_gratuit' AND tarif_mad IS NULL) OR
+//   (formule &lt;&gt; 'essai_gratuit' AND tarif_mad IS NOT NULL));
+
+// 12 — PaiementVue (RG12 — prix par vue et plafond mensuel définis par client)
+model PaiementVue {
+  id                       BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id         BigInt         @db.UnsignedBigInt
+  prix_unitaire_mad        Decimal        @db.Decimal(6, 2)
+  plafond_mensuel          Int            @db.UnsignedInt
+  periode                  String         @db.Char(7)          // 'AAAA-MM'
+  compteur_mois_courant    Int            @default(0) @db.UnsignedInt
+  statut                   PaiementVueStatut @default(actif)
+  etablissement            Etablissement  @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  factures                 Facture[]
+  @@unique([etablissement_id, periode], map: "uq_pv_periode")
+  @@map("paiements_vue")
+}
+
+enum PaiementVueStatut { actif suspendu }</div>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">Le compteur de <span style="font-family:ui-monospace,monospace;font-size:10px;">paiements_vue</span> est incrémenté par le service <em>ViewBillingService</em> (livrable 11) dans une transaction Prisma <span style="font-family:ui-monospace,monospace;font-size:10px;">$transaction</span> — <span style="font-family:ui-monospace,monospace;font-size:10px;">$queryRaw</span> avec <span style="font-family:ui-monospace,monospace;font-size:10px;">SELECT … FOR UPDATE</span> sur la ligne de la période courante — à chaque vue facturable (<span style="font-family:ui-monospace,monospace;font-size:10px;">EvenementTrace.type = vue</span>, source = <span style="font-family:ui-monospace,monospace;font-size:10px;">fiche</span>) tant que le plafond_mensuel n'est pas atteint (RG12, livrable 8 §7).</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.7 — Facturation et sponsoring</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 13 — Facture (RG14, RG18 — numérotation séquentielle légale, origine exclusive)
+model Facture {
+  id                 BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id   BigInt        @db.UnsignedBigInt
+  numero             String        @unique @db.VarChar(20)      // ex. F2026-000641
+  objet              String        @db.VarChar(160)             // « Abonnement annuel (−10 %) »…
+  abonnement_id      BigInt?       @db.UnsignedBigInt
+  paiement_vue_id    BigInt?       @db.UnsignedBigInt
+  sponsoring_id      BigInt?       @db.UnsignedBigInt
+  montant_ht         Decimal       @db.Decimal(10, 2)
+  tva                Decimal       @db.Decimal(10, 2)           // TVA 20 %
+  total_ttc          Decimal       @db.Decimal(10, 2)
+  statut_paiement    FactureStatut @default(non_payee)
+  pdf_chemin         String?       @db.VarChar(255)
+  emise_le           DateTime      @default(now()) @db.Timestamp(0)
+  payee_le           DateTime?     @db.Timestamp(0)
+  etablissement      Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  abonnement         Abonnement?   @relation(fields: [abonnement_id],   references: [id], onDelete: SetNull)
+  paiementVue        PaiementVue?  @relation(fields: [paiement_vue_id], references: [id], onDelete: SetNull)
+  sponsoring         Sponsoring?   @relation(fields: [sponsoring_id],   references: [id], onDelete: SetNull)
+  commissions        Commission[]
+  @@map("factures")
+}
+
+enum FactureStatut { non_payee payee }
+
+// -- CHECK CHK_FAC_ORIGINE (fichier SQL joint) :
+// ALTER TABLE factures ADD CONSTRAINT chk_fac_origine CHECK (
+//   (abonnement_id IS NOT NULL AND paiement_vue_id IS NULL AND sponsoring_id IS NULL) OR
+//   (paiement_vue_id IS NOT NULL AND abonnement_id IS NULL AND sponsoring_id IS NULL) OR
+//   (sponsoring_id IS NOT NULL AND abonnement_id IS NULL AND paiement_vue_id IS NULL));
+
+// 14 — Sponsoring (RG19 — niveau, périmètre, rotation équitable à niveau égal)
+model Sponsoring {
+  id               BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt         @db.UnsignedBigInt
+  niveau           SponsoringNiveau
+  ville_id         BigInt?        @db.UnsignedBigInt
+  categorie        String?        @db.VarChar(60)
+  mot_cle          String?        @db.VarChar(80)
+  debut            DateTime       @db.Date
+  fin              DateTime       @db.Date
+  tarif_mad        Decimal        @db.Decimal(10, 2)
+  etablissement    Etablissement  @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  ville            Ville?         @relation(fields: [ville_id], references: [id], onDelete: SetNull)
+  factures         Facture[]
+  @@index([niveau, ville_id, debut, fin], map: "idx_spo_rotation")
+  @@map("sponsorings")
+}
+
+enum SponsoringNiveau { premium gold silver }</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.8 — Gestion commerciale : prospects, relances, commissions</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 15 — Prospect (RG17 — pipeline commercial ; etablissement_id renseigné à la transformation)
+model Prospect {
+  id                  BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id    BigInt?  @unique @db.UnsignedBigInt   // 0..1 côté Etablissement
+  commercial_id       BigInt?  @db.UnsignedBigInt
+  etablissement_nom   String   @db.VarChar(180)
+  ville               String?  @db.VarChar(100)
+  type_vise           String?  @db.VarChar(40)
+  contact_nom         String   @db.VarChar(120)
+  contact_fonction    String?  @db.VarChar(100)
+  telephone           String   @db.VarChar(30)
+  email               String?  @db.VarChar(160)
+  formule_visee       String?  @db.VarChar(40)
+  message             String?  @db.Text
+  source              ProspectSource   @default(formulaire)
+  statut_pipeline     ProspectStatut   @default(nouveau)
+  cree_le             DateTime @default(now()) @db.Timestamp(0)
+  etablissement       Etablissement?   @relation(fields: [etablissement_id], references: [id], onDelete: SetNull)
+  commercial          User?            @relation("ProspectCommercial",
+                        fields: [commercial_id], references: [id], onDelete: SetNull)
+  relances            Relance[]
+  @@index([statut_pipeline, commercial_id], map: "idx_pros_pipeline")
+  @@map("prospects")
+}
+
+enum ProspectSource { formulaire telephone manuel }
+enum ProspectStatut { nouveau a_contacter chaud relance transforme perdu }
+
+// 16 — Relance (RG17 — historisation des relances commerciales)
+model Relance {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  prospect_id   BigInt   @db.UnsignedBigInt
+  commercial_id BigInt   @db.UnsignedBigInt
+  note          String?  @db.Text
+  prevue_le     DateTime? @db.Timestamp(0)
+  effectuee_le  DateTime? @db.Timestamp(0)
+  prospect      Prospect @relation(fields: [prospect_id],   references: [id], onDelete: Cascade)
+  commercial    User     @relation("RelanceCommercial",
+                    fields: [commercial_id], references: [id], onDelete: Restrict)
+  @@map("relances")
+}
+
+// 17 — Commission (RG18 — réglée seulement après validation de la Direction)
+model Commission {
+  id             BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  facture_id     BigInt   @db.UnsignedBigInt
+  commercial_id  BigInt   @db.UnsignedBigInt
+  taux_pct       Decimal  @db.Decimal(4, 1)
+  montant_mad    Decimal  @db.Decimal(10, 2)
+  statut         CommissionStatut @default(a_valider)
+  validee_par    BigInt?  @db.UnsignedBigInt
+  validee_le     DateTime? @db.Timestamp(0)
+  facture        Facture  @relation(fields: [facture_id],    references: [id], onDelete: Cascade)
+  commercial     User     @relation("CommissionCommercial",
+                    fields: [commercial_id], references: [id], onDelete: Restrict)
+  valideur       User?    @relation("CommissionValideur",
+                    fields: [validee_par],  references: [id], onDelete: SetNull)
+  @@map("commissions")
+}
+
+enum CommissionStatut { a_valider validee reglee }</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.9 — Validation des modifications de fiche</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 18 — PropositionFiche (RG20, RG27 — publication différée à la validation d'un Super Admin)
+model PropositionFiche {
+  id                BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id  BigInt   @db.UnsignedBigInt
+  proposee_par      BigInt   @db.UnsignedBigInt
+  champs_modifies   Json                                     // liste des champs concernés
+  payload           Json?                                    // version proposée complète (avenant 3)
+  statut            PropositionStatut @default(en_attente)
+  decision_motif    String?  @db.VarChar(200)
+  validee_par       BigInt?  @db.UnsignedBigInt
+  proposee_le       DateTime @default(now()) @db.Timestamp(0)
+  traitee_le        DateTime? @db.Timestamp(0)
+  annulee_le        DateTime? @db.Timestamp(0)               // annulation par l'auteur (avenant 3)
+  etablissement     Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  auteur            User          @relation("PropositionAuteur",
+                       fields: [proposee_par], references: [id], onDelete: Restrict)
+  valideur          User?         @relation("PropositionValideur",
+                       fields: [validee_par], references: [id], onDelete: SetNull)
+  @@index([etablissement_id, statut], map: "idx_prop_fiche")
+  @@map("propositions_fiche")
+}
+
+enum PropositionStatut { en_attente validee rejetee }</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.10 — Gouvernance : permissions, notifications, audit</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// 19 — Permission (RG05 — révocation horodatée, jamais supprimée)
+model Permission {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id       BigInt   @db.UnsignedBigInt
+  portee        PermissionPortee
+  accordee_par  BigInt   @db.UnsignedBigInt
+  accordee_le   DateTime @default(now()) @db.Timestamp(0)
+  revoquee_le   DateTime? @db.Timestamp(0)
+  user          User     @relation("PermissionUser",
+                    fields: [user_id],       references: [id], onDelete: Cascade)
+  accordeur     User     @relation("PermissionAccordeur",
+                    fields: [accordee_par], references: [id], onDelete: Restrict)
+  @@unique([user_id, portee], map: "uq_perm_user_portee")
+  @@map("permissions")
+}
+
+enum PermissionPortee { fiches contacts avis }
+
+// 20 — Notification (plafond de vues RG12, échéance RG14, demandes, modération, propositions RG20)
+model Notification {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id       BigInt   @db.UnsignedBigInt
+  type          NotificationType
+  contenu       String   @db.VarChar(255)
+  canal         NotificationCanal
+  envoyee_le    DateTime? @db.Timestamp(0)
+  lue_le        DateTime? @db.Timestamp(0)
+  user          User     @relation("NotificationUser",
+                    fields: [user_id], references: [id], onDelete: Cascade)
+  @@map("notifications")
+}
+
+enum NotificationType  { echeance_abonnement plafond_vue_atteint demande moderation proposition_fiche }
+enum NotificationCanal { in_app email }
+
+// 21 — JournalAudit (RG15, RG26 — insertion seule, immuable, purgée à 3 ans)
+model JournalAudit {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id      BigInt?  @db.UnsignedBigInt              // nullable — acteur système (avenant 3)
+  role_acteur  String   @db.VarChar(20)                 // figé à l'écriture (avenant 3, RG26)
+  action       String   @db.VarChar(60)                 // etablissement.valide, avis.rejete…
+  cible_type   String   @db.VarChar(60)
+  cible_id     BigInt   @db.UnsignedBigInt
+  severite     AuditSeverite @default(info)             // avenant 3
+  details      Json?
+  adresse_ip   String?  @db.VarChar(45)
+  cree_le      DateTime @default(now()) @db.Timestamp(0)
+  user         User?    @relation("AuditUser",
+                    fields: [user_id], references: [id], onDelete: SetNull)
+  @@index([cible_type, cible_id],       map: "idx_audit_cible")
+  @@index([user_id, cree_le(sort: Desc)], map: "idx_audit_user")
+  @@index([role_acteur, cree_le(sort: Desc)], map: "idx_audit_role")
+  @@map("journal_audits")
+}
+
+enum AuditSeverite { info avertissement erreur }</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.11 — CRM leads établissement (avenant n° 1)</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 8px;white-space:pre-wrap;">// 23 — Lead (avenant n° 1 : RG21 fiche de besoin + pipeline, RG22 scoring, RG23 propriété)
+model Lead {
+  id                  BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id    BigInt   @db.UnsignedBigInt                       // RG23
+  demande_contact_id  BigInt?  @db.UnsignedBigInt                       // RG21 — origine site,
+  cree_par            BigInt?  @db.UnsignedBigInt                       //   NULL si saisie manuelle
+  candidat_nom        String   @db.VarChar(120)                          // FC-1
+  pour_qui            LeadPourQui @default(enfant)                       // FC-2
+  tel                 String   @db.VarChar(30)
+  whatsapp            Boolean  @default(false)
+  email               String?  @db.VarChar(160)
+  ville               String?  @db.VarChar(100)                          // FC-3
+  cycle               String?  @db.VarChar(60)                           // FC-4
+  niveau              String?  @db.VarChar(80)
+  budget_min          Int?     @db.UnsignedInt                           // FC-6 — MAD
+  budget_max          Int?     @db.UnsignedInt
+  urgence             LeadUrgence @default(flexible)                     // FC-5
+  source              LeadSource                                          // FC-8
+  fiche_besoin        Json?                                               // blocs FC-1 → FC-11
+  score               Int      @default(0) @db.UnsignedTinyInt            // RG22 — /10
+  statut_pipeline     LeadStatut @default(nouveau)
+  raison_perte        String?  @db.VarChar(120)                           // exigée si perdu (service)
+  acompte_mad         Decimal? @db.Decimal(10, 2)                         // FC-11
+  converti_le         DateTime? @db.Timestamp(0)                          // temps de conversion mesuré
+  cree_le             DateTime @default(now()) @db.Timestamp(0)
+  etablissement       Etablissement    @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  demandeContact      DemandeContact?  @relation(fields: [demande_contact_id],
+                                                 references: [id], onDelete: SetNull)
+  createur            User?            @relation("LeadCreateur",
+                                          fields: [cree_par], references: [id], onDelete: SetNull)
+  suivis              LeadSuivi[]
+  @@index([etablissement_id, statut_pipeline],   map: "idx_lead_kanban")
+  @@index([etablissement_id, score(sort: Desc)], map: "idx_lead_chauds")  // chauds ≥ 7
+  @@map("leads")
+}
+
+enum LeadPourQui { soi enfant }
+enum LeadUrgence { imminente semaine mois rentree flexible }
+enum LeadSource  { ecoles360 whatsapp appel reseaux google recommandation salon autre }
+enum LeadStatut  { nouveau contacte qualifie proposition_envoyee inscrit perdu }
+
+// -- CHECK CHK_LEAD_SCORE (fichier SQL joint) :
+// ALTER TABLE leads ADD CONSTRAINT chk_lead_score CHECK (score BETWEEN 0 AND 10);
+
+// 24 — LeadSuivi (RG21 — commentaires horodatés et relances programmables)
+model LeadSuivi {
+  id             BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  lead_id        BigInt   @db.UnsignedBigInt
+  auteur_id      BigInt?  @db.UnsignedBigInt
+  type           LeadSuiviType
+  note           String?  @db.Text
+  prevue_le      DateTime? @db.Timestamp(0)              // relance programmée
+  effectuee_le   DateTime? @db.Timestamp(0)
+  cree_le        DateTime @default(now()) @db.Timestamp(0)
+  lead           Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  auteur         User?    @relation("LeadSuiviAuteur",
+                    fields: [auteur_id], references: [id], onDelete: SetNull)
+  @@index([lead_id, cree_le(sort: Desc)], map: "idx_suivi_timeline")
+  @@index([prevue_le],                    map: "idx_suivi_relances")  // « relances du jour »
+  @@map("lead_suivis")
+}
+
+enum LeadSuiviType { commentaire relance }</div>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">La suppression et l'export des leads ne sont pas des contraintes de schéma mais des règles d'accès (RG23) : elles sont portées par le <em>LeadGuard</em> et le <em>LeadService</em> du module <span style="font-family:ui-monospace,monospace;font-size:10px;">leads</span> (livrable 11) — réservées à l'Admin Client, refusées à la secrétaire ; le Super Admin J2HB n'accède qu'aux agrégats de conversion.</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.12 — Console d'administration &amp; CMS (avenant n° 3)</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 8px;white-space:pre-wrap;">// 25 — Role (RG25 — le rôle est une entité porteuse de perimetre_fixe)
+model Role {
+  id             BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  code           RoleCode @unique
+  libelle        String   @db.VarChar(40)
+  perimetre_fixe Boolean  @default(true)                 // false pour secretariat uniquement
+  users          User[]
+  @@map("roles")
+}
+
+enum RoleCode { superadmin secretariat commercial etablissement }
+
+// 26 — Reprise de données depuis l'ancien ENUM users.role (fichier SQL joint à la migration Prisma)
+// -- SEED_ROLES : INSERT INTO roles (code, libelle, perimetre_fixe) VALUES
+//      ('superadmin',    'Super Admin',   TRUE),
+//      ('secretariat',   'Secrétariat',   FALSE),
+//      ('commercial',    'Commercial',    TRUE),
+//      ('etablissement', 'Établissement', TRUE);
+// -- REPRISE : UPDATE users SET role_id = (SELECT id FROM roles WHERE code = 'superadmin')
+//              WHERE role = 'admin';   /* + secretaire, etablissement */
+// -- ALTER TABLE users DROP COLUMN role;   (après vérification)
+// (Le schema.prisma expose role_id NOT NULL dès l'origine — l'ancien ENUM n'existe plus
+//  dans le fichier ; la reprise est nécessaire uniquement lors d'une migration depuis la v2.3.)
+
+// 27 — Etablissement : blocs profil éditables — voir §2.2 (regroupés au modèle Etablissement)
+
+// 28 — Article (RG27 — circuit éditorial)
+model Article {
+  id                BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  auteur_id         BigInt?  @db.UnsignedBigInt
+  etablissement_id  BigInt?  @db.UnsignedBigInt              // NULL = article plateforme
+  validee_par       BigInt?  @db.UnsignedBigInt
+  titre             String   @db.VarChar(180)
+  slug              String   @unique @db.VarChar(200)
+  categorie         String   @db.VarChar(60)
+  chapeau           String?  @db.VarChar(300)
+  contenu           String?  @db.MediumText
+  image_chemin      String?  @db.VarChar(200)                 // image facultative
+  statut            ArticleStatut @default(brouillon)
+  a_la_une          Boolean  @default(false)                  // effet si statut=approuve
+  soumis_le         DateTime? @db.Timestamp(0)
+  publie_le         DateTime? @db.Timestamp(0)
+  cree_le           DateTime @default(now()) @db.Timestamp(0)
+  auteur            User?    @relation("ArticleAuteur",
+                       fields: [auteur_id],  references: [id], onDelete: SetNull)
+  etablissement     Etablissement? @relation(fields: [etablissement_id],
+                                             references: [id], onDelete: Cascade)
+  valideur          User?    @relation("ArticleValideur",
+                       fields: [validee_par], references: [id], onDelete: SetNull)
+  @@index([statut, publie_le(sort: Desc)], map: "idx_art_public")
+  @@index([etablissement_id, statut],       map: "idx_art_scope")
+  @@map("articles")
+}
+
+enum ArticleStatut { brouillon en_attente approuve refuse }
+
+// 29–30 — FaqItem et PageCms (RG27)
+model FaqItem {
+  id             BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  question       String   @db.VarChar(200)
+  reponse        String   @db.Text
+  ordre          Int      @default(0) @db.UnsignedSmallInt
+  publiee        Boolean  @default(true)
+  modifiee_par   BigInt?  @db.UnsignedBigInt
+  modifiee_le    DateTime? @db.Timestamp(0)
+  modificateur   User?    @relation("FaqModificateur",
+                    fields: [modifiee_par], references: [id], onDelete: SetNull)
+  @@index([publiee, ordre], map: "idx_faq_ordre")
+  @@map("faq_items")
+}
+
+model PageCms {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  cle           String   @unique @db.VarChar(60)          // 'a-propos'
+  titre         String   @db.VarChar(160)
+  blocs         Json                                       // histoire, mission, valeurs[], coordonnees
+  modifiee_par  BigInt?  @db.UnsignedBigInt
+  modifiee_le   DateTime? @db.Timestamp(0)
+  modificateur  User?    @relation("PageCmsModificateur",
+                    fields: [modifiee_par], references: [id], onDelete: SetNull)
+  @@map("pages_cms")
+}</div>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">Trois points d'attention. <strong>a)</strong> La migration 26 est la seule <em>migration de données</em> de la chaîne : le fichier SQL joint à la migration Prisma insère les quatre lignes de <span style="font-family:ui-monospace,monospace;font-size:10px;">roles</span> puis met users.role_id en correspondance à partir de l'ancien ENUM avant sa suppression — nécessaire uniquement pour un client déjà en v2.3 ; en installation neuve le RoleSeeder du §3 suffit. <strong>b)</strong> L'unicité « une seule proposition en attente par établissement » (RG27) n'est pas une contrainte de schéma — un index unique partiel n'existe pas en MySQL 8 — mais une garantie de service, posée sous verrou dans <em>FicheProposalService</em> (livrable 11). <strong>c)</strong> L'immuabilité du journal (RG26) est portée par le service <em>AuditService</em> — seule voie d'écriture — et par l'absence de toute mutation Prisma exposée sur <span style="font-family:ui-monospace,monospace;font-size:10px;">JournalAudit</span> ; la purge à trois ans est planifiée au §6. Les images téléversées (articles, photos de fiche, affiche vidéo, visuels des autres projets) sont stockées dans le <strong>volume Docker nommé <span style="font-family:ui-monospace,monospace;font-size:10px;">storage</span></strong>, monté dans les conteneurs <em>api</em> et <em>worker</em> (redimensionnées par <em>sharp</em>), seul leur chemin étant persisté — le volume survit à tout remplacement d'image et fait partie du périmètre de sauvegarde (livrable 14).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. Seeders — commandes NestJS, référentiels et données de démonstration</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Deux familles de seeders, écrites sous <span style="font-family:ui-monospace,monospace;font-size:10.5px;">api/src/database/seeders/</span> et exposées en <strong>commandes NestJS</strong> (<span style="font-family:ui-monospace,monospace;font-size:10.5px;">nest-commander</span>) : ce sont des classes <span style="font-family:ui-monospace,monospace;font-size:10.5px;">@Injectable()</span> auxquelles le conteneur de dépendances fournit <span style="font-family:ui-monospace,monospace;font-size:10.5px;">PrismaService</span> et <span style="font-family:ui-monospace,monospace;font-size:10.5px;">ConfigService</span>, lancées par <span style="font-family:ui-monospace,monospace;font-size:10.5px;">pnpm --filter api db:seed</span> en local et par <span style="font-family:ui-monospace,monospace;font-size:10.5px;">docker compose run --rm api node dist/cli.js db:seed</span> sur un environnement conteneurisé : les <strong>référentiels</strong> (villes, niveaux / filières, rôles, contenu éditorial, paramètres globaux) exécutés dans tous les environnements, et les <strong>données de démonstration</strong> (comptes, fiches, activité, leads, CMS, audit) réservées au développement et à la recette — jamais en production (la commande refuse de s'exécuter si <span style="font-family:ui-monospace,monospace;font-size:10.5px;">ConfigService.get("NODE_ENV") === "production"</span>). Tous sont idempotents (<span style="font-family:ui-monospace,monospace;font-size:10.5px;">prisma.model.upsert()</span> sur clé naturelle) donc rejouables.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:24%;">Seeder</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:14%;">Environnement</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Contenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedVilles.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Tous</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">12 villes couvertes au lancement (Casablanca, Rabat, Marrakech, Tanger, Fès, Agadir, Kénitra…) avec slug et région.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedNiveauxFilieres.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Tous</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Référentiel aligné sur les filtres des maquettes — niveaux : Éveil, Maternelle, BTS… ; filières : Sciences, Économie, Lettres, Langues, Bilingue, Mission française, Montessori, Sport, Informatique, Droit, Gestion.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedRoles.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Tous</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Les quatre rôles nommés : Super Admin, Secrétariat (seul à <span style="font-family:ui-monospace,monospace;font-size:9.5px;">perimetre_fixe = false</span>), Commercial, Établissement — préalable à tout compte (RG25 — avenant 3).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedParametresFacturation.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Tous</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Constantes globales du §5 — TVA, durée de l'essai gratuit, remise annuelle, délai de rappel J-7 ; aucun tarif établissement.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedContenuSite.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Tous</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">La page éditoriale <span style="font-family:ui-monospace,monospace;font-size:9.5px;">a-propos</span> (histoire, mission, trois valeurs, coordonnées) et la FAQ publique initiale, ordonnée — lignes non supprimables depuis l'interface, seulement modifiables (RG27 — avenant 3).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedComptesDemo.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Dev / recette</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Les 3 profils de connexion des maquettes (tableau ci-dessous) + 2 secrétaires supplémentaires (Yassine Bennani — fiches, contacts ; Khalid Amrani — suspendu).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedDonneesDemo.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Dev / recette</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Les 20 fiches des maquettes (Lycée Al Massira, Institut Lumière, Université Atlas, Crèche Les Petits Génies…), avis publiés / en attente / signalés (Karima B., Younes T., Hanane M.…), demandes de contact des trois canaux, abonnements / paiements à la vue / factures et quelques prospects en pipeline alimentant les graphiques du tableau de bord et de la page Statistiques.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedLeadsDemo.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Dev / recette</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Les 8 leads du kanban maquette rattachés au Lycée Al Massira (Yasmine El Amrani, Karim Bensaid, Salma Cherkaoui, Rachid Belkadi, Nadia Alaoui, Hamza Idrissi, Fatima-Zahra Berrada, Mohammed Tazi), répartis sur les 6 statuts du pipeline, scores 2 à 9, fiches de besoin FC-1 → FC-11, suivis horodatés et relances programmées — alimentent le kanban « CRM Leads », le bloc CRM du tableau de bord et les relances du jour du secrétariat (RG21, RG22 — avenant 1).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedCmsDemo.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Dev / recette</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Les articles de blog des maquettes répartis sur les quatre statuts du circuit (dont un à la une et un soumis par le Lycée Al Massira, en attente), deux avis mis en avant pour la section « Ce que disent les parents », les blocs de profil complétés pour Al Massira (chiffres clés 96 % / 18 / 27, FAQ, horaires, réseaux sociaux, autres projets du propriétaire, facilités, vidéo) et une proposition de fiche en attente de validation avec son comparatif (RG27 — avenant 3).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">seedAuditDemo.ts</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Dev / recette</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Une dizaine d'entrées d'audit couvrant les quatre rôles et les trois sévérités (validation d'établissement, encaissement, modération d'avis, réinitialisation de mot de passe, approbation de fiche) — alimentent l'écran « Journal d'audit » et ses vues « activité par profil » (RG26 — avenant 3).</td></tr>
+    </tbody>
+  </table>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:20%;">Compte démo</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:28%;">Identifiant</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Rattachements créés</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Super Admin</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">direction@ecoles360.com</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">« Direction écoles360 » — <span style="font-family:ui-monospace,monospace;font-size:9.5px;">role.code = superadmin</span>, accès complet au back-office (validation, modération, permissions, rappels).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Secrétariat</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">sara.s@ecoles360.com</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">« Sara Idrissi » — <span style="font-family:ui-monospace,monospace;font-size:9.5px;">role.code = secretariat</span>, permissions fiches + contacts + avis accordées par l'admin (écran « Bonjour Sara 👋 »).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">Établissement</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">contact@almassira.ma</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Gère « Lycée Al Massira » (Casablanca, Maârif) — fiche validée, sponsorisée, ★ 4,8 / 142 avis, abonnement annuel actif (−10 %), facture payée et 8 leads CRM en pipeline (valeurs du tableau de bord et du kanban maquette).</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 10.5px/1.55 'Inter',sans-serif;color:#5A6472;margin:0 0 10px;">Les mots de passe de démonstration proviennent de variables d'environnement (<span style="font-family:ui-monospace,monospace;font-size:9.5px;">SEED_ADMIN_PASSWORD</span>…), hachés via <span style="font-family:ui-monospace,monospace;font-size:9.5px;">argon2.hash()</span> — jamais de secret en dur dans le dépôt.</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// api/src/database/seed.command.ts — commande NestJS (nest-commander)
+import { Command, CommandRunner } from "nest-commander";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "../prisma/prisma.service";
+
+@Injectable()
+@Command({ name: "db:seed", description: "Référentiels puis données de démonstration" })
+export class SeedCommand extends CommandRunner {
+  constructor(
+    private readonly db: PrismaService,
+    private readonly config: ConfigService,
+    private readonly referentiels: ReferentielsSeeder,
+    private readonly demo: DemoSeeder,
+  ) { super(); }
+
+  async run(): Promise&lt;void&gt; {
+    await this.referentiels.roles();                  // RG25 — préalable à tout compte
+    await this.referentiels.villes();
+    await this.referentiels.niveauxFilieres();
+    await this.referentiels.contenuSite();
+    await this.referentiels.parametresFacturation();
+    if (this.config.get("NODE_ENV") !== "production") {
+      await this.demo.comptes();
+      await this.demo.donnees();
+      await this.demo.leads();
+      await this.demo.cms();
+      await this.demo.audit();
+    }
+  }
+}
+// api/src/main.cli.ts : CommandFactory.run(CliModule) — même image que l'API, commande différente
+
+// DemoSeeder.comptes() — extrait (db = PrismaService injecté)
+const superadmin = await db.role.findUniqueOrThrow({ where: { code: "superadmin" } });
+const secretariat = await db.role.findUniqueOrThrow({ where: { code: "secretariat" } });
+const admin = await db.user.upsert({
+  where:  { email: "direction@ecoles360.com" },
+  update: {},
+  create: {
+    name: "Direction écoles360", email: "direction@ecoles360.com",
+    passwordHash: await argon2.hash(process.env.SEED_ADMIN_PASSWORD!),
+    role_id: superadmin.id, statut: "actif",
+  },
+});
+const sara = await db.user.upsert({
+  where:  { email: "sara.s@ecoles360.com" },
+  update: {},
+  create: {
+    name: "Sara Idrissi", email: "sara.s@ecoles360.com",
+    passwordHash: await argon2.hash(process.env.SEED_SECRETAIRE_PASSWORD!),
+    role_id: secretariat.id, statut: "actif",
+  },
+});
+for (const portee of ["fiches", "contacts", "avis"] as const) {                    // RG05
+  await db.permission.upsert({
+    where:  { user_id_portee: { user_id: sara.id, portee } },
+    update: {},
+    create: { user_id: sara.id, portee, accordee_par: admin.id },
+  });
+}
+
+// DemoSeeder.donnees() — extrait : la fiche vitrine des maquettes
+const casablanca = await db.ville.findUniqueOrThrow({ where: { slug: "casablanca" } });
+const almassira = await db.etablissement.upsert({
+  where:  { slug: "lycee-al-massira-casablanca" },
+  update: {},
+  create: {
+    ville_id: casablanca.id, proprietaire_user_id: compteEtab.id,
+    slug: "lycee-al-massira-casablanca", nom: "Lycée Al Massira",
+    type: "lycee", statut: "validee", quartier: "Maârif",
+    note_moy: 4.8, nb_avis: 142, sponsorise: true, verifie: true, premium: true,
+    chiffres: [{ label: "Taux de réussite bac", valeur: "96 %" },
+               { label: "Élèves par classe",   valeur: "18"  },
+               { label: "Enseignants",         valeur: "27"  }],
+  },
+});
+await db.etablissementNiveau.createMany({
+  data: [{ etablissement_id: almassira.id, niveau_id: sciences.id },
+         { etablissement_id: almassira.id, niveau_id: economie.id }],
+  skipDuplicates: true,
+});
+const abonnement = await db.abonnement.create({
+  data: {
+    etablissement_id: almassira.id, formule: "annuel",
+    tarif_mad: 2400, remise_pct: 10,                       // tarif propre à ce client (RG14)
+    debut: new Date("2026-03-01"), echeance: new Date("2027-03-01"), statut: "actif",
+  },
+});
+await db.facture.upsert({
+  where:  { numero: "F2026-000612" },
+  update: {},
+  create: {
+    etablissement_id: almassira.id, numero: "F2026-000612",
+    objet: "Abonnement annuel 2026-2027 (−10 %)", abonnement_id: abonnement.id,
+    montant_ht: 25920, tva: 5184, total_ttc: 31104,
+    statut_paiement: "payee", payee_le: new Date("2026-03-01"),
+  },
+});
+
+// DemoSeeder.leads() — extrait : lead n° 1 du kanban maquette (RG21, RG22)
+const lead = await db.lead.create({
+  data: {
+    etablissement_id: almassira.id, demande_contact_id: demande.id,
+    candidat_nom: "Yasmine El Amrani", pour_qui: "enfant",
+    tel: "06 61 42 88 30", whatsapp: true, email: "y.elamrani@gmail.com",
+    ville: "Casablanca", cycle: "Primaire", niveau: "CP",
+    budget_min: 25000, budget_max: 35000,
+    urgence: "rentree", source: "ecoles360",
+    score: 7,                                              // urgence 3 + budget 2 + complétude 2
+    statut_pipeline: "nouveau",
+    fiche_besoin: {
+      motif: "Première inscription au privé", filiere: "Bilingue FR-AR",
+      priorites: ["reputation", "proximite", "prix", "rapidite"],
+    },
+  },
+});
+await db.leadSuivi.create({
+  data: { lead_id: lead.id, type: "commentaire", note: "Fiche reçue depuis ecoles360.com" },
+});</div>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. Stratégie d'import open data (≈ 8 000 fiches)</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">L'annuaire est amorcé par les listes publiques d'établissements privés autorisés (ministère de l'Éducation nationale / data.gov.ma, exports CSV par académie). L'import est une <strong>commande NestJS</strong> idempotente (<span style="font-family:ui-monospace,monospace;font-size:10.5px;">ImportEtablissementsCommand</span>, même binaire CLI que les seeders) exécutée par <span style="font-family:ui-monospace,monospace;font-size:10.5px;">pnpm --filter api import:etablissements</span> en local, ou dans un <strong>conteneur éphémère</strong> en environnement déployé — le fichier CSV étant déposé dans le volume <span style="font-family:ui-monospace,monospace;font-size:10.5px;">storage</span> ; le traitement se fait en 6 étapes, par lots de 500 lignes dans une transaction Prisma chacun ; les fiches créées naissent en statut <span style="font-family:ui-monospace,monospace;font-size:10.5px;">en_attente</span>, source <span style="font-family:ui-monospace,monospace;font-size:10.5px;">open_data</span>, non rattachées à un compte (RG04) — la visibilité publique passe par la validation admin par lots.</p>
+
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:14px;background:#fff;margin:0 0 6px;">
+    <div style="display:flex;align-items:stretch;gap:0;">
+      <div style="flex:1;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">1 · COLLECTE</div>
+        <div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Exports CSV MEN chargés tels quels en table de staging import_brut + hash de ligne</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 3px;color:#C9D2DE;font:700 10px/1 'Inter',sans-serif;">→</div>
+      <div style="flex:1;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">2 · NETTOYAGE</div>
+        <div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Trim, casse, téléphones +212, mapping vers les 6 types ENUM et les villes du référentiel</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 3px;color:#C9D2DE;font:700 10px/1 'Inter',sans-serif;">→</div>
+      <div style="flex:1;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">3 · DOUBLONS</div>
+        <div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Clé nom normalisé + ville, puis similarité (Levenshtein ≤ 2) ; cas ambigus en file admin</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 3px;color:#C9D2DE;font:700 10px/1 'Inter',sans-serif;">→</div>
+      <div style="flex:1;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">4 · SLUGS</div>
+        <div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">slugify(nom-ville), suffixe -2, -3… en cas de collision — URL SEO stables (livrable 9)</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 3px;color:#C9D2DE;font:700 10px/1 'Inter',sans-serif;">→</div>
+      <div style="flex:1;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">5 · GÉOLOC</div>
+        <div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">Géocodage Nominatim (1 req/s, cache Redis) ; défaut = centroïde de la ville, à affiner à la revendication</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 3px;color:#C9D2DE;font:700 10px/1 'Inter',sans-serif;">→</div>
+      <div style="flex:1;border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;">
+        <div style="background:#E63946;color:#fff;font:700 8.5px/1 'Inter',sans-serif;letter-spacing:.4px;padding:6px 7px;">6 · INSERTION</div>
+        <div style="padding:6px 7px;font:400 8px/1.5 'Inter',sans-serif;color:#2A313B;">statut en_attente, source open_data, aucun abonnement ni tarif tant que non revendiquée ; validation admin par lots</div>
+      </div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 12px;">Figure 1 — Pipeline d'import open data : du CSV brut à la fiche en attente de validation.</p>
+
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 8px;white-space:pre-wrap;">docker compose run --rm api node dist/cli.js import:etablissements /storage/imports/men-2026.csv --dry-run
+# 8 214 lignes lues · 7 962 importables · 187 doublons fusionnés · 65 rejets (rapport CSV)
+docker compose run --rm api node dist/cli.js import:etablissements /storage/imports/men-2026.csv</div>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">La commande est <strong>rejouable sans doublon</strong> : chaque ligne source est identifiée par son hash (stocké en staging) ; une ligne déjà importée est ignorée, une ligne modifiée est proposée en mise à jour. Le mode <span style="font-family:ui-monospace,monospace;font-size:10px;">--dry-run</span> produit le rapport complet (importables, doublons, rejets motivés) sans écriture — c'est le livrable de recette de l'import (livrable 15).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. Paramètres de facturation globaux</h2>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Les seules valeurs globales sont des constantes réglementaires ou commerciales communes à tous les clients ; le modèle <span style="font-family:ui-monospace,monospace;font-size:10.5px;">ParametreFacturation</span> les rend modifiables depuis le back-office admin, lues via cache applicatif Redis (invalidé à chaque modification), toute modification étant une action sensible journalisée (RG15). <strong>Aucun tarif d'établissement n'y figure</strong> : le prix de l'abonnement et le prix par vue sont saisis directement sur Abonnement / PaiementVue, propres à chaque client (RG14).</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 10px;white-space:pre-wrap;">// 22 — ParametreFacturation (paramétrable admin — constantes globales uniquement)
+model ParametreFacturation {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  cle          String   @unique @db.VarChar(60)          // tva_pct, duree_essai_gratuit_jours…
+  valeur       String   @db.VarChar(40)
+  libelle      String   @db.VarChar(160)
+  modifie_par  BigInt?  @db.UnsignedBigInt
+  maj_le       DateTime? @db.Timestamp(0)
+  modificateur User?    @relation("ParamModificateur",
+                  fields: [modifie_par], references: [id], onDelete: SetNull)
+  @@map("parametres_facturation")
+}</div>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:34%;">Clé</th>
+        <th style="text-align:right;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:12%;">Valeur</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:12%;">Unité</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Libellé (valeur contractuelle — livrable 9)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">tva_pct</td><td style="border:1px solid #E1E5EA;padding:5px 8px;text-align:right;">20</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">%</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Taux de TVA appliqué à toute facture</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">duree_essai_gratuit_jours</td><td style="border:1px solid #E1E5EA;padding:5px 8px;text-align:right;">30</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">jours</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Durée de l'essai gratuit toutes options (RG13)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">remise_annuelle_pct</td><td style="border:1px solid #E1E5EA;padding:5px 8px;text-align:right;">10</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">%</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Remise si l'abonnement annuel est réglé en une fois (RG11)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">rappel_echeance_j</td><td style="border:1px solid #E1E5EA;padding:5px 8px;text-align:right;">7</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">jours</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Délai du rappel avant échéance d'abonnement (RG14)</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">conservation_facture_ans</td><td style="border:1px solid #E1E5EA;padding:5px 8px;text-align:right;">10</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">ans</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Durée légale de conservation des factures</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. Procédures d'exploitation</h2>
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">6.1 — Sauvegarde quotidienne</p>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose exec -T mysql mysqldump --single-transaction --routines --triggers</span> chaque nuit à 03 h 00 (job BullMQ <em>backup</em> déclenché par le conteneur <em>scheduler</em> via <span style="font-family:ui-monospace,monospace;font-size:10px;">@Cron</span>, livrable 7 §2) — le dump est produit depuis un conteneur éphémère, sans binaire MySQL installé sur l'hôte et sans verrouillage des tables InnoDB (le site reste servi).</li></li>
+    <li style="margin-bottom:5px;"><strong>Rotation</strong> : 7 sauvegardes quotidiennes, 4 hebdomadaires, 12 mensuelles ; archives compressées et chiffrées (GPG), copiées hors du serveur applicatif (stockage objet).</li>
+    <li style="margin-bottom:5px;"><strong>Contrôle d'intégrité hebdomadaire</strong> : restauration à blanc sur conteneur MySQL jetable + comptage des tables critiques (etablissements, factures, abonnements) — une sauvegarde non testée n'est pas une sauvegarde.</li>
+    <li>Les photos (volume Docker <span style="font-family:ui-monospace,monospace;font-size:10px;">storage</span>) suivent une synchronisation incrémentale <span style="font-family:ui-monospace,monospace;font-size:10px;">rsync</span> séparée — la base ne stocke que les chemins ; l'instantané fait partie du même job BullMQ.</li>
+  </ul>
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">6.2 — Restauration (objectifs V1 : RPO 24 h · RTO 4 h)</p>
+  <ol style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:4px;">Passage en maintenance : <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose stop api web worker scheduler</span> + activation d'une page d'attente servie par le conteneur <em>nginx</em>.</li>
+    <li style="margin-bottom:4px;">Restauration du dump sur une base temporaire (jamais directement sur la base de production).</li>
+    <li style="margin-bottom:4px;">Contrôles : comptages des tables critiques, dernière facture émise (séquence numero), intégrité des clés étrangères (<span style="font-family:ui-monospace,monospace;font-size:10px;">SET FOREIGN_KEY_CHECKS = 0/1</span> et vérification).</li>
+    <li style="margin-bottom:4px;">Bascule par renommage de bases, purge du cache Redis (<span style="font-family:ui-monospace,monospace;font-size:10px;">FLUSHDB</span> ciblé sur les clés applicatives, pas sur les files BullMQ ni sur les sessions), puis <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose up -d api web worker scheduler</span>.</li>
+    <li>Journal d'incident (cause, données perdues éventuelles, durée) ; <strong>exercice de restauration trimestriel</strong> documenté en recette (livrable 15).</li>
+  </ol>
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">6.3 — Purge et minimisation (loi 09-08)</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Conformément aux durées déclarées à la CNDP (livrable 9), le conteneur <em>scheduler</em> — même image que l'API, commandé différemment (livrable 7 §2) — déclare quatre tâches récurrentes par <span style="font-family:ui-monospace,monospace;font-size:10.5px;">@Cron</span> ; chaque exécution est journalisée (nombre de lignes traitées) dans JournalAudit via <em>AuditService</em> — la file BullMQ <em>maintenance</em> exécute effectivement les traitements dans le conteneur <em>worker</em>, pour permettre les retries et l'observabilité. Un seul exemplaire du conteneur <em>scheduler</em> tournant, aucune tâche ne peut être déclenchée deux fois.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:26%;">Job BullMQ</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:16%;">Fréquence</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Traitement</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">purge:demandes</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Quotidien 02 h 00</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Anonymise les demandes <strong>traitées depuis plus de 12 mois</strong> : parent_nom → « Anonymisé », parent_tel et message effacés ; les compteurs statistiques sont conservés (RG16).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">purge:traces</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Quotidien 02 h 30</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Agrège evenement_traces en statistiques journalières (par fiche, type, jour) puis supprime les lignes brutes de <strong>plus de 12 mois</strong> (RG10, volumétrie livrable 8 §7).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">purge:audit</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Hebdomadaire dim. 04 h 00</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Supprime les entrées journal_audits de <strong>plus de 3 ans</strong> (RG26 — avenant 3) ; les factures et propositions rattachées ne sont jamais purgées.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">abonnements:rappels</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Quotidien 08 h 00</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Notification d'échéance à J-7 (RG14) — pas une purge, mais planifiée au même endroit.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">backup:quotidien</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Quotidien 03 h 00</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Sauvegarde §6.1. Les <strong>factures ne sont jamais purgées</strong> (conservation comptable 10 ans).</td></tr>
+    </tbody>
+  </table>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">// api/src/maintenance/maintenance.scheduler.ts — conteneur « scheduler » (livrable 7 §2)
+import { Injectable } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
+
+@Injectable()
+export class MaintenanceScheduler {
+  constructor(@InjectQueue("maintenance") private readonly maintenance: Queue) {}
+
+  @Cron("0 2 * * *")  purgeDemandes()  { return this.maintenance.add("purge:demandes", {}); }
+  @Cron("30 2 * * *") purgeTraces()    { return this.maintenance.add("purge:traces", {}); }
+  @Cron("0 4 * * 0")  purgeAudit()     { return this.maintenance.add("purge:audit", {}); }
+  @Cron("0 3 * * *")  backupQuotidien(){ return this.maintenance.add("backup:quotidien", {}); }
+  @Cron("0 8 * * *")  rappels()        { return this.maintenance.add("abonnements:rappels", {}); } // RG14
+}</div>
+
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;"><strong>Prochaine étape</strong> — Livrable 11 : back-end / API NestJS (modules métier, controllers et DTO, Guards de rôles et de portées, services transactionnels de l'abonnement, du paiement à la vue, des commissions et du CRM leads — <em>LeadService</em>, <em>LeadGuard</em> — s'appuyant sur ce schéma Prisma via <em>PrismaService</em>).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">7. Historique des révisions</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:12%;">Version</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:16%;">Date</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v1.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Version initiale — migrations Laravel du modèle crédits / packs / abonnement Premium unique.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Remplacement de compte_credits / mouvement_credits / commandes par abonnements et paiements_vue (tarif par client) ; factures à origine étendue (abonnement / vue / sponsoring) ; ajout prospects, relances, commissions, sponsorings, propositions_fiche ; bareme_credits devient parametres_facturation (constantes globales uniquement) ; seeders et comptes de démonstration alignés (Lycée Al Massira en abonnement annuel).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.1</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Avenant n° 1 — extension CRM côté établissement : migrations 23 (leads — colonnes clés de la fiche de besoin, fiche_besoin JSON FC-1 → FC-11, score /10 contraint par CHECK, pipeline 6 statuts, index kanban / leads chauds) et 24 (lead_suivis — commentaires, relances programmables) ; LeadsDemoSeeder — les 8 leads du kanban maquette rattachés au Lycée Al Massira.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.3</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Avenant n° 3 — console d'administration &amp; CMS : migrations 25 à 31 (table roles et reprise de données de users.role vers role_id, rattachement d'établissement et blog activable, colonnes JSON des blocs de la page profil, articles, faq_items, pages_cms, enrichissement de journal_audits — rôle de l'acteur et sévérité —, mise en avant des avis, version proposée complète et annulation des propositions de fiche) ; seeders RoleSeeder, ContenuSiteSeeder, CmsDemoSeeder et AuditDemoSeeder ; garanties de service (proposition unique en attente, immuabilité du journal, purge à trois ans) et stockage des images téléversées — conforme au MPD v2.3 du livrable 8 (RG25–RG27).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.4</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Migration de la stack Laravel 11 vers Next.js 14 (livrable 7 v2.4). Périmètre : les 31 migrations Laravel deviennent un fichier <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma/schema.prisma</span> unique — 23 modèles métier + 4 techniques Auth.js, sémantique et contraintes identiques (types, index, FULLTEXT, énumérations), CHECK MySQL portés par fichiers SQL joints aux migrations Prisma ; les enrichissements 26/27/31 sont projetés sur leurs modèles cibles (User, Etablissement, JournalAudit, Avis, PropositionFiche). Seeders PHP remplacés par TypeScript (<span style="font-family:ui-monospace,monospace;font-size:10px;">prisma/seed.ts</span> orchestre seedRoles, seedVilles, seedNiveauxFilieres, seedContenuSite, seedParametresFacturation, seedComptesDemo, seedDonneesDemo, seedLeadsDemo, seedCmsDemo, seedAuditDemo — Argon2id pour le hachage). Commande d'import open data en <span style="font-family:ui-monospace,monospace;font-size:10px;">tsx</span> (<span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm import:etablissements</span>). Purges, rappels et sauvegarde pilotés par BullMQ + node-cron (livrable 7 §2, process <em>scheduler</em>) au lieu du Laravel scheduler ; ajout de <em>purge:audit</em> (RG26, 3 ans). Comptes de démonstration inchangés (mêmes identifiants, mots de passe toujours en variables d'environnement).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.5</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Correction d'architecture : Next.js 14 → NestJS 10 + React 18/Vite ; conteneurisation Docker de la production (livrable 7 v2.5). Périmètre : §1 — le schéma perd les tables techniques d'Auth.js (<span style="font-family:ui-monospace,monospace;font-size:10px;">accounts, sessions, verification_tokens</span>), les sessions Passport étant persistées dans Redis 7 par <span style="font-family:ui-monospace,monospace;font-size:10px;">connect-redis</span> (sessions révocables — RG25), et <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma migrate deploy</span> est désormais exécuté au démarrage du conteneur <em>api</em> ; §2 — modèle User nettoyé (plus de relations Auth.js, <span style="font-family:ui-monospace,monospace;font-size:10px;">email_verifie_le</span>), client Prisma exposé par <span style="font-family:ui-monospace,monospace;font-size:10px;">PrismaService</span> (provider injectable), <span style="font-family:ui-monospace,monospace;font-size:10px;">api/prisma/</span> comme emplacement du schéma, médias déplacés du disque local vers le <strong>volume Docker nommé <span style="font-family:ui-monospace,monospace;font-size:10px;">storage</span></strong>, LeadPolicy devenu <em>LeadGuard</em> ; §3 — seeders TypeScript transformés en <strong>commandes NestJS</strong> (<span style="font-family:ui-monospace,monospace;font-size:10px;">nest-commander</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">SeedCommand</span> injectant <em>PrismaService</em> et <em>ConfigService</em>), exécutables en conteneur éphémère ; §4 — import open data exposé en <span style="font-family:ui-monospace,monospace;font-size:10px;">ImportEtablissementsCommand</span> ; §6 — exploitation conteneurisée : <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose exec -T mysql mysqldump</span> pour la sauvegarde, arrêt / reprise par <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose stop|up -d</span> au lieu de <span style="font-family:ui-monospace,monospace;font-size:10px;">pm2</span>, planification <span style="font-family:ui-monospace,monospace;font-size:10px;">node-cron</span> remplacée par <span style="font-family:ui-monospace,monospace;font-size:10px;">@nestjs/schedule</span> (<span style="font-family:ui-monospace,monospace;font-size:10px;">@Cron</span>) dans un conteneur <em>scheduler</em> unique. <strong>Inchangés</strong> : le MPD, les 23 modèles métier et leurs contraintes, les énumérations, les index et FULLTEXT, les CHECK par fichiers SQL joints, les données de démonstration, les paramètres globaux du §5 et les durées de conservation du §6.3.</td></tr>
+    </tbody>
+  </table>
+
+</x-import>
+</x-dc>
+</body>
+</html>
+</content>
+</invoke>

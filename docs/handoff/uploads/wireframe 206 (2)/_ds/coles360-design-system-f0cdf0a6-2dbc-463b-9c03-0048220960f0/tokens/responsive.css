@@ -1,0 +1,108 @@
+/* écoles360 — Responsive utilities & layout primitives.
+   Class-based helpers consumers drop onto markup so screens reflow without
+   bespoke media queries. Mobile-first: base rules target phones, @media
+   (min-width) layers up. All breakpoints reference tokens/breakpoints.css. */
+
+/* ---- Container ----------------------------------------------------------
+   Centered content column with a fluid gutter, capped at --container-max.
+   Variants narrow the cap for reading-width or dashboard layouts. */
+.e360-container {
+  width: 100%;
+  max-width: var(--container-max);      /* 1180px */
+  margin-inline: auto;
+  padding-inline: var(--container-pad); /* clamp(16px → 40px) */
+  box-sizing: border-box;
+}
+.e360-container--narrow { max-width: 760px; }
+.e360-container--wide   { max-width: 1320px; }
+
+/* ---- Section rhythm ----
+   Marketing sections breathe on desktop, tighten on phones. */
+.e360-section { padding-block: var(--section-y); }
+
+/* ---- Auto grid ----------------------------------------------------------
+   Cards flow into as many columns as fit at --col-min wide, then wrap.
+   No breakpoints needed — set --col-min per context (default 260px). */
+.e360-grid {
+  display: grid;
+  gap: var(--gap-grid);
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--col-min, 260px), 100%), 1fr));
+}
+.e360-grid--wide { grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); }
+.e360-grid--tight { grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); }
+
+/* ---- Stack-on-mobile ----
+   A flex row (sidebar + content, two panels) that stacks below md. */
+.e360-split {
+  display: flex;
+  gap: var(--gap-grid);
+}
+.e360-split > .e360-split__aside { flex: none; width: var(--filter-w, 280px); }
+.e360-split > .e360-split__main  { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 899px) {
+  .e360-split { flex-direction: column; }
+  .e360-split > .e360-split__aside { width: auto; }
+}
+
+/* ---- Responsive visibility ----
+   Show/hide chrome per tier (desktop header nav vs. mobile drawer/bottom bar). */
+.e360-only-mobile  { display: revert; }
+.e360-hide-mobile  { display: none; }
+@media (min-width: 900px) {
+  .e360-only-mobile { display: none !important; }
+  .e360-hide-mobile { display: revert; }
+}
+
+/* ---- Touch target ----
+   Guarantees the 44px minimum hit area on any tappable control. */
+.e360-touch {
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Fluid headings (opt-in classes mirroring the fluid tokens) ---- */
+.e360-hero  { font-size: var(--fs-hero-fluid);  letter-spacing: var(--ls-hero-fluid); line-height: 1.05; font-weight: 800; }
+.e360-h1    { font-size: var(--fs-h1-fluid);    letter-spacing: var(--ls-heading);    line-height: 1.15; font-weight: 800; }
+.e360-h2    { font-size: var(--fs-h2-fluid);    letter-spacing: var(--ls-heading);    line-height: 1.2;  font-weight: 800; }
+
+/* ---- Table → cards -------------------------------------------------------
+   Below md, a .e360-responsive-table collapses each row into a stacked card,
+   surfacing the column name from data-label before each cell. */
+@media (max-width: 899px) {
+  .e360-responsive-table,
+  .e360-responsive-table tbody,
+  .e360-responsive-table tr,
+  .e360-responsive-table td { display: block !important; width: 100%; box-sizing: border-box; }
+  .e360-responsive-table thead { display: none !important; }
+  .e360-responsive-table tr {
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-xl);
+    padding: 4px 14px;
+    margin-bottom: 12px;
+    background: var(--c-white);
+  }
+  .e360-responsive-table td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center;
+    gap: 16px;
+    padding: 11px 0 !important;
+    border: none;
+    border-bottom: 1px solid var(--c-border-soft);
+    text-align: right !important;
+  }
+  .e360-responsive-table td:last-child { border-bottom: none; }
+  .e360-responsive-table td::before {
+    content: attr(data-label);
+    font-size: var(--fs-eyebrow);
+    font-weight: 700;
+    letter-spacing: var(--ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--c-gray-400);
+    text-align: left;
+    flex: none;
+  }
+}

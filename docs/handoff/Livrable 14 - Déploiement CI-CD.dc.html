@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Livrable 14 · Déploiement &amp; CI-CD</span>
+    <span>v2.5 · septembre 2026</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Livrable 14 / 16 — Réalisation &amp; mise en service</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">Déploiement et intégration continue</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">Chaîne de mise en service du projet : <strong>production conteneurisée en Docker Compose</strong> sur un VPS Hostinger KVM 2 (Ubuntu 24 LTS) — sept services <em>api · worker · scheduler · web · mysql · redis · nginx</em> —, images construites en intégration continue et publiées sur GitHub Container Registry, déploiement et retour arrière par tag d'image, mise à jour d'un seul composant sans toucher aux autres, sauvegardes externalisées, supervision et plan de reprise — RPO 24 h / RTO 4 h.</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Version 2.5 · Septembre 2026 · S'appuie sur les livrables 7 v2.5 (architecture NestJS + React/Vite, topologie de conteneurs), 10 v2.5 (schéma Prisma + procédures d'exploitation conteneurisées), 11 v2.5 (modules, Guards, BullMQ), 12 v2.5 (front React 18 + Vite, SSR ciblé) et 13 v2.5 (Jest + Supertest + Playwright, images publiées après les tests) · Prépare le livrable 15 (recette)</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. Environnements cibles</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Quatre environnements décrits par quatre fichiers Compose versionnés dans le dépôt — <span style="font-family:ui-monospace,monospace;font-size:10.5px;">docker-compose.dev.yml</span>, <span style="font-family:ui-monospace,monospace;font-size:10.5px;">.test.yml</span>, <span style="font-family:ui-monospace,monospace;font-size:10.5px;">.staging.yml</span>, <span style="font-family:ui-monospace,monospace;font-size:10.5px;">.prod.yml</span>. C'est le premier gain de la conteneurisation : la pile logicielle n'est plus décrite dans une procédure d'installation, elle est <em>déclarée</em> et identique partout ; seules changent les données, l'échelle et les accès. Le domaine <span style="font-family:ui-monospace,monospace;font-size:10.5px;">ecoles360.com</span> a été acheté chez Hostinger : les enregistrements A / AAAA sont configurés dans hPanel pour pointer vers l'IP publique du VPS ; le sous-domaine <span style="font-family:ui-monospace,monospace;font-size:10.5px;">staging.ecoles360.com</span> partage la même adresse.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 14px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:15%;">Environnement</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:23%;">Domaine / fichier Compose</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:21%;">Données</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Usage</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Développement</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">localhost:5173 (web)<br>localhost:3000 (api)<br>docker-compose.dev.yml</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Seeders complets (comptes de démonstration du L10 v2.5)</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Compose lève MySQL 8 et Redis 7 ; l'API et le front tournent en local hors conteneur pour garder le rechargement à chaud (<span style="font-family:ui-monospace,monospace;font-size:9.5px;">pnpm --filter api start:dev</span>, <span style="font-family:ui-monospace,monospace;font-size:9.5px;">pnpm --filter web dev</span>). Tests Jest et Vitest à chaque commit.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Test / CI</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">éphémère<br>docker-compose.test.yml</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Base <span style="font-family:ui-monospace,monospace;font-size:9.5px;">ecoles360_test</span> recréée à chaque exécution</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">MySQL 8 et Redis 7 <em>réels</em> (jamais SQLite — L13 §1) ; en CI, les mêmes images sont fournies en tant que <em>services</em> GitHub Actions (§3).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Staging</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">staging.ecoles360.com<br>docker-compose.staging.yml<br>projet <span style="font-family:ui-monospace,monospace;font-size:9.5px;">-p ecoles360-staging</span></td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Base <span style="font-family:ui-monospace,monospace;font-size:9.5px;">ecoles360_staging</span>, volumes séparés, données anonymisées, re-seedée à chaque déploiement</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Recette (L15), parcours Playwright, validation client — Basic Auth nginx et <span style="font-family:ui-monospace,monospace;font-size:9.5px;">X-Robots-Tag: noindex</span>. <strong>Même VPS que la production, mais projet Compose distinct</strong> : réseau, volumes et conteneurs sont nommés et isolés par le préfixe de projet (§4.3).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Production</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9.5px;">ecoles360.com<br>docker-compose.prod.yml<br>projet <span style="font-family:ui-monospace,monospace;font-size:9.5px;">-p ecoles360</span></td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Données réelles (≈ 8 000 fiches open data MEN + clients)</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Service public. Aucune donnée de test ; <span style="font-family:ui-monospace,monospace;font-size:9.5px;">prisma migrate deploy</span> au démarrage du conteneur <em>api</em> uniquement (jamais <span style="font-family:ui-monospace,monospace;font-size:9.5px;">reset</span> ni <span style="font-family:ui-monospace,monospace;font-size:9.5px;">db:seed</span> — RG14, RG15).</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. Topologie de production — Docker Compose sur VPS Hostinger KVM</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;"><strong>Cible retenue</strong> : Hostinger <strong>VPS KVM 2</strong> minimum (2 vCPU, 8 Go RAM, 100 Go SSD NVMe) sous <strong>Ubuntu 24 LTS</strong>, accès root SSH par clé, IPv4 + IPv6 dédiées. Le serveur n'héberge plus qu'un moteur Docker et un fichier Compose : tout le reste — Node, MySQL, Redis, Nginx — vit dans des images. <strong>PM2 disparaît de la production</strong>, remplacé par les politiques de redémarrage Docker (<span style="font-family:ui-monospace,monospace;font-size:10.5px;">restart: unless-stopped</span>) et les <em>healthchecks</em> de chaque service. Sept services composent la production :</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:13%;">Service</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:30%;">Image</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Rôle</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">api</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9px;">ghcr.io/&lt;org&gt;/ecoles360-api:&lt;sha&gt;</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Application NestJS 10 servant <span style="font-family:ui-monospace,monospace;font-size:9px;">/api/v1</span> ; applique <span style="font-family:ui-monospace,monospace;font-size:9px;">prisma migrate deploy</span> à son démarrage puis lance <span style="font-family:ui-monospace,monospace;font-size:9px;">node dist/main.js</span>. Dépend de <em>mysql</em> et <em>redis</em> en bonne santé.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">worker</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9px;">la <strong>même</strong> image que <em>api</em></td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Commande différente (<span style="font-family:ui-monospace,monospace;font-size:9px;">node dist/worker.js</span>) : consommateurs BullMQ des cinq files <em>mail · alerts · billing · maintenance · stats</em> (L11 §6). N'écoute aucun port.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">scheduler</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9px;">la <strong>même</strong> image que <em>api</em></td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Commande différente (<span style="font-family:ui-monospace,monospace;font-size:9px;">node dist/scheduler.js</span>) : méthodes <span style="font-family:ui-monospace,monospace;font-size:9px;">@Cron</span> de <span style="font-family:ui-monospace,monospace;font-size:9px;">@nestjs/schedule</span> — purges 02 h et 04 h, sauvegarde 03 h, rappels J-7 à 08 h (L10 §6.3). Exemplaire unique : aucune tâche ne peut se déclencher deux fois.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">web</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9px;">ghcr.io/&lt;org&gt;/ecoles360-web:&lt;sha&gt;</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Sortie <span style="font-family:ui-monospace,monospace;font-size:9px;">vite build</span> : serveur de rendu SSR du site public + assets statiques de la SPA des back-offices (L12 §1).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">mysql</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9px;">mysql:8</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Base InnoDB utf8mb4 (L10) ; volume nommé <span style="font-family:ui-monospace,monospace;font-size:9px;">mysql_data</span> ; port publié sur <span style="font-family:ui-monospace,monospace;font-size:9px;">127.0.0.1</span> seulement.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">redis</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9px;">redis:7</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Sessions Passport (<span style="font-family:ui-monospace,monospace;font-size:9px;">connect-redis</span>), files BullMQ, cache API, compteurs de <em>rate limiting</em> ; volume nommé <span style="font-family:ui-monospace,monospace;font-size:9px;">redis_data</span> ; bind <span style="font-family:ui-monospace,monospace;font-size:9px;">127.0.0.1</span>.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 8px;font-weight:700;">nginx</td><td style="border:1px solid #E1E5EA;padding:5px 8px;font-family:ui-monospace,monospace;font-size:9px;">nginx:1.27-alpine</td><td style="border:1px solid #E1E5EA;padding:5px 8px;">Reverse proxy et terminaison TLS ; <strong>seul service publiant 80 et 443</strong> ; monte en lecture seule les certificats Let's Encrypt de l'hôte — <em>certbot reste installé sur l'hôte, hors conteneur</em>.</td></tr>
+    </tbody>
+  </table>
+
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:16px;background:#fff;margin:0 0 6px;">
+    <div style="display:flex;align-items:stretch;gap:0;margin-bottom:8px;">
+      <div style="flex:0 0 106px;border:1px solid #C9D2DE;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;padding:6px 8px;">CLIENT</div>
+        <div style="padding:8px;font:400 8.5px/1.5 'Inter',sans-serif;color:#5A6472;">Navigateur<br>(parent, établ.,<br>secrétaire, commercial, admin)</div>
+      </div>
+      <div style="flex:0 0 38px;display:flex;align-items:center;justify-content:center;font:700 13px/1 'Inter',sans-serif;color:#9AA3AF;">→</div>
+      <div style="flex:1;border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1 'Inter',sans-serif;padding:6px 8px;">VPS HOSTINGER KVM 2 · UBUNTU 24 LTS · MOTEUR DOCKER — PROJET COMPOSE « ecoles360 »</div>
+        <div style="padding:10px;">
+          <div style="border:1.5px solid #E63946;border-radius:7px;overflow:hidden;margin-bottom:8px;">
+            <div style="background:#E63946;color:#fff;font:700 8.5px/1 'Inter',sans-serif;padding:5px 7px;">nginx — SEUL SERVICE PUBLIÉ (80 · 443) · TLS 1.3 · HTTP/2 · HSTS</div>
+            <div style="padding:7px;font:400 8px/1.5 'Inter',sans-serif;color:#5A6472;"><span style="font-family:ui-monospace,monospace;font-size:8px;">/api/*</span> → api:3000 · tout le reste → web:4000 · certificats Let's Encrypt montés en lecture seule depuis l'hôte</div>
+          </div>
+          <div style="text-align:center;font:600 8px/1 'Inter',sans-serif;color:#9AA3AF;margin-bottom:8px;">▼ réseau interne Docker <span style="font-family:ui-monospace,monospace;">ecoles360_net</span> — aucun port publié</div>
+          <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px;">
+            <div style="flex:1.25;border:1.5px solid #C9D2DE;border-radius:7px;overflow:hidden;">
+              <div style="background:#E7EDF5;color:#1D3557;font:700 8.5px/1 'Inter',sans-serif;padding:5px 7px;">api — ecoles360-api:&lt;sha&gt;</div>
+              <div style="padding:7px;font:400 8px/1.5 'Inter',sans-serif;color:#5A6472;">NestJS 10 · <span style="font-family:ui-monospace,monospace;font-size:8px;">prisma migrate deploy</span> au démarrage<br>14 modules métier · Guards · Swagger <span style="font-family:ui-monospace,monospace;font-size:8px;">/api/docs</span><br><span style="color:#2E9E5B;font-weight:600;">HEALTHCHECK /api/v1/health</span></div>
+            </div>
+            <div style="flex:1;border:1.5px solid #C9D2DE;border-radius:7px;overflow:hidden;">
+              <div style="background:#E7EDF5;color:#1D3557;font:700 8.5px/1 'Inter',sans-serif;padding:5px 7px;">web — ecoles360-web:&lt;sha&gt;</div>
+              <div style="padding:7px;font:400 8px/1.5 'Inter',sans-serif;color:#5A6472;">Serveur SSR du site public (Vike) + assets<br>SPA des trois back-offices (L12 §1)</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <div style="flex:1;border:1px solid #E1E5EA;border-radius:7px;overflow:hidden;">
+              <div style="background:#FCF1DE;color:#B57708;font:700 8px/1 'Inter',sans-serif;padding:5px 7px;">worker — même image que api</div>
+              <div style="padding:6px 7px;font:400 7.5px/1.4 'Inter',sans-serif;color:#5A6472;">BullMQ · files mail, alerts, billing, maintenance, stats (L11 §6)</div>
+            </div>
+            <div style="flex:1;border:1px solid #E1E5EA;border-radius:7px;overflow:hidden;">
+              <div style="background:#FCF1DE;color:#B57708;font:700 8px/1 'Inter',sans-serif;padding:5px 7px;">scheduler — même image que api</div>
+              <div style="padding:6px 7px;font:400 7.5px/1.4 'Inter',sans-serif;color:#5A6472;">@nestjs/schedule · purges 02 h / 04 h · backup 03 h · rappels 08 h (L10 §6.3)</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;border:1px solid #C9D2DE;border-radius:7px;overflow:hidden;">
+              <div style="background:#15233A;color:#fff;font:700 8.5px/1 'Inter',sans-serif;padding:5px 7px;">mysql:8 — volume mysql_data</div>
+              <div style="padding:7px;font:400 8px/1.5 'Inter',sans-serif;color:#5A6472;">Schéma L10 v2.5 · verrous <span style="font-family:ui-monospace,monospace;font-size:8px;">$queryRaw FOR UPDATE</span> (vues, factures, propositions)</div>
+            </div>
+            <div style="flex:0 0 31%;border:1px solid #C9D2DE;border-radius:7px;overflow:hidden;">
+              <div style="background:#15233A;color:#fff;font:700 8.5px/1 'Inter',sans-serif;padding:5px 7px;">redis:7 — volume redis_data</div>
+              <div style="padding:7px;font:400 8px/1.5 'Inter',sans-serif;color:#5A6472;">Sessions · BullMQ · cache · throttler</div>
+            </div>
+            <div style="flex:0 0 22%;border:1px dashed #C9D2DE;border-radius:7px;overflow:hidden;">
+              <div style="background:#F5F6F8;color:#1D3557;font:700 8.5px/1 'Inter',sans-serif;padding:5px 7px;">volume storage</div>
+              <div style="padding:7px;font:400 8px/1.5 'Inter',sans-serif;color:#5A6472;">Médias RG16 / RG27 — monté dans api et worker</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:stretch;">
+      <div style="flex:1;border:1px dashed #C9D2DE;border-radius:8px;padding:8px;font:400 9.5px/1.5 'Inter',sans-serif;color:#5A6472;background:#FAFBFC;"><strong style="color:#1D3557;">ufw (hôte)</strong> · autorise seulement <span style="font-family:ui-monospace,monospace;font-size:9px;">22/tcp</span> (SSH clé), <span style="font-family:ui-monospace,monospace;font-size:9px;">80/tcp</span>, <span style="font-family:ui-monospace,monospace;font-size:9px;">443/tcp</span>.</div>
+      <div style="flex:1;border:1px dashed #C9D2DE;border-radius:8px;padding:8px;font:400 9.5px/1.5 'Inter',sans-serif;color:#5A6472;background:#FAFBFC;"><strong style="color:#1D3557;">fail2ban (hôte)</strong> · jail SSH (5 échecs → ban 1 h) et jail sur les logs nginx montés depuis le conteneur.</div>
+      <div style="flex:1;border:1px dashed #C9D2DE;border-radius:8px;padding:8px;font:400 9.5px/1.5 'Inter',sans-serif;color:#5A6472;background:#FAFBFC;"><strong style="color:#1D3557;">certbot (hôte)</strong> · renouvellement automatique ; <span style="font-family:ui-monospace,monospace;font-size:9px;">/etc/letsencrypt</span> monté en lecture seule dans <em>nginx</em>, rechargé après renouvellement.</div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 10px;">Figure 1 — Production conteneurisée : <em>api</em>, <em>worker</em> et <em>scheduler</em> partagent une image identique et ne diffèrent que par leur commande ; <em>mysql</em>, <em>redis</em> et les médias conservent leur état dans des volumes nommés qui survivent à tout remplacement d'image ; <em>nginx</em> est la seule porte d'entrée.</p>
+  <p style="font:400 11.5px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">La conteneurisation isole les <strong>runtimes</strong> ; l'indépendance fonctionnelle entre parties du site vient des <strong>modules NestJS</strong> — un module par domaine métier, avec son controller, son service, ses DTO et ses guards. Les deux mécanismes sont complémentaires et c'est leur combinaison qui permet de modifier une partie sans toucher aux autres (livrable 7 §2).</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.1 — <span style="font-family:ui-monospace,monospace;font-size:11px;">docker-compose.prod.yml</span></p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;">name: ecoles360                                  # préfixe de projet — isole staging (§4.3)
+
+x-api-base: &amp;api-base                            # ancre partagée : api, worker et scheduler
+  image: ghcr.io/${GH_ORG}/ecoles360-api:${TAG}   # une seule image, trois commandes
+  env_file: [./.env.prod]                        # chmod 600, hors dépôt
+  restart: unless-stopped
+  networks: [ecoles360_net]
+  volumes: ["storage:/app/storage"]              # médias RG16 / RG27
+  depends_on:
+    mysql: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  api:
+    &lt;&lt;: *api-base
+    command: ["sh","-c","npx prisma migrate deploy &amp;&amp; node dist/main.js"]
+    healthcheck:
+      test: ["CMD","node","-e","fetch('http://127.0.0.1:3000/api/v1/health').then(r=&gt;process.exit(r.ok?0:1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    &lt;&lt;: *api-base
+    command: ["node","dist/worker.js"]           # BullMQ : 5 files (L11 §6)
+
+  scheduler:
+    &lt;&lt;: *api-base
+    command: ["node","dist/scheduler.js"]        # @Cron (L10 §6.3) — exemplaire unique
+
+  web:
+    image: ghcr.io/${GH_ORG}/ecoles360-web:${TAG}
+    env_file: [./.env.prod]
+    environment: { API_INTERNAL_URL: "http://api:3000/api/v1" }   # SSR → réseau interne
+    restart: unless-stopped
+    networks: [ecoles360_net]
+    depends_on: { api: { condition: service_healthy } }
+
+  mysql:
+    image: mysql:8
+    command: ["--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_DATABASE: ecoles360_prod
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root
+    volumes: ["mysql_data:/var/lib/mysql"]
+    ports: ["127.0.0.1:3306:3306"]               # jamais exposé publiquement
+    secrets: [mysql_root]
+    restart: unless-stopped
+    networks: [ecoles360_net]
+    healthcheck:
+      test: ["CMD","mysqladmin","ping","-h","localhost"]
+      interval: 10s
+      retries: 10
+
+  redis:
+    image: redis:7
+    command: ["redis-server","--appendonly","yes"]
+    volumes: ["redis_data:/data"]
+    ports: ["127.0.0.1:6379:6379"]
+    restart: unless-stopped
+    networks: [ecoles360_net]
+    healthcheck: { test: ["CMD","redis-cli","ping"], interval: 10s, retries: 10 }
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["80:80","443:443"]                   # LES SEULS PORTS PUBLIÉS
+    volumes:
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro     # certbot reste sur l'hôte
+      - ./infra/nginx/logs:/var/log/nginx        # lus par fail2ban sur l'hôte
+    restart: unless-stopped
+    networks: [ecoles360_net]
+    depends_on: [api, web]
+
+volumes:  { mysql_data: {}, redis_data: {}, storage: {} }
+networks: { ecoles360_net: { driver: bridge } }
+secrets:  { mysql_root: { file: ./secrets/mysql_root.txt } }</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">2.2 — Dockerfiles multi-étages</p>
+  <p style="font:400 11.5px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Les deux images sont construites en plusieurs étapes : les dépendances de développement et les sources TypeScript ne survivent pas à l'étape finale. L'image applicative tourne en <strong>utilisateur non-root</strong> et déclare un <span style="font-family:ui-monospace,monospace;font-size:10.5px;">HEALTHCHECK</span> — c'est lui que Compose interroge avant de considérer le service comme disponible, et c'est lui qui déclenche le redémarrage automatique en cas de blocage.</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 10px;white-space:pre-wrap;"># api/Dockerfile — NestJS 10
+FROM node:20-alpine AS deps
+WORKDIR /app
+RUN corepack enable
+COPY api/package.json api/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+FROM node:20-alpine AS build
+WORKDIR /app
+RUN corepack enable
+COPY --from=deps /app/node_modules ./node_modules
+COPY api/ ./
+RUN npx prisma generate &amp;&amp; pnpm build          # → dist/main.js, dist/worker.js, dist/scheduler.js
+RUN pnpm prune --prod                           # ne garde que les dépendances d'exécution
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+RUN addgroup -S app &amp;&amp; adduser -S app -G app    # utilisateur non-root
+COPY --from=build --chown=app:app /app/node_modules ./node_modules
+COPY --from=build --chown=app:app /app/dist     ./dist
+COPY --from=build --chown=app:app /app/prisma   ./prisma
+USER app
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=40s \
+  CMD node -e "fetch('http://127.0.0.1:3000/api/v1/health').then(r=&gt;process.exit(r.ok?0:1))"
+CMD ["node","dist/main.js"]</div>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;"># web/Dockerfile — React 18 + Vite (SSR ciblé du site public)
+FROM node:20-alpine AS build
+WORKDIR /app
+RUN corepack enable
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY web/ ./
+RUN pnpm build                                  # vite build → dist/client + dist/server
+RUN pnpm prune --prod
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production PORT=4000
+RUN addgroup -S app &amp;&amp; adduser -S app -G app
+COPY --from=build --chown=app:app /app/node_modules ./node_modules
+COPY --from=build --chown=app:app /app/dist         ./dist
+COPY --from=build --chown=app:app /app/server.js    ./server.js
+USER app
+EXPOSE 4000
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:4000/sante').then(r=&gt;process.exit(r.ok?0:1))"
+CMD ["node","server.js"]                        # sert le SSR public + les assets de la SPA</div>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. Intégration continue — tests puis publication des images</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">À chaque <span style="font-family:ui-monospace,monospace;font-size:10px;">push</span> et chaque <span style="font-family:ui-monospace,monospace;font-size:10px;">pull request</span>, deux jobs parallèles rejouent la pyramide du livrable 13 v2.5 sur une base MySQL 8 et un Redis 7 réels. <strong>Les images ne sont construites qu'ensuite</strong>, dans un job qui dépend du succès des précédents, puis poussées sur <strong>GitHub Container Registry</strong> (<span style="font-family:ui-monospace,monospace;font-size:10px;">ghcr.io</span>) et taguées par SHA de commit. Une image existe donc si, et seulement si, ses tests sont passés — et <strong>le VPS ne compile jamais</strong> : il ne fait que télécharger des artefacts déjà éprouvés, ce qui supprime du serveur de production la chaîne de build, ses dépendances de développement et son risque d'échec à mi-parcours.</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 8px;white-space:pre-wrap;"># .github/workflows/ci.yml
+name: CI
+on:
+  push:         { branches: [main, develop], tags: ["v*"] }
+  pull_request: {}
+  schedule:     [{ cron: "0 2 * * *" }]                # e2e chaque nuit
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env: { MYSQL_DATABASE: ecoles360_test, MYSQL_ROOT_PASSWORD: root }
+        ports: ["3306:3306"]
+        options: &gt;-
+          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: --health-cmd="redis-cli ping" --health-interval=10s
+    env:
+      DATABASE_URL: "mysql://root:root@127.0.0.1:3306/ecoles360_test"
+      REDIS_URL:    "redis://127.0.0.1:6379/15"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "pnpm" }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api exec prisma generate
+      - run: pnpm --filter api exec prisma migrate deploy
+      - run: pnpm --filter api db:seed                  # SeedCommand NestJS (L10 v2.5 §3)
+        env:
+          SEED_ADMIN_PASSWORD:         ${<span></span>{ secrets.SEED_ADMIN_PASSWORD }<span></span>}
+          SEED_SECRETAIRE_PASSWORD:    ${<span></span>{ secrets.SEED_SECRETAIRE_PASSWORD }<span></span>}
+          SEED_ETABLISSEMENT_PASSWORD: ${<span></span>{ secrets.SEED_ETABLISSEMENT_PASSWORD }<span></span>}
+      - run: pnpm --filter api test:cov                 # Jest + Supertest, seuil 90 % (L13 §1)
+      - run: pnpm --filter api build                    # nest build — échoue si type cassé
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "pnpm" }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint                                  # ESLint + Prettier + tsc --noEmit
+      - run: pnpm --filter web test --run               # Vitest + RTL + MSW (contrat d'API)
+      - run: pnpm --filter web build                    # vite build (client + serveur SSR)
+
+  images:                                               # APRÈS les tests, jamais avant
+    needs: [api, web]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${<span></span>{ github.actor }<span></span>}
+          password: ${<span></span>{ secrets.GITHUB_TOKEN }<span></span>}
+      - uses: docker/build-push-action@v6                # image API
+        with:
+          context: .
+          file: api/Dockerfile
+          push: true
+          tags: ghcr.io/${<span></span>{ github.repository_owner }<span></span>}/ecoles360-api:${<span></span>{ github.sha }<span></span>}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+      - uses: docker/build-push-action@v6                # image web
+        with:
+          context: .
+          file: web/Dockerfile
+          push: true
+          tags: ghcr.io/${<span></span>{ github.repository_owner }<span></span>}/ecoles360-web:${<span></span>{ github.sha }<span></span>}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+  e2e:
+    if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/v')
+    needs: [images]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "pnpm" }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm playwright install --with-deps chromium
+      - run: pnpm test:e2e                               # 5 parcours acteur (L13 §4)
+        env: { E2E_BASE_URL: "https://staging.ecoles360.com" }</div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 16px;">Aucun <span style="font-family:ui-monospace,monospace;font-size:9.5px;">merge</span> vers <span style="font-family:ui-monospace,monospace;font-size:9.5px;">main</span> si un test échoue ou si la couverture passe sous les seuils du L13 §1. Un bug corrigé = un test de non-régression ajouté, référencé dans le commit. Les secrets (mots de passe des seeders, clé SSH de déploiement) vivent dans les <em>secrets</em> GitHub ; le jeton de publication sur ghcr.io est le <span style="font-family:ui-monospace,monospace;font-size:9.5px;">GITHUB_TOKEN</span> de l'exécution, à durée de vie limitée.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. Déploiement continu — par tag d'image</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Déployer ne consiste plus à reconstruire l'application sur le serveur, mais à <strong>désigner le tag d'image à exécuter</strong>. Le fichier <span style="font-family:ui-monospace,monospace;font-size:10.5px;">.env.prod</span> du VPS porte une variable <span style="font-family:ui-monospace,monospace;font-size:10.5px;">TAG</span> ; le workflow de déploiement l'écrit au SHA validé, puis lance <span style="font-family:ui-monospace,monospace;font-size:10.5px;">docker compose pull</span> et <span style="font-family:ui-monospace,monospace;font-size:10.5px;">docker compose up -d</span>. Les conteneurs sont recréés dans l'ordre des dépendances, chacun n'entrant en service qu'une fois son <em>healthcheck</em> au vert. Déclenché par GitHub Actions sur <span style="font-family:ui-monospace,monospace;font-size:10.5px;">main</span> (staging) et sur tag <span style="font-family:ui-monospace,monospace;font-size:10.5px;">vX.Y.Z</span> (production), par SSH sur un utilisateur <span style="font-family:ui-monospace,monospace;font-size:10.5px;">deploy</span> non-root membre du groupe <span style="font-family:ui-monospace,monospace;font-size:10.5px;">docker</span>.</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 10px;white-space:pre-wrap;"># deploy.sh — exécuté sur le VPS Hostinger par l'utilisateur deploy
+set -euo pipefail
+cd /srv/ecoles360
+SHA="$1"
+
+echo "TAG=$SHA" &gt; .env.tag                        # le tag devient l'unique variable de version
+docker compose -f docker-compose.prod.yml --env-file .env.tag pull
+docker compose -f docker-compose.prod.yml --env-file .env.tag up -d --remove-orphans
+#   ↑ api applique « prisma migrate deploy » à son démarrage (L10 v2.5 §2)
+#   ↑ chaque service n'est déclaré prêt qu'après son healthcheck
+
+docker compose -f docker-compose.prod.yml ps      # contrôle : tous les services « healthy »
+curl -fsS https://ecoles360.com/api/v1/health &gt; /dev/null
+echo "$SHA" &gt;&gt; /srv/ecoles360/deploiements.log    # journal des tags déployés (rollback, §4.2)
+docker image prune -af --filter "until=720h"      # purge les images de plus de 30 jours</div>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">4.1 — Redéployer un seul composant sans toucher aux autres</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">C'est l'objectif même de la conteneurisation pour ce projet. Chaque service étant une unité de déploiement autonome, on peut remplacer l'API sans interrompre le front, la base, le cache ni le proxy :</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 8px;white-space:pre-wrap;"># Reconstruire et redémarrer UNIQUEMENT l'API — web, mysql, redis et nginx ne bougent pas
+docker compose up -d --no-deps --build api
+
+# Variante « image déjà publiée en CI » (cas nominal en production) :
+docker compose pull api &amp;&amp; docker compose up -d --no-deps api
+
+# Autres cas d'usage du même mécanisme :
+docker compose up -d --no-deps web         # livrer une correction d'interface seule
+docker compose restart worker              # relancer les consommateurs BullMQ sans couper l'API
+docker compose exec nginx nginx -s reload  # recharger le proxy après renouvellement TLS</div>
+  <p style="font:400 11.5px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">L'option <span style="font-family:ui-monospace,monospace;font-size:10.5px;">--no-deps</span> est la clé : sans elle, Compose recréerait aussi les services dont <em>api</em> dépend (<em>mysql</em>, <em>redis</em>), c'est-à-dire précisément ceux qu'il ne faut pas redémarrer. Les sessions Passport et les files BullMQ vivant dans Redis (livrable 11 §2), le remplacement du seul conteneur <em>api</em> ne déconnecte personne et ne perd aucun job. Le rappel du §2 vaut ici pleinement : Docker garantit qu'un redémarrage n'en entraîne pas d'autres, et le découpage en modules NestJS garantit qu'une évolution de domaine n'oblige pas à en toucher un autre.</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">4.2 — Retour arrière</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Le rollback est la même opération que le déploiement, avec le tag précédent — les images antérieures restant disponibles sur ghcr.io et en cache local sur le VPS. Le fichier <span style="font-family:ui-monospace,monospace;font-size:10.5px;">deploiements.log</span> donne l'historique des SHA mis en service :</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 8px;white-space:pre-wrap;">tail -n 5 /srv/ecoles360/deploiements.log        # retrouver le SHA précédent
+./deploy.sh &lt;sha-precedent&gt;                       # redéploiement du tag antérieur</div>
+  <p style="font:400 11px/1.55 'Inter',sans-serif;color:#5A6472;margin:0 0 10px;">Une réserve à connaître : les <strong>migrations de base ne reculent pas</strong> avec l'image. Toute migration doit donc rester compatible avec la version précédente de l'application (ajout de colonne nullable, jamais de suppression dans la même livraison) ; une suppression de colonne se fait en deux livraisons successives. Cette règle est inscrite au guide de contribution (livrable 16).</p>
+
+  <p style="font:700 12px/1.5 'Inter',sans-serif;color:#1A1A1A;margin:0 0 6px;">4.3 — Staging : même VPS, projet Compose distinct</p>
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Le staging tourne sur le même serveur, mais dans un <strong>projet Compose séparé</strong> (<span style="font-family:ui-monospace,monospace;font-size:10.5px;">-p ecoles360-staging</span>) décrit par <span style="font-family:ui-monospace,monospace;font-size:10.5px;">docker-compose.staging.yml</span> : conteneurs, réseau et <strong>volumes portent le préfixe du projet</strong>, la base s'appelle <span style="font-family:ui-monospace,monospace;font-size:10.5px;">ecoles360_staging</span> et le <span style="font-family:ui-monospace,monospace;font-size:10.5px;">server_name</span> nginx dédié est <span style="font-family:ui-monospace,monospace;font-size:10.5px;">staging.ecoles360.com</span>. <strong>C'est nettement plus propre que la cohabitation « bare-metal » de la v2.4</strong>, où les deux environnements partageaient la même instance MySQL, le même Redis et le même gestionnaire de processus, et où une erreur de variable d'environnement pouvait faire écrire le staging dans la base de production. Ici, l'isolation est structurelle : deux projets Compose ne partagent ni réseau, ni volume, ni conteneur.</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 12px;white-space:pre-wrap;"># Déploiement du staging — mêmes images, projet et données distincts
+docker compose -p ecoles360-staging -f docker-compose.staging.yml pull
+docker compose -p ecoles360-staging -f docker-compose.staging.yml up -d
+docker compose -p ecoles360-staging exec api npx prisma migrate reset --force
+docker compose -p ecoles360-staging run --rm api node dist/cli.js db:seed   # données anonymisées
+
+# Les deux projets cohabitent sans se voir :
+docker compose -p ecoles360         ps    # production
+docker compose -p ecoles360-staging ps    # staging (volumes ecoles360-staging_mysql_data, …)</div>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. Sauvegarde, supervision et plan de reprise (RPO 24 h · RTO 4 h)</h2>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>Sauvegarde base (RPO 24 h)</strong> — job BullMQ <em>backup:quotidien</em> planifié à 03 h par le conteneur <em>scheduler</em> (<span style="font-family:ui-monospace,monospace;font-size:10px;">@Cron</span>, livrable 10 §6.3). Le dump est produit <strong>depuis un conteneur éphémère</strong>, sans binaire MySQL installé sur l'hôte : <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose exec -T mysql mysqldump --single-transaction --routines --triggers ecoles360_prod | gzip -9 | gpg --encrypt --recipient backup@ecoles360.com</span>, puis dépôt sur <strong>Hostinger Object Storage</strong> (S3-compatible, disponible depuis hPanel, mêmes datacenters), avec repli documenté vers un fournisseur S3-compatible tiers (Wasabi ou Backblaze B2). Rétention : 30 quotidiennes, 4 hebdomadaires, 12 mensuelles. Les factures F2026-NNNNNN et les journaux d'audit restent en base pour leur durée légale (10 ans, 3 ans — RG14, RG26).</li>
+    <li style="margin-bottom:5px;"><strong>Sauvegarde fichiers</strong> — <span style="font-family:ui-monospace,monospace;font-size:10px;">rsync</span> incrémental quotidien du <strong>volume <span style="font-family:ui-monospace,monospace;font-size:10px;">storage</span></strong> (photos des fiches — RG16, images d'articles — RG27, affiches vidéo, visuels des autres projets) vers le même dépôt objet. La base ne conserve que les <em>chemins</em> (livrable 10 §2.12) ; le volume étant nommé, il survit à tout remplacement d'image — c'est un gain net sur la v2.4, où les médias vivaient dans un dossier partagé entre releases.</li>
+    <li style="margin-bottom:5px;"><strong>Reprise (RTO 4 h)</strong> — procédure runbook (livrable 16), <strong>sensiblement raccourcie par la conteneurisation</strong> : (1) reprovisionnement d'un VPS Hostinger KVM 2 depuis hPanel avec l'image Ubuntu 24 LTS de base ; (2) exécution du playbook Ansible <span style="font-family:ui-monospace,monospace;font-size:10px;">bootstrap.yml</span>, désormais réduit à l'installation de Docker Engine, du plugin Compose, de certbot, de fail2ban et d'ufw — <em>il n'installe plus Node, PM2, MySQL ni Redis, tous devenus des images</em> ; (3) restauration : <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose up -d mysql</span> puis <span style="font-family:ui-monospace,monospace;font-size:10px;">gpg --decrypt … | docker compose exec -T mysql mysql ecoles360_prod</span>, et <span style="font-family:ui-monospace,monospace;font-size:10px;">rsync</span> du volume <span style="font-family:ui-monospace,monospace;font-size:10px;">storage</span> ; (4) réémission des certificats Let's Encrypt ; (5) <span style="font-family:ui-monospace,monospace;font-size:10px;">./deploy.sh &lt;dernier-sha&gt;</span> — aucune compilation, seulement des <span style="font-family:ui-monospace,monospace;font-size:10px;">docker pull</span> ; (6) vérification par la check-list de recette (livrable 15). Exercice de restauration réalisé sur le staging chaque trimestre.</li>
+    <li style="margin-bottom:5px;"><strong>Supervision</strong> — sonde externe UptimeRobot (hors du VPS) sur <span style="font-family:ui-monospace,monospace;font-size:10px;">GET /api/v1/health</span>, qui retourne <span style="font-family:ui-monospace,monospace;font-size:10px;">200</span> avec la version, la profondeur des cinq files BullMQ et le statut de la connexion Prisma — c'est aussi la commande du <span style="font-family:ui-monospace,monospace;font-size:10px;">HEALTHCHECK</span> Docker (§2.2), donc une seule définition de « en bonne santé » pour la sonde externe et pour l'orchestrateur. Alertes SMS et e-mail au-delà de 2 minutes de latence ou 3 échecs consécutifs. Exploitation manuelle par <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose ps</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose logs -f api</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">docker stats</span>.</li>
+    <li><strong>Journaux</strong> — chaque conteneur écrit sur <span style="font-family:ui-monospace,monospace;font-size:10px;">stdout</span> ; le pilote <span style="font-family:ui-monospace,monospace;font-size:10px;">json-file</span> est configuré globalement (<span style="font-family:ui-monospace,monospace;font-size:10px;">max-size: 10m</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">max-file: 5</span>) dans <span style="font-family:ui-monospace,monospace;font-size:10px;">/etc/docker/daemon.json</span>, ce qui remplace <span style="font-family:ui-monospace,monospace;font-size:10px;">pm2-logrotate</span>. Les logs nginx sont montés sur l'hôte pour rester lisibles par fail2ban et logrotate. Ils se corrèlent par l'identifiant de trace posé par l'interceptor de l'API (livrable 11 §2). Les actions sensibles (validation, suspension, modération, permission, publication CMS, réinitialisation de mot de passe) restent en outre tracées dans le journal d'audit métier (RG15, RG26).</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. Sécurité de la mise en service</h2>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>Chiffrement</strong> — HTTPS obligatoire (Let's Encrypt, certbot sur l'hôte avec renouvellement automatique ; <span style="font-family:ui-monospace,monospace;font-size:10px;">/etc/letsencrypt</span> monté en lecture seule dans le conteneur <em>nginx</em>, rechargé par <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose exec nginx nginx -s reload</span> en <em>deploy hook</em>) ; TLS 1.2 / 1.3 uniquement ; redirection 80 → 443 ; <span style="font-family:ui-monospace,monospace;font-size:10px;">HSTS</span> (<span style="font-family:ui-monospace,monospace;font-size:10px;">max-age=31536000; includeSubDomains</span>) ; en-têtes <span style="font-family:ui-monospace,monospace;font-size:10px;">Content-Security-Policy</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">X-Content-Type-Options</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">Referrer-Policy</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">Permissions-Policy</span> posés par nginx et par <span style="font-family:ui-monospace,monospace;font-size:10px;">helmet</span> côté API (livrable 11 §5).</li>
+    <li style="margin-bottom:5px;"><strong>Authentification</strong> — Passport + <span style="font-family:ui-monospace,monospace;font-size:10px;">express-session</span> sur <span style="font-family:ui-monospace,monospace;font-size:10px;">connect-redis</span> : cookie <span style="font-family:ui-monospace,monospace;font-size:10px;">HttpOnly</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">Secure</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">SameSite=Lax</span>, CSRF <em>double-submit</em>, hachage Argon2id. Le domaine <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360.com</span> couvre le front et l'API — nginx route <span style="font-family:ui-monospace,monospace;font-size:10px;">/api</span> vers <em>api</em> et le reste vers <em>web</em>, donc même origine, pas de CORS. Les sessions vivant dans Redis sont <strong>révocables</strong> — utilisées lors de la suspension d'un compte et de la réinitialisation de mot de passe (RG25).</li>
+    <li style="margin-bottom:5px;"><strong>Secrets</strong> — variables sensibles (<span style="font-family:ui-monospace,monospace;font-size:10px;">DATABASE_URL</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">SESSION_SECRET</span>, mots de passe des seeders, jetons Hostinger Object Storage, clé GPG de sauvegarde) dans <span style="font-family:ui-monospace,monospace;font-size:10px;">/srv/ecoles360/.env.prod</span> (chmod 600, propriétaire <span style="font-family:ui-monospace,monospace;font-size:10px;">deploy</span>), chargé par <span style="font-family:ui-monospace,monospace;font-size:10px;">env_file</span> ; le mot de passe root MySQL passe par un <em>secret</em> Docker monté en fichier plutôt que par une variable d'environnement — jamais dans le dépôt, jamais dans l'image. Rotation semestrielle documentée au runbook (livrable 16).</li>
+    <li style="margin-bottom:5px;"><strong>Réseau</strong> — <span style="font-family:ui-monospace,monospace;font-size:10px;">ufw</span> restreint l'hôte aux ports <span style="font-family:ui-monospace,monospace;font-size:10px;">22/tcp</span> (SSH par clé, <span style="font-family:ui-monospace,monospace;font-size:10px;">PermitRootLogin no</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">PasswordAuthentication no</span>), <span style="font-family:ui-monospace,monospace;font-size:10px;">80/tcp</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">443/tcp</span> — <strong>inchangé par rapport à la v2.4</strong>. Côté conteneurs, seul <em>nginx</em> publie des ports ; <em>api</em>, <em>worker</em>, <em>scheduler</em> et <em>web</em> ne sont joignables que sur le réseau interne <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360_net</span>, et MySQL comme Redis ne publient que sur <span style="font-family:ui-monospace,monospace;font-size:10px;">127.0.0.1</span>. <em>fail2ban</em> couvre SSH et les logs nginx montés sur l'hôte.</li>
+    <li style="margin-bottom:5px;"><strong>Durcissement des images</strong> — images finales <span style="font-family:ui-monospace,monospace;font-size:10px;">alpine</span> minimales, exécution en utilisateur non-root, aucune dépendance de développement ni source TypeScript embarquée (§2.2), tags immuables par SHA (jamais <span style="font-family:ui-monospace,monospace;font-size:10px;">:latest</span> en production, ce qui interdit toute dérive silencieuse de version). Les images de base sont remontées mensuellement pour absorber les correctifs de sécurité amont (plan de maintenance, livrable 16).</li>
+    <li style="margin-bottom:5px;"><strong>Limitation de débit</strong> — <span style="font-family:ui-monospace,monospace;font-size:10px;">@nestjs/throttler</span> adossé à Redis (livrable 11 §5) : avis et demandes 5 par heure et par IP, connexion et réinitialisation de mot de passe 5 par minute ; le staging reste protégé par Basic Auth nginx et fermé aux moteurs (<span style="font-family:ui-monospace,monospace;font-size:10px;">X-Robots-Tag: noindex, nofollow</span>).</li>
+    <li><strong>Loi 09-08</strong> — les purges du livrable 10 §6.3 (anonymisation des demandes à 12 mois, agrégation des traces à 12 mois, purge du journal à 3 ans) tournent en production dans le conteneur <em>scheduler</em> ; chaque exécution laisse une entrée d'audit horodatée (RG26).</li>
+  </ul>
+
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;"><strong>Prochaine étape</strong> — Livrable 15 : recette (procès-verbal, scénarios de bout en bout par acteur — parent, établissement, secrétaire, admin / Super Admin, commercial — reprenant les parcours du livrable 13 v2.5 §4, dont la conversion d'un lead CRM et la décision d'un article, et les critères d'acceptation du livrable 3, joués sur le staging conteneurisé <span style="font-family:ui-monospace,monospace;font-size:11px;">staging.ecoles360.com</span> déployé par le présent livrable).</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">7. Historique des révisions</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:12%;">Version</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:16%;">Date</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v1.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Version initiale — environnements dev / préprod / production, topologie VPS Debian (Nginx + PHP-FPM + MySQL 8 + worker <span style="font-family:ui-monospace,monospace;font-size:10px;">queue:work</span> + cron <span style="font-family:ui-monospace,monospace;font-size:10px;">schedule:run</span>), CI GitHub Actions (jobs back / front / e2e), déploiement par releases atomiques Laravel (composer + <span style="font-family:ui-monospace,monospace;font-size:10px;">artisan migrate</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">config:cache</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">reload php-fpm</span>), sauvegardes / supervision / PRA (RPO 24 h, RTO 4 h) et sécurité (TLS, Sanctum SPA, secrets, throttling). Modèle v2.1 (avenant n° 1).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.4</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Migration Laravel 11 → Next.js 14 (livrable 7 v2.4) + bascule d'hébergement sur <strong>Hostinger VPS KVM</strong>. Périmètre : §1 environnements — le domaine <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360.com</span> déjà acheté chez Hostinger pointe via hPanel vers l'IP du VPS, <span style="font-family:ui-monospace,monospace;font-size:10px;">preprod</span> renommée en <span style="font-family:ui-monospace,monospace;font-size:10px;">staging.ecoles360.com</span> ; §2 topologie — VPS KVM 2 minimum (2 vCPU / 8 Go RAM, Ubuntu 24 LTS, accès root), Nginx frontal TLS + HTTP/2 + <span style="font-family:ui-monospace,monospace;font-size:10px;">/_next/static</span> servi directement, Node.js 20 LTS + PM2 (<em>web</em> cluster 2 instances, <em>worker</em> BullMQ 5 files, <em>scheduler</em> node-cron), MySQL 8 et Redis 7 en local, staging cohabitant sur le même VPS (<span style="font-family:ui-monospace,monospace;font-size:10px;">server_name</span> Nginx séparé + port 3001) — variante VPS Hostinger secondaire documentée pour la montée en charge ; §3 CI GitHub Actions — jobs back / front / e2e avec services <span style="font-family:ui-monospace,monospace;font-size:10px;">mysql:8</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">redis:7</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm install --frozen-lockfile</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm prisma migrate deploy</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm test:server --coverage</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">pnpm build</span>, Playwright chaque nuit et pré-production ; §4 CD — <span style="font-family:ui-monospace,monospace;font-size:10px;">deploy.sh</span> par releases atomiques (git clone + pnpm + prisma migrate deploy + next build + symlink <span style="font-family:ui-monospace,monospace;font-size:10px;">current</span> + <span style="font-family:ui-monospace,monospace;font-size:10px;">pm2 reload --update-env</span> sans coupure ; rollback par bascule inverse), <span style="font-family:ui-monospace,monospace;font-size:10px;">ecosystem.config.js</span> chargeant <span style="font-family:ui-monospace,monospace;font-size:10px;">shared/.env</span>, extrait Nginx en <em>reverse proxy</em> ; §5 PRA — <span style="font-family:ui-monospace,monospace;font-size:10px;">mysqldump</span> chiffré GPG quotidien 03 h vers <strong>Hostinger Object Storage</strong> (recommandé) avec repli S3-compatible tiers, <span style="font-family:ui-monospace,monospace;font-size:10px;">rsync</span> du storage, RTO 4 h via playbook Ansible <span style="font-family:ui-monospace,monospace;font-size:10px;">bootstrap.yml</span>, sonde UptimeRobot sur <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/v1/health</span> exposant version + profondeur BullMQ + Prisma ; §6 sécurité — TLS 1.2/1.3, HSTS, en-têtes durcis, Auth.js sessions cookie HttpOnly + CSRF double-submit + Argon2id, <em>ufw</em> ports 22/80/443, <em>fail2ban</em> SSH et Nginx auth, secrets dans <span style="font-family:ui-monospace,monospace;font-size:10px;">shared/.env</span> (chmod 600), rate-limiting Redis, purges 09-08 planifiées par <em>scheduler</em> avec entrée d'audit.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.5</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Correction d'architecture : Next.js 14 → NestJS 10 + React 18/Vite ; <strong>conteneurisation Docker de la production</strong> (livrable 7 v2.5). Périmètre : §1 quatre environnements décrits par quatre fichiers Compose versionnés (<span style="font-family:ui-monospace,monospace;font-size:10px;">dev / test / staging / prod</span>), staging identifié comme projet Compose distinct ; §2 topologie entièrement réécrite — <strong>sept services</strong> (<em>api · worker · scheduler · web · mysql · redis · nginx</em>), <em>api</em>, <em>worker</em> et <em>scheduler</em> partageant une image unique avec trois commandes, volumes nommés <span style="font-family:ui-monospace,monospace;font-size:10px;">mysql_data</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">redis_data</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">storage</span>, réseau interne, seuls 80 et 443 publiés, certbot maintenu sur l'hôte hors conteneur, figure 1 refaite, et rappel « la conteneurisation isole les runtimes, les modules NestJS isolent les domaines » ; §2.1 <span style="font-family:ui-monospace,monospace;font-size:10px;">docker-compose.prod.yml</span> complet (ancre partagée, healthchecks, secret Docker pour le mot de passe MySQL, <span style="font-family:ui-monospace,monospace;font-size:10px;">prisma migrate deploy</span> au démarrage d'<em>api</em>) ; §2.2 <strong>Dockerfiles multi-étages</strong> API et web (build → <span style="font-family:ui-monospace,monospace;font-size:10px;">node:20-alpine</span>, utilisateur non-root, <span style="font-family:ui-monospace,monospace;font-size:10px;">HEALTHCHECK</span> sur <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/v1/health</span>) ; §3 CI réorganisée en jobs <em>api</em> / <em>web</em> / <strong><em>images</em></strong> / <em>e2e</em> — Jest + Supertest, <span style="font-family:ui-monospace,monospace;font-size:10px;">nest build</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">vite build</span>, images construites <strong>après</strong> les tests et poussées sur <span style="font-family:ui-monospace,monospace;font-size:10px;">ghcr.io</span> taguées par SHA, le VPS ne compilant plus jamais ; §4 déploiement réécrit — <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose pull &amp;&amp; up -d</span> par tag, §4.1 <strong>redéploiement d'un seul composant par <span style="font-family:ui-monospace,monospace;font-size:10px;">--no-deps</span></strong> (l'API sans toucher au front, à MySQL, à Redis ni à Nginx), §4.2 rollback par redéploiement du tag antérieur et règle de compatibilité ascendante des migrations, §4.3 staging en projet Compose séparé avec ses propres volumes et sa base <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360_staging</span> — plus propre que la cohabitation bare-metal de la v2.4 ; §5 PRA conteneurisé — <span style="font-family:ui-monospace,monospace;font-size:10px;">mysqldump</span> lancé depuis un conteneur éphémère, <span style="font-family:ui-monospace,monospace;font-size:10px;">rsync</span> du volume <span style="font-family:ui-monospace,monospace;font-size:10px;">storage</span>, playbook <span style="font-family:ui-monospace,monospace;font-size:10px;">bootstrap.yml</span> simplifié (n'installe plus Node, PM2, MySQL ni Redis), journalisation par pilote <span style="font-family:ui-monospace,monospace;font-size:10px;">json-file</span> à la place de <span style="font-family:ui-monospace,monospace;font-size:10px;">pm2-logrotate</span> ; §6 sécurité — Passport + sessions Redis révocables, secret Docker MySQL, durcissement des images (alpine, non-root, tags immuables par SHA, jamais <span style="font-family:ui-monospace,monospace;font-size:10px;">:latest</span>), <span style="font-family:ui-monospace,monospace;font-size:10px;">@nestjs/throttler</span>. <strong>PM2 disparaît de la production</strong>, remplacé par les politiques de redémarrage Docker et les healthchecks. Inchangés : VPS Hostinger KVM 2 sous Ubuntu 24 LTS, domaine <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360.com</span>, MySQL 8, Redis 7, ufw 22/80/443, fail2ban, TLS + HSTS, Hostinger Object Storage, PRA RPO 24 h / RTO 4 h.</td></tr>
+    </tbody>
+  </table>
+
+</x-import>
+</x-dc>
+</body>
+</html>

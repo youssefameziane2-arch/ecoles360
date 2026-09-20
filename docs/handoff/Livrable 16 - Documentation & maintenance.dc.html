@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Livrable 16 · Documentation &amp; maintenance</span>
+    <span>v2.5 · septembre 2026</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Livrable 16 / 16 — Réalisation &amp; mise en service</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">Documentation et maintenance</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">Documentation d'exploitation et d'usage du produit : guide administrateur, guide établissement / secrétaire, runbook d'exploitation adapté à la stack <strong>NestJS 10 + React 18/Vite conteneurisée en Docker Compose</strong> sur Hostinger VPS KVM, et plan de maintenance corrective, adaptative et évolutive. Clôt la démarche des seize livrables et prépare le transfert vers l'implémentation.</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Version 2.5 · Septembre 2026 · S'appuie sur l'ensemble des livrables 1 à 15 (v2.5 sur L7/L10/L11/L12/L13/L14/L15) · Clôt la démarche ; ouvre la maintenance et les avenants (n° 1 et n° 3 intégrés, n° 2 planifié)</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. Corpus documentaire livré</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">La documentation s'organise en trois niveaux — <strong>utilisateur</strong>, <strong>exploitation</strong>, <strong>projet</strong> — chacun destiné à un public et maintenu à part. Elle est versionnée dans le dépôt (<span style="font-family:ui-monospace,monospace;font-size:10px;">/docs</span>) et republiée à chaque mise en production via GitHub Actions (livrable 14 v2.5 §3).</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 14px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:22%;">Document</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:16%;">Public</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Contenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Guide administrateur</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Direction / Super Admin</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Validation des établissements, facturation &amp; tarification, sponsoring, modération, CRM Clients, validation des fiches, console d'administration (utilisateurs / rôles, journal d'audit, CMS blog / FAQ / à propos) — §2.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Guide établissement</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Client / secrétaire</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Fiche, statistiques, abonnement &amp; factures, avis, CRM Leads et fiche de besoin, blog (soumission d'articles), paramètres du compte — portées de la secrétaire (§3).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Runbook d'exploitation</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Exploitant technique</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Déploiement par <span style="font-family:ui-monospace,monospace;font-size:9.5px;">docker compose pull &amp;&amp; up -d</span>, rollback par tag d'image antérieur, redéploiement d'un seul service (<span style="font-family:ui-monospace,monospace;font-size:9.5px;">--no-deps</span>), sauvegarde / restauration MySQL depuis un conteneur éphémère (dump chiffré GPG → Hostinger Object Storage), supervision UptimeRobot, incidents courants (§4) — reprend le livrable 14 v2.5.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Guide de contribution</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Développeur</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Installation locale (<span style="font-family:ui-monospace,monospace;font-size:9.5px;">docker compose -f docker-compose.dev.yml</span>), conventions TypeScript, tests <strong>Jest + Supertest</strong> (API) et <strong>Vitest / Playwright</strong> (front), règle de compatibilité ascendante des migrations, flux Git, design system écoles360 (SKILL.md) — prépare le handoff Claude Code.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Dossier projet</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">MOA / MOE</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Les 16 livrables + avenants n° 1 et n° 3 (hors-ligne), règles de gestion RG01–RG27, historique des révisions.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. Guide administrateur — procédures clés</h2>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>Traiter une demande d'inscription</strong> — Établissements → filtre « En attente » → ouvrir la fiche → vérifier contact, formule souhaitée et message → configurer l'abonnement (§ facturation) → « Valider ». La validation est <em>bloquée</em> tant que l'abonnement n'est pas encaissé (RG14) : 409 <em>facture_non_payee</em> renvoie vers l'écran facturation.</li>
+    <li style="margin-bottom:5px;"><strong>Fixer un tarif et facturer</strong> — Abonnement &amp; facturation → sélectionner l'établissement → formule (essai gratuit, abonnement mensuel / annuel −10 %, ou paiement à la vue avec plafond) → saisir le tarif → générer la facture (Non payée) → à réception du paiement, « Marquer payée » → reçu HTML téléchargeable (F2026-NNNNNN attribué par <em>FacturationService</em> sous verrou <span style="font-family:ui-monospace,monospace;font-size:10px;">$queryRaw FOR UPDATE</span>, TVA 20 %, RG14, RG18).</li>
+    <li style="margin-bottom:5px;"><strong>Gérer le sponsoring</strong> — attribuer un niveau (Premium / Gold / Silver) par ville, catégorie ou mot-clé ; la rotation d'affichage est équitable entre sponsors de même niveau (RG19).</li>
+    <li style="margin-bottom:5px;"><strong>Modérer un avis</strong> — écran Avis → chip « En attente » ou « Signalés » → décision (publier / masquer) avec motif ; la note moyenne et le nombre d'avis sont recalculés dans la même transaction Prisma (RG06–RG08) ; entrée d'audit horodatée (RG26).</li>
+    <li style="margin-bottom:5px;"><strong>Valider une modification de fiche</strong> — file « Modifications de fiche à valider » → écran « Vérifier une modification » → aperçu du diff (DiffPanel) + aperçu profil avec champ surligné → Approuver / Modifier / Refuser ; la publication rend la modification visible dès le rendu SSR suivant, la clé de cache <span style="font-family:ui-monospace,monospace;font-size:10px;">fiche:{slug}</span> étant purgée (RG20, RG27).</li>
+    <li style="margin-bottom:5px;"><strong>CRM Clients</strong> — pipeline de prospection commerciale (Nouveau → Transformé / Perdu) ; une transformation crée le compte + la fiche établissement et déclenche la commission à la première facture (RG17, RG18).</li>
+    <li style="margin-bottom:5px;"><strong>Utilisateurs &amp; rôles</strong> (avenant n° 3, RG25) — écran Secrétariat pour créer, suspendre, réinitialiser le mot de passe des comptes secrétariat ; la réinitialisation détruit les sessions Passport du compte cible dans Redis et envoie un mot de passe temporaire. Les rôles admin / commercial / établissement ont un périmètre fixe (lecture seule).</li>
+    <li style="margin-bottom:5px;"><strong>Journal d'audit</strong> (avenant n° 3, RG26) — filtres par rôle et sévérité ; lecture seule (aucune méthode d'écriture n'est déclarée dans le controller : POST / PATCH / DELETE → 404) ; purge automatique à 3 ans par le conteneur <em>scheduler</em> (<span style="font-family:ui-monospace,monospace;font-size:10px;">@nestjs/schedule</span>).</li>
+    <li style="margin-bottom:5px;"><strong>Blog</strong> (avenant n° 3, RG27) — décider les articles en attente (approuver / refuser + mise à la une) ; l'approbation purge la clé de cache <span style="font-family:ui-monospace,monospace;font-size:10px;">articles:public</span>. La gestion des catégories (ajouter / retirer) et la validation des propositions de nouvelles catégories envoyées par les autres profils se fait dans <em>Contenu du site</em>.</li>
+    <li><strong>Contenu du site</strong> — FAQ (ajout / réordonnancement / édition), page « À propos » (histoire, mission, valeurs, coordonnées), catégories du blog. Chaque écriture purge la clé de cache publique correspondante.</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. Guide établissement &amp; secrétaire — procédures clés</h2>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>Compléter sa fiche</strong> — Ma fiche → informations, photos (téléversement contrôlé côté API — MIME, poids, re-encodage <em>sharp</em>, écrites dans le volume <span style="font-family:ui-monospace,monospace;font-size:10px;">storage</span>), équipements, équipe, tarifs, chiffres clés, FAQ, vidéo, autres projets, réseaux sociaux ; l'enregistrement crée une proposition soumise à validation via <em>FicheProposalService</em> (RG20). La fiche n'est visible qu'avec une formule active (RG13).</li>
+    <li style="margin-bottom:5px;"><strong>Suivre son activité</strong> — tableau de bord : demandes, vues, avis, leads à relancer ; écran Statistiques pour le détail par période.</li>
+    <li style="margin-bottom:5px;"><strong>Gérer ses leads (CRM)</strong> — chaque demande de contact devient un lead ; compléter la fiche de besoin (FC-1 → FC-11) affine le score (RG22, borné 0–10 par <em>LeadService</em>) ; faire avancer le lead dans le pipeline (6 statuts), programmer des relances, conclure en « inscrit » (avec acompte) ou « perdu » (avec motif) — RG21. Un lead peut aussi être créé manuellement (« + Nouveau lead »).</li>
+    <li style="margin-bottom:5px;"><strong>Abonnement &amp; factures</strong> — consulter la formule active, les vues du profil et l'historique des factures (lecture seule) ; les tarifs sont fixés avec le conseiller (RG14).</li>
+    <li style="margin-bottom:5px;"><strong>Blog</strong> (avenant n° 3) — activer le blog dans les paramètres du compte ; rédiger un article → soumission → attente d'approbation par l'administration (RG27). Si aucune catégorie de la liste ne convient, choisir « Autre catégorie… » : le nom saisi part en proposition pour validation admin.</li>
+    <li style="margin-bottom:5px;"><strong>Paramètres du compte</strong> — dans la sidebar, cliquer sur son tile de profil (bas de la barre) : modifier les coordonnées (nom + e-mail, avec confirmation du mot de passe actuel), changer son mot de passe (8 caractères minimum), téléverser une photo de profil.</li>
+    <li><strong>Portées de la secrétaire</strong> — accès limité aux fiches, contacts et avis délégués (RG05, nav fixe Tableau de bord · Demandes · Fiches en 5<sup>e</sup> passe) ; elle traite les leads via son établissement mais ne peut ni les supprimer ni les exporter — ces droits appartiennent à l'Admin Client (RG23) — 403 côté API sans exception.</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. Runbook d'exploitation</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Procédures opérationnelles, condensé du livrable 14 v2.5. Toutes s'exécutent sur le VPS Hostinger KVM via SSH (utilisateur <span style="font-family:ui-monospace,monospace;font-size:10px;">deploy</span>, clé, jamais root, membre du groupe <span style="font-family:ui-monospace,monospace;font-size:10px;">docker</span>), depuis <span style="font-family:ui-monospace,monospace;font-size:10px;">/srv/ecoles360</span> ; les commandes destructrices sont proscrites en production (RG14, RG26). La production étant conteneurisée, <strong>PM2 n'existe plus</strong> : les redémarrages sont assurés par les politiques Docker et les <em>healthchecks</em>.</p>
+  <div style="border:1px solid #E1E5EA;border-radius:8px;background:#15233A;padding:12px 14px;font:400 9.5px/1.7 ui-monospace,monospace;color:#D8E1EC;margin:0 0 8px;white-space:pre-wrap;"># Déployer une version          → tag Git → CI construit et pousse les images → deploy.sh
+git tag v1.x.y &amp;&amp; git push --tags        # le VPS ne compile jamais : il télécharge des images
+./deploy.sh &lt;sha&gt;                        # écrit TAG=&lt;sha&gt; puis :
+#   docker compose pull &amp;&amp; docker compose up -d --remove-orphans
+#   le conteneur api applique « prisma migrate deploy » à son démarrage
+
+# Revenir en arrière (rollback)  → redéployer le tag précédent
+tail -n 5 /srv/ecoles360/deploiements.log   # historique des SHA mis en service
+./deploy.sh &lt;sha-precedent&gt;
+
+# Redéployer UN SEUL composant   → sans toucher aux autres services
+docker compose pull api &amp;&amp; docker compose up -d --no-deps api   # front, MySQL, Redis, Nginx intacts
+docker compose up -d --no-deps web                              # correction d'interface seule
+docker compose restart worker                                   # relance BullMQ sans couper l'API
+
+# Consulter l'état et les journaux
+docker compose ps                        # état + santé des sept services
+docker compose logs -f --tail=100 api    # journaux applicatifs (pilote json-file, rotation 10 Mo)
+docker stats                             # CPU / mémoire par conteneur
+
+# Restaurer la base (RTO 4 h)    → depuis le dump chiffré Hostinger Object Storage
+mc cp hostinger/ecoles360-backup/backup-AAAAMMJJ.sql.gz.gpg .
+docker compose up -d mysql
+gpg --decrypt backup-AAAAMMJJ.sql.gz.gpg | gunzip \
+  | docker compose exec -T mysql mysql ecoles360_prod
+docker compose up -d api                 # rejoue les migrations éventuelles au démarrage
+
+# Vérifier la santé              → même sonde que le HEALTHCHECK Docker
+curl -f https://ecoles360.com/api/v1/health   # version + profondeur des 5 files + Prisma
+
+# Traitements planifiés (sinon @Cron du conteneur scheduler)
+docker compose restart scheduler         # relance les @Cron (purges, backup, rappels)
+docker compose run --rm api node dist/cli.js purge:donnees   # anonymisation 12 mois manuelle (09-08)</div>
+  <table style="width:100%;border-collapse:collapse;font:400 10px/1.5 'Inter',sans-serif;color:#2A313B;margin:6px 0 14px;">
+    <thead><tr>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;width:32%;">Incident courant</th>
+      <th style="text-align:left;font:700 9px/1.3 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:5px 7px;">Diagnostic → action</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">Notifications / factures en retard</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">File BullMQ engorgée → <span style="font-family:ui-monospace,monospace;font-size:9px;">docker compose restart worker</span> ; profondeur exposée par <span style="font-family:ui-monospace,monospace;font-size:9px;">/api/v1/health</span>.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">Erreurs 5xx après déploiement</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Consulter <span style="font-family:ui-monospace,monospace;font-size:9px;">docker compose logs -f api</span> et <span style="font-family:ui-monospace,monospace;font-size:9px;">docker compose ps</span> (service non <em>healthy</em>) → rollback immédiat par <span style="font-family:ui-monospace,monospace;font-size:9px;">./deploy.sh &lt;sha-precedent&gt;</span>, puis analyse hors ligne.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">Un seul composant à corriger</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Livrer l'image du service concerné puis <span style="font-family:ui-monospace,monospace;font-size:9px;">docker compose up -d --no-deps &lt;service&gt;</span> — les autres services, les sessions Redis et les files BullMQ ne sont pas interrompus (livrable 14 v2.5 §4.1).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">Disque saturé</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Rotation des journaux par le pilote <span style="font-family:ui-monospace,monospace;font-size:9px;">json-file</span> (10 Mo × 5), purge des images inutilisées par <span style="font-family:ui-monospace,monospace;font-size:9px;">docker image prune -af --filter "until=720h"</span> (faite par <em>deploy.sh</em>), contrôle du quota médias par offre (RG16).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">Certificat TLS expirant</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Renouvellement Let's Encrypt automatique par certbot sur l'hôte ; en cas d'échec, <span style="font-family:ui-monospace,monospace;font-size:9px;">sudo certbot renew</span> puis <span style="font-family:ui-monospace,monospace;font-size:9px;">docker compose exec nginx nginx -s reload</span>.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:5px 7px;">Reprise complète (RTO 4 h)</td><td style="border:1px solid #E1E5EA;padding:5px 7px;">Reprovisionner un VPS Hostinger KVM via hPanel → playbook Ansible <span style="font-family:ui-monospace,monospace;font-size:9px;">bootstrap.yml</span> (Docker + Compose + certbot + ufw + fail2ban seulement) → restaurer le dump dans le volume <span style="font-family:ui-monospace,monospace;font-size:9px;">mysql_data</span> + <span style="font-family:ui-monospace,monospace;font-size:9px;">rsync</span> du volume <span style="font-family:ui-monospace,monospace;font-size:9px;">storage</span> → réémettre les certificats → <span style="font-family:ui-monospace,monospace;font-size:9px;">./deploy.sh &lt;dernier-sha&gt;</span> (aucune compilation).</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. Plan de maintenance</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:20%;">Type</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:26%;">Périmètre</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Engagement</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Corrective</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Anomalies (dont réserves R-01, R-02 du livrable 15 v2.5)</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Bloquant &lt; 4 h (RTO), majeur &lt; 2 j, mineur au prochain jalon ; chaque correctif accompagné d'un test de non-régression Jest, Vitest ou Playwright (L13 v2.5 §6).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Préventive</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Dépendances, images de base, sécurité, sauvegardes</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Mises à jour mensuelles (NestJS patch, Prisma, Passport, BullMQ, dépendances npm via <span style="font-family:ui-monospace,monospace;font-size:9.5px;">pnpm audit</span>) et <strong>remontée mensuelle des images de base</strong> (<span style="font-family:ui-monospace,monospace;font-size:9.5px;">node:20-alpine</span>, <span style="font-family:ui-monospace,monospace;font-size:9.5px;">mysql:8</span>, <span style="font-family:ui-monospace,monospace;font-size:9.5px;">redis:7</span>, <span style="font-family:ui-monospace,monospace;font-size:9.5px;">nginx</span>) pour absorber les correctifs amont ; test de restauration trimestriel, revue des accès et du journal d'audit RG26.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Adaptative</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Environnement (Node.js LTS, MySQL 8 → 9, Ubuntu, Redis)</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Suivi des versions LTS Node.js (20 → 22) par simple changement d'image de base, migration validée d'abord sur le staging conteneurisé via GitHub Actions ; playbook Ansible re-testé.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Évolutive</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Nouvelles fonctions (avenants, Lot 2)</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Matching lead ↔ offre V1.1 (R-03), RTL arabe, avenant n° 2 « compte parent léger » (RG24 — inscription e-mail + mot de passe requise pour déposer un avis, historiques de recherche et de contact, sans tableau de bord) — chacun suit la même démarche : cahier des charges → conception → tests → recette.</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 11.5px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 16px;">Les évolutions majeures sont formalisées en <strong>avenants</strong> au cahier des charges, répercutés dans les livrables concernés avec un historique des révisions (méthode éprouvée sur les avenants n° 1 — v2.1 — et n° 3 — v2.3, sur la migration de stack — v2.4 — et sur la correction d'architecture NestJS + Docker — v2.5). L'avenant n° 2 porte sur le <strong>compte parent léger</strong> (RG24) : la piste d'une vérification par code OTP envoyé en WhatsApp ou SMS a été étudiée puis <strong>abandonnée</strong> au profit d'une inscription e-mail + mot de passe, plus simple à exploiter et sans coût de passerelle.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. Clôture de la démarche &amp; transfert</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Les seize livrables sont produits, validés et exportés hors-ligne ; les avenants n° 1 (CRM leads, v2.1) et n° 3 (console d'administration &amp; CMS, v2.3) sont intégrés au modèle ; la migration Laravel → Next.js + Hostinger VPS KVM (v2.4) puis la <strong>correction d'architecture NestJS 10 + React 18/Vite avec conteneurisation Docker de la production (v2.5)</strong> ont été menées sur L7/L10/L11/L12/L13/L14/L15/L16 en septembre 2026 ; la recette est prononcée avec réserves mineures (livrable 15 v2.5). L'ensemble constitue un cahier des charges complet et traçable — de l'analyse de l'existant à l'exploitation.</p>
+  <div data-om-raster style="border:1px solid #E1E5EA;border-radius:10px;padding:14px 16px;background:#fff;margin:0 0 8px;">
+    <div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:120px;border:1px solid #E1E5EA;border-radius:8px;overflow:hidden;">
+        <div style="background:#E7EDF5;color:#1D3557;font:700 9px/1.3 'Inter',sans-serif;padding:6px 8px;">Analyse &amp; cadrage</div>
+        <div style="padding:7px 8px;font:400 8.5px/1.5 'Inter',sans-serif;color:#5A6472;">L1–L3 · L6–L9 (cahier des charges, RG, architecture)</div>
+      </div>
+      <div style="flex:1;min-width:120px;border:1px solid #E1E5EA;border-radius:8px;overflow:hidden;">
+        <div style="background:#E7EDF5;color:#1D3557;font:700 9px/1.3 'Inter',sans-serif;padding:6px 8px;">Conception</div>
+        <div style="padding:7px 8px;font:400 8.5px/1.5 'Inter',sans-serif;color:#5A6472;">L4–L5 (DS, maquettes) · L8 Merise · L10 v2.5 Prisma</div>
+      </div>
+      <div style="flex:1;min-width:120px;border:1px solid #E1E5EA;border-radius:8px;overflow:hidden;">
+        <div style="background:#E7EDF5;color:#1D3557;font:700 9px/1.3 'Inter',sans-serif;padding:6px 8px;">Réalisation</div>
+        <div style="padding:7px 8px;font:400 8.5px/1.5 'Inter',sans-serif;color:#5A6472;">L11 v2.5 API NestJS · L12 v2.5 React/Vite · L13 v2.5 Jest + Supertest</div>
+      </div>
+      <div style="flex:1;min-width:120px;border:1.5px solid #1D3557;border-radius:8px;overflow:hidden;">
+        <div style="background:#1D3557;color:#fff;font:700 9px/1.3 'Inter',sans-serif;padding:6px 8px;">Mise en service</div>
+        <div style="padding:7px 8px;font:400 8.5px/1.5 'Inter',sans-serif;color:#5A6472;">L14 v2.5 Docker Compose · Hostinger KVM · L15 v2.5 recette · L16 v2.5 doc &amp; maintenance</div>
+      </div>
+    </div>
+  </div>
+  <p style="font:400 10px/1.5 'Inter',sans-serif;color:#9AA3AF;margin:0 0 14px;">Figure 1 — Les quatre phases de la démarche et leurs livrables. Les avenants n° 1 (CRM) et n° 3 (console admin &amp; CMS) traversent les phases Conception → Mise en service. La correction d'architecture NestJS + Docker (v2.5) porte sur les mêmes phases Conception → Mise en service (L7/L10–L16).</p>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;"><strong>Transfert vers l'implémentation</strong> — le dépôt inclut un guide de contribution (TypeScript strict, ESLint + Prettier, Jest + Supertest côté API, Vitest + Playwright côté front, Prisma, fichiers Docker Compose par environnement) et le design system écoles360 (avec son <span style="font-family:ui-monospace,monospace;font-size:10px;">SKILL.md</span>) prêt pour un package de handoff Claude Code. Les livrables tiennent lieu de spécification exécutable ; la maintenance évolutive prend le relais via les avenants.</p>
+
+  <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;"><strong>Prochaine étape</strong> — hors démarche des seize livrables : avenant n° 2 « compte parent léger » (RG24) selon la maintenance évolutive (§5), puis package de handoff Claude Code pour l'implémentation réelle sur la stack NestJS 10 + React 18/Vite conteneurisée en Docker Compose sur Hostinger VPS KVM.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">7. Historique des révisions</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:12%;">Version</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:16%;">Date</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Contenu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v1.0</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Juillet 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Version initiale — corpus documentaire (5 documents), guide administrateur, guide établissement / secrétaire, runbook d'exploitation (incidents courants), plan de maintenance (corrective / préventive / adaptative / évolutive) traitant les réserves R-01 à R-03, clôture de la démarche des 16 livrables et transfert vers l'implémentation. Intègre le modèle v2.1 (avenant n° 1) ; annonçait alors l'avenant n° 2 sous forme de vérification OTP du parent.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.4</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Migration Laravel 11 → Next.js 14 + hébergement Hostinger VPS KVM (v2.4 sur L7/L10–L15). Périmètre : §1 corpus adapté à la stack Next.js (guide de contribution TypeScript / Vitest / Prisma, publication GitHub Actions à chaque MEP) ; §2 guide administrateur étendu à la console d'administration (avenant n° 3 : utilisateurs &amp; rôles / journal d'audit / blog / contenu du site), 409 <em>facture_non_payee</em> nommé, <span style="font-family:ui-monospace,monospace;font-size:10px;">revalidateTag</span> mentionné sur fiches et articles ; §3 guide établissement / secrétaire enrichi (blog activable, proposition de catégorie, paramètres du compte via le tile sidebar cliquable), <em>FicheProposalService</em> et <em>LeadService</em> nommés, nav secrétariat en 5<sup>e</sup> passe ; §4 runbook réécrit — releases atomiques Next.js par symlink + <span style="font-family:ui-monospace,monospace;font-size:10px;">pm2 reload --update-env</span>, restauration depuis <strong>Hostinger Object Storage</strong> (dump GPG), sonde <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/v1/health</span> exposant version + files BullMQ + Prisma, reprise complète RTO 4 h via playbook Ansible <span style="font-family:ui-monospace,monospace;font-size:10px;">bootstrap.yml</span> ; §5 plan de maintenance adapté (mises à jour Next.js / Prisma / Auth.js / BullMQ, migration Node.js 20 → 22 via staging Hostinger), avenants n° 1 (v2.1) + n° 3 (v2.3) + migration (v2.4) cités ; §6 clôture : recette prononcée avec réserves mineures (L15 v2.4), handoff Claude Code cadré sur la stack Next.js 14 / TypeScript strict / Prisma / Auth.js / BullMQ / Hostinger KVM. Avenant n° 2 requalifié : la vérification OTP (WhatsApp / SMS) est <strong>abandonnée</strong>, remplacée par le « compte parent léger » (RG24 — inscription e-mail + mot de passe pour les avis, historiques de recherche et de contact, aucun tableau de bord parent) conformément à l'arbitrage client.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">v2.5</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Septembre 2026</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Correction d'architecture : Next.js 14 → NestJS 10 + React 18/Vite ; conteneurisation Docker de la production (v2.5 sur L7/L10–L15). Périmètre : §1 corpus adapté à la nouvelle stack (runbook en commandes <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose</span>, guide de contribution avec Jest + Supertest côté API, Vitest + Playwright côté front, fichiers Compose par environnement et règle de compatibilité ascendante des migrations) ; §2 guide administrateur — sessions Passport détruites dans Redis à la réinitialisation d'un mot de passe (RG25), journal d'audit refusant l'écriture en <strong>404</strong> (aucune méthode déclarée dans le controller Nest, là où Next.js répondait 405) et purgé par le conteneur <em>scheduler</em> (<span style="font-family:ui-monospace,monospace;font-size:10px;">@nestjs/schedule</span>), publication de fiche et d'article visible dès le rendu SSR suivant après purge des clés de cache <span style="font-family:ui-monospace,monospace;font-size:10px;">fiche:{slug}</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">articles:public</span> au lieu de <span style="font-family:ui-monospace,monospace;font-size:10px;">revalidateTag</span> ; §3 guide établissement / secrétaire — téléversement des photos contrôlé côté API (MIME, poids, re-encodage <em>sharp</em>) et écrit dans le volume Docker <span style="font-family:ui-monospace,monospace;font-size:10px;">storage</span> ; §4 <strong>runbook entièrement réécrit en commandes <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose</span></strong> : déployer (<span style="font-family:ui-monospace,monospace;font-size:10px;">pull &amp;&amp; up -d</span> par tag, le VPS ne compilant jamais), rollback par redéploiement du tag antérieur lu dans <span style="font-family:ui-monospace,monospace;font-size:10px;">deploiements.log</span>, <strong>redéployer un seul service</strong> (<span style="font-family:ui-monospace,monospace;font-size:10px;">up -d --no-deps api|web</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">restart worker</span>), consulter l'état et les journaux (<span style="font-family:ui-monospace,monospace;font-size:10px;">ps</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">logs -f</span>, <span style="font-family:ui-monospace,monospace;font-size:10px;">docker stats</span>), restaurer depuis Hostinger Object Storage via <span style="font-family:ui-monospace,monospace;font-size:10px;">exec -T mysql mysql</span>, sonde <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/v1/health</span> partagée avec le HEALTHCHECK Docker, purges par commande NestJS en conteneur éphémère ; table des incidents mise à jour (dont une entrée « un seul composant à corriger ») et reprise RTO 4 h avec playbook <span style="font-family:ui-monospace,monospace;font-size:10px;">bootstrap.yml</span> simplifié ; §5 plan de maintenance — mises à jour NestJS / Prisma / Passport / BullMQ et <strong>remontée mensuelle des images de base</strong>, migration Node 20 → 22 par simple changement d'image validée sur le staging conteneurisé ; §6 clôture actualisée (figure 1 et handoff Claude Code cadrés sur NestJS 10 / React 18-Vite / Prisma / Passport / BullMQ / Docker Compose sur Hostinger KVM). <strong>PM2 disparaît de la production</strong>, remplacé par les politiques de redémarrage Docker et les healthchecks. Guides utilisateurs inchangés sur le fond ; avenant n° 2 « compte parent léger » (RG24) toujours planifié en maintenance évolutive.</td></tr>
+    </tbody>
+  </table>
+
+</x-import>
+</x-dc>
+</body>
+</html>

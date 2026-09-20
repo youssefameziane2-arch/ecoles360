@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Livrable 2 · User stories &amp; besoins fonctionnels / non fonctionnels</span>
+    <span>v1.0 · juillet 2026</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Livrable 2 / 16 — Phase d'analyse</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">User stories &amp; besoins fonctionnels et non fonctionnels</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">Expression des besoins par acteur, priorisation MoSCoW et exigences transverses de la plateforme.</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Version 1.0 · Juillet 2026 · S'appuie sur le livrable 1 (benchmark) et sur le prototype haute-fidélité validé</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. Objet et méthode</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Ce document formalise les besoins de la plateforme écoles360 sous forme de user stories priorisées (méthode MoSCoW : <strong>M</strong>ust / <strong>S</strong>hould / <strong>C</strong>ould), complétées par les exigences non fonctionnelles. Chaque story est vérifiable dans le prototype haute-fidélité interactif (livrables 4 à 6), qui a servi à valider les parcours avant développement. Priorité <strong>M</strong> = périmètre V1 obligatoire ; <strong>S</strong> = V1 si le planning le permet ; <strong>C</strong> = versions ultérieures.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. Acteurs</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11.5px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:8px 10px;width:22%;">Acteur</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:8px 10px;">Profil et objectif principal</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:8px 10px;width:18%;">Accès</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;font-weight:700;">Parent</td>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;">Cherche, compare et contacte un établissement adapté à son enfant, en confiance. Usage majoritairement mobile.</td>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;">Site public, gratuit, sans compte</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;font-weight:700;">Établissement</td>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;">Direction ou responsable communication d'une école privée. Achète de la visibilité, gère sa fiche, suit ses performances et ses demandes.</td>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;">Espace de gestion, compte payant</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;font-weight:700;">Secrétaire</td>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;">Opérateur interne écoles360. Traite les demandes des parents et met à jour les fiches pour le compte des établissements, selon des permissions déléguées.</td>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;">Back-office, permissions limitées</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;font-weight:700;">Administrateur</td>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;">Direction écoles360. Garantit la qualité de l'annuaire : validation des établissements, modération des avis, gestion des comptes et permissions.</td>
+        <td style="border:1px solid #E1E5EA;padding:8px 10px;">Back-office, accès complet</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. User stories — Parent (site public)</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:8%;">ID</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">En tant que parent, je veux…</th>
+        <th style="text-align:center;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:9%;">Prio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">P1</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">rechercher un établissement par type (crèche, primaire, collège, lycée, université, formation) et par ville, afin de trouver rapidement ce qui correspond à mon enfant.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">P2</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">affiner les résultats par filière, budget mensuel et note minimale, et les trier, afin de comparer des établissements pertinents.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">P3</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">consulter une fiche complète (photos, vidéo, filières, équipements, équipe, FAQ, horaires, localisation), afin de me faire une opinion sans me déplacer.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">P4</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">lire des avis de parents vérifiés avec la répartition des notes, afin de faire confiance aux retours d'expérience.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">P5</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">contacter l'établissement par appel, WhatsApp ou formulaire, afin d'obtenir une réponse par le canal qui me convient.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">P6</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">déposer un avis avec une note, afin de partager mon expérience avec d'autres familles.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#B57708;">S</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">P7</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">distinguer clairement les fiches sponsorisées des résultats organiques, afin de garder confiance dans le classement.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">P8</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">basculer les résultats en vue carte, afin de chercher par proximité géographique.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#B57708;">S</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">P9</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">consulter des pages par ville et un blog de conseils, afin de préparer mes choix de scolarité.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#1F7A45;">C</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. User stories — Établissement (espace de gestion)</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:8%;">ID</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">En tant qu'établissement, je veux…</th>
+        <th style="text-align:center;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:9%;">Prio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">E1</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">inscrire mon établissement et choisir une formule (Gratuit, Pack Visibilité, Premium), afin d'être présent dans l'annuaire au niveau de visibilité voulu.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">E2</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">me connecter à un espace de gestion sécurisé, afin de piloter ma présence sur la plateforme.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">E3</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">modifier ma fiche (informations, type, ville, description, filières, photos, coordonnées, WhatsApp), afin de la garder attractive et à jour.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">E4</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">suivre mes statistiques (vues, clics « Appeler », contacts WhatsApp, taux de contact, origine des visites), afin de mesurer le retour sur mon investissement.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">E5</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">recevoir les demandes de contact des parents et y répondre, afin de convertir l'intérêt en inscriptions.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">E6</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">répondre publiquement aux avis reçus, afin de soigner ma réputation.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#B57708;">S</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">E7</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">acheter des packs de crédits (200 / 500 / 1 000), suivre mon solde et télécharger mes factures, afin de maîtriser mon budget de visibilité.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">E8</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">être alerté quand mon solde de crédits est bas ou épuisé, afin d'éviter que ma fiche soit masquée sans le savoir.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#B57708;">S</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">E9</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">activer la mise en avant sponsorisée dans les résultats de recherche, afin d'augmenter ma visibilité auprès des parents.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. User stories — Secrétaire et Administrateur (back-office)</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:8%;">ID</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">User story</th>
+        <th style="text-align:center;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:9%;">Prio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">S1</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">En tant que secrétaire, je veux accéder au back-office avec uniquement les permissions qui m'ont été accordées (fiches, contacts, avis), afin de travailler sans risque d'erreur hors périmètre.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">S2</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">En tant que secrétaire, je veux traiter les demandes de contact des parents (répondre, suivre les statuts Nouveau / En cours / Traité) pour les établissements que je gère.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">S3</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">En tant que secrétaire, je veux mettre à jour les fiches des établissements dont j'ai la charge, afin de garantir la fraîcheur de l'annuaire.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">S4</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">En tant que secrétaire autorisé, je veux modérer les avis en file d'attente, afin de soulager l'administrateur.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#B57708;">S</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">A1</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">En tant qu'administrateur, je veux valider les nouveaux établissements avant publication, et suspendre ou réactiver une fiche, afin de garantir la qualité de l'annuaire.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">A2</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">En tant qu'administrateur, je veux créer des comptes secrétaires et régler leurs permissions par module, afin de déléguer en sécurité.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">A3</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">En tant qu'administrateur, je veux traiter les avis signalés (approuver ou rejeter avec motif), afin de protéger parents et établissements des abus.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#C8313F;">M</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">A4</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">En tant qu'administrateur, je veux un tableau de bord global (établissements actifs, en attente, avis à modérer, activité récente, rappels), afin de piloter l'opération au quotidien.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#B57708;">S</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 9px;font-weight:600;">A5</td><td style="border:1px solid #E1E5EA;padding:6px 9px;">En tant qu'administrateur, je veux voir les abonnements arrivant à expiration et relancer les établissements, afin de sécuriser le revenu récurrent.</td><td style="border:1px solid #E1E5EA;padding:6px 9px;text-align:center;font-weight:700;color:#B57708;">S</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. Critères d'acceptation des stories clés</h2>
+  <ul style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:6px;"><strong>P1/P2 — Recherche</strong> : le type est obligatoire (message si absent) ; les filtres se cumulent ; le nombre de résultats est affiché ; « Réinitialiser » restaure l'état initial ; pagination au-delà de 6 résultats.</li>
+    <li style="margin-bottom:6px;"><strong>P4 — Avis</strong> : note moyenne à une décimale avec virgule (ex. 4,8), nombre d'avis, badge « Parent vérifié » ; les avis signalés ne sont pas publiés tant qu'ils sont en modération.</li>
+    <li style="margin-bottom:6px;"><strong>P5 — Contact</strong> : chaque clic « Appeler » / « WhatsApp » et chaque formulaire envoyé est tracé et crée une demande visible côté établissement et secrétariat.</li>
+    <li style="margin-bottom:6px;"><strong>P7/E9 — Sponsoring</strong> : les fiches sponsorisées portent le badge « Sponsorisé » et un marquage visuel distinct ; leur position n'écrase jamais totalement les résultats organiques.</li>
+    <li style="margin-bottom:6px;"><strong>E7/E8 — Crédits</strong> : le solde décrémente à chaque vue sponsorisée et contact reçu ; alerte « Solde bas » sous un seuil ; à 0, la fiche passe en « temporairement indisponible » côté public avec invitation à recharger.</li>
+    <li style="margin-bottom:6px;"><strong>A1 — Validation</strong> : un établissement « En attente » n'apparaît pas dans les résultats publics ; la suspension retire la fiche de l'annuaire immédiatement et est réversible.</li>
+    <li style="margin-bottom:6px;"><strong>S1/A2 — Permissions</strong> : un secrétaire sans la permission « Avis » ne voit pas le module de modération ; toute modification de permission prend effet à la connexion suivante au plus tard.</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">7. Besoins fonctionnels par module</h2>
+  <ol style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:6px;"><strong>Annuaire &amp; recherche</strong> — référentiel des établissements (6 types), recherche type + ville, filtres (filière, budget, note), tri, pagination, vue carte, pages ville.</li>
+    <li style="margin-bottom:6px;"><strong>Fiche établissement</strong> — contenu riche (galerie, vidéo, filières, équipements, équipe, FAQ, horaires, réseaux sociaux, carte), états : active, en attente, suspendue, masquée (crédits épuisés).</li>
+    <li style="margin-bottom:6px;"><strong>Avis &amp; modération</strong> — dépôt avec note, vérification « parent vérifié », signalement, file de modération (approbation / rejet motivé), réponse de l'établissement.</li>
+    <li style="margin-bottom:6px;"><strong>Mise en relation</strong> — appel, WhatsApp, formulaire ; suivi des demandes avec statuts ; traçage des interactions pour les statistiques et la consommation de crédits.</li>
+    <li style="margin-bottom:6px;"><strong>Monétisation</strong> — formules (Gratuit / Pack Visibilité / Premium 2 500 MAD/mois), packs de crédits (200 / 400 MAD, 500 / 900 MAD, 1 000 / 1 600 MAD), consommation par vue sponsorisée et contact, facturation, historique.</li>
+    <li style="margin-bottom:6px;"><strong>Back-offices &amp; rôles</strong> — authentification, trois rôles (admin, secrétaire, établissement), permissions granulaires par module, tableaux de bord par rôle.</li>
+    <li style="margin-bottom:6px;"><strong>Notifications</strong> — alertes solde bas, nouvelles demandes, avis signalés, abonnements à échéance (in-app V1 ; e-mail Should).</li>
+  </ol>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">8. Besoins non fonctionnels</h2>
+  <table style="width:100%;border-collapse:collapse;font:400 11px/1.55 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;width:20%;">Exigence</th>
+        <th style="text-align:left;font:700 10px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:7px 9px;">Cible</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Performance</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Résultats de recherche affichés en moins de 2 s sur connexion mobile 4G ; images optimisées et chargées à la demande.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Mobile first</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Interface responsive dès 360 px ; cibles tactiles ≥ 44 px (norme du design system) ; navigateurs récents (Chrome, Safari, Firefox, Edge).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Sécurité</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Authentification par rôle (RBAC), mots de passe hachés, sessions sécurisées, HTTPS obligatoire, journalisation des actions sensibles (validation, suspension, modération).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Données personnelles</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Conformité à la loi marocaine 09-08 (CNDP) : consentement pour les données des parents, finalité déclarée, droit d'accès et de suppression.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Disponibilité</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Cible 99 % ; sauvegarde quotidienne de la base de données ; restauration documentée.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">SEO</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">URL propres et indexables par ville et par type, métadonnées et données structurées sur les fiches, sitemap, performances Core Web Vitals (détaillé au livrable 9).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Internationalisation</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Français (Maroc) en V1 : MAD, virgule décimale, formats locaux. Arabe (RTL) prévu en phase ultérieure — l'architecture front doit le permettre (propriétés CSS logiques, i18n).</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:7px 9px;font-weight:700;">Maintenabilité</td><td style="border:1px solid #E1E5EA;padding:7px 9px;">Respect du design system écoles360 (tokens + 46 composants documentés) ; code revu, testé et documenté (livrables 13 et 16).</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">9. Traçabilité vers le prototype</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 8px;">Toutes les stories M et S sont démontrables dans le prototype haute-fidélité :</p>
+  <ul style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>P1–P9</strong> → site public : accueil (recherche guidée), résultats (filtres, tri, liste/carte), fiche détaillée, contact, pages ville, blog.</li>
+    <li style="margin-bottom:5px;"><strong>E1–E9</strong> → inscription (formules et packs) ; espace établissement : tableau de bord, Ma fiche, Statistiques, Avis reçus, Crédits &amp; abonnement.</li>
+    <li style="margin-bottom:5px;"><strong>S1–S4</strong> → espace secrétariat : tableau de bord, Fiches, Demandes de contact, Modération des avis.</li>
+    <li style="margin-bottom:5px;"><strong>A1–A5</strong> → back-office admin : tableau de bord et rappels, Établissements (validation / suspension), Secrétaires &amp; permissions, Modération des avis.</li>
+  </ul>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0;">Le périmètre V1 correspond à l'ensemble des stories <strong>Must</strong>. Ces besoins sont contractualisés dans le cahier des charges initial (livrable 3), puis complétés par le modèle économique détaillé et la stratégie SEO (livrable 9).</p>
+
+</x-import>
+</x-dc>
+</body>
+</html>

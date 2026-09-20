@@ -1,0 +1,2079 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<style>
+body{margin:0;background:#f0eee9;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a}
+a{color:#1a1a1a}a:hover{color:#666}
+.dv-turn{padding:40px 44px 36px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Helvetica,Arial,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:52px;align-items:flex-start}
+.dv-opt{flex:none;max-width:100%;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:9px;font:600 14px/1.3 Helvetica,Arial,sans-serif;color:#1a1a1a}
+.dv-opt:target .dv-oid{background:#1a1a1a;color:#fff}
+.dv-next{margin:28px 0 0;font:12px/1.5 Helvetica,Arial,sans-serif;color:rgba(0,0,0,.5)}
+.fr{background:#fff;border:1.5px solid #8f8f8f;border-radius:10px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.vp{font:600 10px ui-monospace,Menlo,monospace;color:#78716c;letter-spacing:.5px;text-transform:uppercase}
+.hatch{background:repeating-linear-gradient(45deg,#ebebeb 0 7px,#f8f8f8 7px 14px);border:1px solid #c8c8c8;display:flex;align-items:center;justify-content:center;color:#8a8a8a;font:500 10px ui-monospace,Menlo,monospace;flex:none;border-radius:4px;text-align:center}
+.b1{display:flex;align-items:center;justify-content:center;background:#2f2f2f;color:#fff;font-weight:600;border-radius:8px;text-align:center;padding:0 14px;font-size:12.5px}
+.b2{display:flex;align-items:center;justify-content:center;background:#fff;border:1.4px solid #4a4a4a;color:#2f2f2f;font-weight:600;border-radius:8px;text-align:center;padding:0 14px;font-size:12.5px}
+.bdg{display:inline-flex;align-items:center;border:1px solid #9a9a9a;color:#4f4f4f;background:#f1f1f1;border-radius:4px;font:700 8.5px/1 Helvetica,Arial,sans-serif;padding:3px 5px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1.2px solid #8f8f8f;border-radius:99px;padding:0 12px;font:500 11.5px Helvetica,Arial,sans-serif;background:#fff;height:38px;white-space:nowrap}
+.chipa{background:#2f2f2f;color:#fff;border-color:#2f2f2f}
+.inp{background:#fff;border:1.2px solid #a3a3a3;border-radius:8px;display:flex;align-items:center;padding:0 10px;color:#8a8a8a;font-size:12px;min-height:44px}
+.lab{font:700 10.5px Helvetica,Arial,sans-serif;color:#555;text-transform:uppercase;letter-spacing:.4px}
+.n{display:inline-flex;width:17px;height:17px;border-radius:99px;background:#1a1a1a;color:#fff;font:700 10px/1 Helvetica,Arial,sans-serif;align-items:center;justify-content:center;flex:none}
+.ann{width:310px;flex:none;background:#fbfaf6;border:1px dashed #a0a0a0;border-radius:10px;padding:14px 16px}
+.ann h4{margin:0 0 10px;font:700 10.5px Helvetica,Arial,sans-serif;text-transform:uppercase;letter-spacing:.6px;color:#666}
+.ann ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.ann li{display:flex;gap:8px;font:12px/1.5 Helvetica,Arial,sans-serif;color:#333}
+.sec{border-top:1px solid #e0e0e0;padding:14px;display:flex;flex-direction:column;gap:10px}
+.eyeb{margin:0;font:700 11px Helvetica,Arial,sans-serif;text-transform:uppercase;letter-spacing:.7px;color:#555}
+.row{display:flex;align-items:center;gap:8px}
+.col{display:flex;flex-direction:column;gap:8px}
+.mut{color:#7d7d7d}
+.seg{display:flex;border:1.2px solid #5a5a5a;border-radius:8px;overflow:hidden}
+.seg>div{padding:0 12px;height:40px;display:flex;align-items:center;font:600 11.5px Helvetica,Arial,sans-serif;background:#fff}
+.seg>div.sega{background:#2f2f2f;color:#fff}
+.star{letter-spacing:1px;color:#3d3d3d}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">LOT P1 révisé — d'après le prototype fourni (structure reprise, rendu gris basse fidélité) · OTP supprimé → compte e-mail léger pour les avis</span></div>
+<p style="margin:0 0 24px;font:11.5px/1.5 Helvetica,Arial,sans-serif;color:#8a8a8a">Révisions : recherche sans mot-clé · types en petites icônes · filtres par type + budget Min–Max · filtres desktop horizontaux · fiche = structure du prototype sans formulaire de demande · « Autres projets » avant Établissements similaires · login e-mail pour les avis · gestion des groupes multi-cycles.</p>
+<div class="dv-opts">
+<!-- ===== 2a ACCUEIL RÉVISÉ ===== -->
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Écran 1 révisé — Accueil (sans mot-clé · types en petites icônes · page enrichie)</div>
+<div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap">
+
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390</div>
+<div class="fr" data-screen-label="2a Accueil révisé — mobile" style="width:390px">
+  <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd;gap:8px">
+    <div class="hatch" style="width:84px;height:30px">logo</div>
+    <div style="flex:1"></div>
+    <div class="b1" style="height:44px;padding:0 10px;font-size:11px">Inscrire mon établissement</div>
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1.2px solid #9a9a9a;border-radius:8px;font-size:19px;flex:none">≡</div>
+    <span class="n">1</span>
+  </div>
+  <div style="position:relative">
+    <div class="hatch" style="height:190px;border:0;border-radius:0">visuel hero — slider 3 images</div>
+    <div class="col" style="position:absolute;left:14px;right:14px;bottom:34px;gap:4px">
+      <h2 style="margin:0;font-size:21px;background:#fff;padding:6px 10px;align-self:flex-start;border:1px solid #c8c8c8">Trouvez la bonne école pour votre enfant</h2>
+    </div>
+    <div class="row" style="position:absolute;left:14px;bottom:12px;gap:5px">
+      <div style="width:22px;height:7px;border-radius:99px;background:#2f2f2f"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+      <span class="n">2</span>
+    </div>
+  </div>
+  <div class="col" style="padding:12px 14px 16px;gap:8px;background:#f6f6f6;border-bottom:1px solid #e0e0e0">
+    <div class="col" style="background:#fff;border:1.2px solid #b5b5b5;border-radius:10px;padding:12px;gap:8px">
+      <div class="row"><span class="lab" style="flex:1">Rechercher un établissement</span><span class="n">3</span></div>
+      <div class="inp">Ville — ex. Casablanca ▾</div>
+      <div class="row" style="margin-top:2px"><span class="lab" style="flex:1">Types — sélection multiple</span><span class="n">4</span></div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+        <div class="chip chipa" style="grid-column:span 2;height:48px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12.5px;padding:0 4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="8.5" r="4"></circle><path d="M12 12.5v6"></path><circle cx="12" cy="20" r="1.3"></circle></svg>Crèche ✓</div>
+        <div class="chip chipa" style="grid-column:span 2;height:48px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12.5px;padding:0 4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M5 19l1.5-4.5L17 4l3 3L9.5 17.5 5 19z"></path></svg>Primaire ✓</div>
+        <div class="chip" style="grid-column:span 2;height:48px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12.5px;padding:0 4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M2 4.5h6a4 4 0 0 1 4 4V20a3 3 0 0 0-3-3H2z"></path><path d="M22 4.5h-6a4 4 0 0 0-4 4V20a3 3 0 0 1 3-3h7z"></path></svg>Collège</div>
+        <div class="chip" style="grid-column:span 3;height:48px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12.5px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M2 9.5l10-5 10 5-10 5-10-5z"></path><path d="M6 11.5v4.5c0 1.6 2.7 3 6 3s6-1.4 6-3v-4.5"></path></svg>Lycée</div>
+        <div class="chip" style="grid-column:span 3;height:48px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12.5px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="9" r="4.5"></circle><path d="M9.5 12.5L8 21l4-2.2L16 21l-1.5-8.5"></path></svg>École supérieure</div>
+        <div class="chip" style="grid-column:span 3;height:48px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12.5px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 3l9 5.5H3L12 3z"></path><path d="M5 8.5V19M12 8.5V19M19 8.5V19"></path><path d="M3 19h18"></path></svg>Université</div>
+        <div class="chip" style="grid-column:span 3;height:48px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12.5px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="3" y="4.5" width="18" height="11.5" rx="1.5"></rect><path d="M9 20h6M12 16v4"></path></svg>Centre de formation</div>
+      </div>
+      <div class="b1" style="height:48px">Rechercher</div>
+    </div>
+  </div>
+  <div class="sec" style="background:#f6f6f6">
+    <div class="col" style="gap:2px;align-items:center;text-align:center">
+      <span style="font-size:9.5px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">SIMPLE ET RAPIDE</span>
+      <div class="row" style="gap:6px"><h3 style="margin:0;font-size:18px">Comment ça marche</h3><span class="n">5</span></div>
+    </div>
+    <div class="row" style="gap:10px;padding:8px 10px">
+      <div style="width:28px;height:28px;border-radius:99px;background:#e3e3e3;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none">1</div>
+      <div class="col" style="gap:1px"><span style="font-size:12.5px;font-weight:700">Choisissez le type</span><span class="mut" style="font-size:10.5px;line-height:1.45">Crèche, primaire, collège, lycée, supérieur ou centre de formation.</span></div>
+    </div>
+    <div class="row" style="gap:10px;padding:8px 10px">
+      <div style="width:28px;height:28px;border-radius:99px;background:#e3e3e3;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none">2</div>
+      <div class="col" style="gap:1px"><span style="font-size:12.5px;font-weight:700">Affinez vos filtres</span><span class="mut" style="font-size:10.5px;line-height:1.45">Ville, budget mensuel, langues, activités, filière.</span></div>
+    </div>
+    <div class="row" style="gap:10px;padding:10px;background:#fff;border:1.2px solid #b5b5b5;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,.06)">
+      <div style="width:28px;height:28px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none">3</div>
+      <div class="col" style="gap:1px"><span style="font-size:12.5px;font-weight:700">Comparez en confiance</span><span class="mut" style="font-size:10.5px;line-height:1.45">Photos, note des parents, avis vérifiés et fourchette de tarifs, côte à côte.</span></div>
+    </div>
+    <div class="row" style="gap:10px;padding:8px 10px">
+      <div style="width:28px;height:28px;border-radius:99px;background:#e3e3e3;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none">4</div>
+      <div class="col" style="gap:1px"><span style="font-size:12.5px;font-weight:700">Contactez directement</span><span class="mut" style="font-size:10.5px;line-height:1.45">Appel ou WhatsApp en un clic, depuis la fiche.</span></div>
+    </div>
+    <div class="row" style="background:#ececec;border:1.2px solid #c8c8c8;border-radius:12px;padding:14px;gap:10px;justify-content:center">
+      <div class="col" style="width:132px;background:#fff;border:1px solid #c8c8c8;border-radius:10px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:60px;border:0;border-bottom:1px solid #d9d9d9;border-radius:0"></div>
+        <div class="col" style="padding:8px;gap:3px"><span style="font-size:11px;font-weight:700">Lycée Al Massira</span><span class="star" style="font-size:10px">★ 4,8</span><span style="background:#efefef;border-radius:5px;padding:2px 7px;font-size:9.5px;font-weight:600;align-self:flex-start">2 500 MAD</span></div>
+      </div>
+      <div class="col" style="width:132px;background:#fff;border:1px solid #c8c8c8;border-radius:10px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:60px;border:0;border-bottom:1px solid #d9d9d9;border-radius:0"></div>
+        <div class="col" style="padding:8px;gap:3px"><span style="font-size:11px;font-weight:700">La Résidence</span><span class="star" style="font-size:10px">★ 4,9</span><span style="background:#efefef;border-radius:5px;padding:2px 7px;font-size:9.5px;font-weight:600;align-self:flex-start">3 000 MAD</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="col" style="gap:2px;align-items:center;text-align:center">
+      <span style="font-size:9.5px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">CE QUE NOUS FAISONS</span>
+      <h3 style="margin:0 0 8px;font-size:18px">Choisir une école, enfin simple</h3>
+    </div>
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+      <div class="hatch" style="height:88px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo — familles / campus</div>
+      <div class="col" style="padding:11px;gap:4px">
+        <div class="hatch" style="width:32px;height:32px;border-radius:8px">ic.</div>
+        <span style="font-size:13px;font-weight:700">Tout au même endroit</span>
+        <span class="mut" style="font-size:11px;line-height:1.5">Comparez établissements, filières, tarifs et avis sur une seule plateforme.</span>
+      </div>
+    </div>
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+      <div class="hatch" style="height:88px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo — salle de classe</div>
+      <div class="col" style="padding:11px;gap:4px">
+        <div class="hatch" style="width:32px;height:32px;border-radius:8px">ic.</div>
+        <span style="font-size:13px;font-weight:700">Des établissements vérifiés</span>
+        <span class="mut" style="font-size:11px;line-height:1.5">Chaque école référencée est contrôlée : informations à jour, badge « Vérifié ».</span>
+      </div>
+    </div>
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+      <div class="hatch" style="height:88px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo — parents</div>
+      <div class="col" style="padding:11px;gap:4px">
+        <div class="hatch" style="width:32px;height:32px;border-radius:8px">ic.</div>
+        <span style="font-size:13px;font-weight:700">Une communauté de parents</span>
+        <span class="mut" style="font-size:11px;line-height:1.5">Lisez les avis, comparez les expériences et partagez le vôtre.</span>
+      </div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="row" style="align-items:flex-start"><div class="col" style="flex:1;gap:2px"><span style="font-size:9.5px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">SÉLECTION VÉRIFIÉE</span><p class="eyeb" style="margin:0">Établissements à la une</p></div><span class="n">6</span></div>
+    <div class="row" style="gap:10px;overflow:hidden">
+      <div class="col" style="width:240px;flex:none;border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:105px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo</div>
+        <div class="col" style="padding:10px;gap:4px">
+          <div class="row" style="gap:5px"><span class="bdg">Sponsorisé</span><span class="bdg">✓ Vérifié</span></div>
+          <span style="font-size:13px;font-weight:700">Groupe Scolaire Atlas</span>
+          <span class="mut" style="font-size:11.5px">École privée · Casablanca — Maârif</span>
+          <div class="row" style="gap:6px"><span class="star" style="font-size:11.5px">★ 4,8 · 26 avis</span><span class="mut" style="font-size:10.5px">···&nbsp;Premium</span></div>
+        </div>
+      </div>
+      <div class="col" style="width:240px;flex:none;border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:105px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo</div>
+        <div class="col" style="padding:10px;gap:4px">
+          <div class="row" style="gap:5px"><span class="bdg">Sponsorisé</span><span class="bdg">✓ Vérifié</span></div>
+          <span style="font-size:13px;font-weight:700">Institut Al Manar</span>
+          <span class="mut" style="font-size:11.5px">Collège · Rabat — Agdal</span>
+          <div class="row" style="gap:6px"><span class="star" style="font-size:11.5px">★ 4,6 · 18 avis</span><span class="mut" style="font-size:10.5px">··&nbsp;Gold</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="row" style="justify-content:center;gap:5px">
+      <div style="width:22px;height:7px;border-radius:99px;background:#2f2f2f"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#c9c9c9"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#c9c9c9"></div>
+    </div>
+  </div>
+  <div class="sec" style="background:#f6f6f6">
+    <p class="eyeb">12 villes couvertes</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11.5px;font-weight:500;text-align:center">
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Casablanca</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Rabat</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Marrakech</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Fès</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Tanger</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Agadir</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Meknès</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Kénitra</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Oujda</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Tétouan</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Salé</div>
+      <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:12px 4px">Mohammedia</div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="row"><p class="eyeb" style="flex:1">Ils ont trouvé leur école ici</p><span class="n">7</span></div>
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:10px;background:#fff;gap:5px">
+      <div class="row" style="gap:6px"><div style="width:24px;height:24px;border-radius:99px;background:#dcdcdc;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">S</div><span style="font-size:12px;font-weight:600">Samira B.</span><span class="bdg">Parent vérifié</span></div>
+      <span class="star" style="font-size:11px">★★★★★</span>
+      <p class="mut" style="margin:0;font-size:11.5px;line-height:1.45">Inscription réglée en une semaine, très bon suivi de la direction.</p>
+    </div>
+    <div class="row" style="justify-content:center;gap:5px">
+      <div style="width:7px;height:7px;border-radius:99px;background:#2f2f2f"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#c9c9c9"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#c9c9c9"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#c9c9c9"></div>
+    </div>
+    <div class="row" style="gap:6px;text-align:center;border-top:1px solid #e0e0e0;padding-top:12px">
+      <div class="col" style="flex:1;gap:2px"><span style="font-size:18px;font-weight:700">1 250</span><span class="mut" style="font-size:10.5px">établissements</span></div>
+      <div class="col" style="flex:1;gap:2px"><span style="font-size:18px;font-weight:700">8 400</span><span class="mut" style="font-size:10.5px">demandes traitées</span></div>
+      <div class="col" style="flex:1;gap:2px"><span style="font-size:18px;font-weight:700">3 900</span><span class="mut" style="font-size:10.5px">avis publiés</span></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="row"><p class="eyeb" style="flex:1">Conseils &amp; guides</p><span class="n">9</span></div>
+    <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0">
+      <div class="hatch" style="width:96px;flex:none;border:0;border-right:1px solid #c8c8c8;border-radius:0">visuel</div>
+      <div class="col" style="padding:10px;gap:4px;flex:1">
+        <span class="bdg" style="align-self:flex-start">Choisir une école</span>
+        <span style="font-size:12.5px;font-weight:700;line-height:1.35">Mission, semi-privé, international : quel programme choisir ?</span>
+        <span class="mut" style="font-size:10.5px">5 min de lecture · 12/07/2026</span>
+      </div>
+    </div>
+    <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0">
+      <div class="hatch" style="width:96px;flex:none;border:0;border-right:1px solid #c8c8c8;border-radius:0">visuel</div>
+      <div class="col" style="padding:10px;gap:4px;flex:1">
+        <span class="bdg" style="align-self:flex-start">Budget</span>
+        <span style="font-size:12.5px;font-weight:700;line-height:1.35">Frais de scolarité au Maroc : à quoi s'attendre en 2026 ?</span>
+        <span class="mut" style="font-size:10.5px">4 min de lecture · 05/07/2026</span>
+      </div>
+    </div>
+    <div class="b2" style="height:44px">Voir le blog</div>
+  </div>
+  <div class="sec">
+    <div style="position:relative">
+      <div class="hatch" style="height:90px">bannière annonceur</div>
+      <span class="bdg" style="position:absolute;top:6px;right:6px;background:#fff">Publicité</span>
+    </div>
+  </div>
+  <div class="sec" style="gap:12px">
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;background:#fff;gap:8px">
+      <div class="row"><span style="font-size:15px;font-weight:800;flex:1">Besoin d'aide pour choisir ?</span><span class="n">10</span></div>
+      <span class="mut" style="font-size:11px;line-height:1.5">Notre équipe vous accompagne gratuitement pour trouver l'établissement idéal pour votre enfant.</span>
+      <div class="row" style="gap:8px"><div class="b2" style="height:44px;flex:1;font-size:11px">✆&#xFE0E; 06 61 18 98 21</div><div class="b1" style="height:44px;flex:1;background:#5a5a5a;font-size:11px">Nous écrire</div></div>
+    </div>
+    <div class="col" style="background:#2f2f2f;border-radius:12px;padding:16px;gap:8px">
+      <span style="font-size:15px;font-weight:800;color:#fff">Vous dirigez un établissement ?</span>
+      <span style="font-size:11px;line-height:1.5;color:#c9c9c9">Référencez votre école, gagnez en visibilité et recevez des contacts de parents qualifiés près de chez vous.</span>
+      <div class="b1" style="height:46px;background:#fff;color:#1a1a1a">Inscrire mon établissement</div>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:20px 14px 130px;gap:14px">
+    <div class="hatch" style="width:84px;height:30px">logo</div>
+    <p style="margin:0;font-size:11px;line-height:1.55;color:#c9c9c9">L'annuaire de référence des établissements scolaires privés au Maroc. Recherchez, comparez et contactez en toute confiance.</p>
+    <div class="row" style="gap:7px">
+      <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">FB</div>
+      <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">IG</div>
+      <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">LI</div>
+      <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">YT</div>
+      <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">TK</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="col" style="gap:6px"><span style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#9a9a9a">PARENTS</span><span style="font-size:11.5px;color:#e3e3e3">Rechercher</span><span style="font-size:11.5px;color:#e3e3e3">Blog</span><span style="font-size:11.5px;color:#e3e3e3">À propos</span><span style="font-size:11.5px;color:#e3e3e3">Contact</span></div>
+      <div class="col" style="gap:6px"><span style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#9a9a9a">ÉTABLISSEMENTS</span><span style="font-size:11.5px;color:#e3e3e3">Inscrire mon établissement</span><span style="font-size:11.5px;color:#e3e3e3">Formules &amp; tarifs</span><span style="font-size:11.5px;color:#e3e3e3">Espace pro</span></div>
+    </div>
+    <div class="col" style="gap:6px"><span style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#9a9a9a">AIDE</span><div class="row" style="flex-wrap:wrap;gap:10px"><span style="font-size:11.5px;color:#e3e3e3">Contact</span><span style="font-size:11.5px;color:#e3e3e3">FAQ</span><span style="font-size:11.5px;color:#e3e3e3">Mentions légales</span><span style="font-size:11.5px;color:#e3e3e3">Confidentialité</span></div></div>
+    <div class="row" style="border-top:1px solid #4a4a4a;padding-top:12px;gap:12px;flex-wrap:wrap">
+      <span style="font-size:10px;color:#9a9a9a;flex:1">© 2026 écoles360. Tous droits réservés.</span>
+      <span style="font-size:10px;color:#c9c9c9">CGU</span><span style="font-size:10px;color:#c9c9c9">Confidentialité</span><span style="font-size:10px;color:#c9c9c9">Espace pro</span>
+    </div>
+  </div>
+  <div class="row" style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1.5px solid #6f6f6f;height:60px">
+    <div class="col" style="flex:1;align-items:center;justify-content:center;gap:2px"><div class="hatch" style="width:22px;height:22px"></div><span style="font-size:10px;font-weight:700">Accueil</span></div>
+    <div class="col" style="flex:1;align-items:center;justify-content:center;gap:2px"><div class="hatch" style="width:22px;height:22px"></div><span class="mut" style="font-size:10px;font-weight:600">Rechercher</span></div>
+    <div class="col" style="flex:1;align-items:center;justify-content:center;gap:2px"><div class="hatch" style="width:22px;height:22px"></div><span class="mut" style="font-size:10px;font-weight:600">Inscrire</span></div>
+    <div class="col" style="flex:1;align-items:center;justify-content:center;gap:2px"><div class="hatch" style="width:22px;height:22px"></div><span class="mut" style="font-size:10px;font-weight:600">Menu</span></div>
+    <span class="n" style="position:absolute;right:6px;top:6px">8</span>
+  </div>
+  <div style="position:absolute;left:12px;bottom:72px;width:52px;height:52px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">WA</div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Desktop · 1200</div>
+<div class="fr" data-screen-label="2a Accueil révisé — desktop" style="width:1200px">
+  <div class="row" style="padding:12px 28px;border-bottom:1px solid #ddd;gap:22px">
+    <div class="hatch" style="width:96px;height:32px">logo</div>
+    <div class="row" style="gap:18px;font-size:12.5px;font-weight:500">
+      <span style="font-weight:700;border-bottom:2px solid #2f2f2f;padding-bottom:2px">Accueil</span><span>Établissements</span><span>Blog</span><span>À propos</span><span>Contact</span>
+    </div>
+    <div style="flex:1"></div>
+    <div class="b1" style="height:42px">Inscrire mon établissement</div>
+    <span class="n">1</span>
+  </div>
+  <div style="position:relative">
+    <div class="hatch" style="height:300px;border:0;border-radius:0">visuel hero — slider 3 images (rotation auto 6 s)</div>
+    <div class="col" style="position:absolute;left:28px;bottom:70px;gap:8px;max-width:600px">
+      <h2 style="margin:0;font-size:34px;background:#fff;padding:8px 14px;border:1px solid #c8c8c8">Trouvez la bonne école pour votre enfant</h2>
+      <p style="margin:0;font-size:13px;background:#fff;padding:6px 14px;border:1px solid #c8c8c8;align-self:flex-start">1 250 établissements privés vérifiés dans 12 villes — consultation libre, sans compte.</p>
+    </div>
+    <div class="row" style="position:absolute;right:28px;top:16px;gap:5px">
+      <div style="width:22px;height:7px;border-radius:99px;background:#2f2f2f"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+      <span class="n">2</span>
+    </div>
+    <div class="col" style="position:absolute;left:28px;right:28px;bottom:-72px;background:#fff;border:1.2px solid #b5b5b5;border-radius:12px;padding:12px 14px;gap:8px;box-shadow:0 4px 14px rgba(0,0,0,.1)">
+      <div class="row" style="gap:10px;align-items:flex-start">
+        <div class="inp" style="width:240px;flex:none">Ville ▾</div>
+        <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:8px;flex:1">
+          <div class="chip chipa" style="grid-column:span 3;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;padding:0 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="8.5" r="4"></circle><path d="M12 12.5v6"></path><circle cx="12" cy="20" r="1.3"></circle></svg>Crèche ✓</div>
+          <div class="chip chipa" style="grid-column:span 3;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;padding:0 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M5 19l1.5-4.5L17 4l3 3L9.5 17.5 5 19z"></path></svg>Primaire ✓</div>
+          <div class="chip" style="grid-column:span 3;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;padding:0 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M2 4.5h6a4 4 0 0 1 4 4V20a3 3 0 0 0-3-3H2z"></path><path d="M22 4.5h-6a4 4 0 0 0-4 4V20a3 3 0 0 1 3-3h7z"></path></svg>Collège <span style="opacity:.55;font-size:10px">280</span></div>
+          <div class="chip" style="grid-column:span 3;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;padding:0 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M2 9.5l10-5 10 5-10 5-10-5z"></path><path d="M6 11.5v4.5c0 1.6 2.7 3 6 3s6-1.4 6-3v-4.5"></path></svg>Lycée <span style="opacity:.55;font-size:10px">190</span></div>
+          <div class="chip" style="grid-column:span 4;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;padding:0 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="9" r="4.5"></circle><path d="M9.5 12.5L8 21l4-2.2L16 21l-1.5-8.5"></path></svg>École supérieure <span style="opacity:.55;font-size:10px">85</span></div>
+          <div class="chip" style="grid-column:span 4;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;padding:0 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 3l9 5.5H3L12 3z"></path><path d="M5 8.5V19M12 8.5V19M19 8.5V19"></path><path d="M3 19h18"></path></svg>Université <span style="opacity:.55;font-size:10px">60</span></div>
+          <div class="chip" style="grid-column:span 4;height:44px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;padding:0 4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="3" y="4.5" width="18" height="11.5" rx="1.5"></rect><path d="M9 20h6M12 16v4"></path></svg>Centre de formation <span style="opacity:.55;font-size:10px">110</span></div>
+        </div>
+        <div class="b1" style="height:48px;width:150px;flex:none">Rechercher</div>
+        <div class="col" style="gap:4px;flex:none"><span class="n">3</span><span class="n">4</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:96px 28px 20px;background:#f6f6f6">
+    <div class="col" style="gap:2px;align-items:center;text-align:center">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">SIMPLE ET RAPIDE</span>
+      <div class="row" style="gap:8px;justify-content:center"><h2 style="margin:0 0 12px;font-size:24px">Comment ça marche</h2><span class="n">5</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1.05fr;gap:24px;align-items:center">
+      <div class="col" style="gap:6px">
+        <div class="row" style="gap:12px;padding:10px 12px">
+          <div style="width:30px;height:30px;border-radius:99px;background:#e3e3e3;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none">1</div>
+          <div class="col" style="gap:2px"><span style="font-size:13.5px;font-weight:700">Choisissez le type</span><span class="mut" style="font-size:11.5px;line-height:1.5">Crèche, primaire, collège, lycée, supérieur ou centre de formation — dites-nous ce que vous cherchez.</span></div>
+        </div>
+        <div class="row" style="gap:12px;padding:10px 12px">
+          <div style="width:30px;height:30px;border-radius:99px;background:#e3e3e3;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none">2</div>
+          <div class="col" style="gap:2px"><span style="font-size:13.5px;font-weight:700">Affinez vos filtres</span><span class="mut" style="font-size:11.5px;line-height:1.5">Ville, budget mensuel, langues, activités, filière : ciblez précisément l'établissement idéal.</span></div>
+        </div>
+        <div class="row" style="gap:12px;padding:12px;background:#fff;border:1.2px solid #b5b5b5;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.07)">
+          <div style="width:30px;height:30px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none">3</div>
+          <div class="col" style="gap:2px"><span style="font-size:13.5px;font-weight:700">Comparez en confiance</span><span class="mut" style="font-size:11.5px;line-height:1.5">Photos, note des parents, avis vérifiés et fourchette de tarifs, côte à côte.</span></div>
+        </div>
+        <div class="row" style="gap:12px;padding:10px 12px">
+          <div style="width:30px;height:30px;border-radius:99px;background:#e3e3e3;color:#777;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none">4</div>
+          <div class="col" style="gap:2px"><span style="font-size:13.5px;font-weight:700">Contactez directement</span><span class="mut" style="font-size:11.5px;line-height:1.5">Appel ou WhatsApp en un clic, sans intermédiaire, depuis la fiche de l'établissement.</span></div>
+        </div>
+      </div>
+      <div class="row" style="background:#ececec;border:1.2px solid #c8c8c8;border-radius:14px;min-height:290px;gap:16px;align-items:center;justify-content:center;padding:20px">
+        <div class="col" style="width:158px;background:#fff;border:1px solid #c8c8c8;border-radius:12px;overflow:hidden;gap:0;box-shadow:0 6px 16px rgba(0,0,0,.08)">
+          <div class="hatch" style="height:76px;border:0;border-bottom:1px solid #d9d9d9;border-radius:0"></div>
+          <div class="col" style="padding:10px;gap:4px"><span style="font-size:12px;font-weight:700">Lycée Al Massira</span><span class="star" style="font-size:11px">★ 4,8</span><span style="background:#efefef;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;align-self:flex-start">2 500 MAD</span></div>
+        </div>
+        <div class="col" style="width:158px;background:#fff;border:1px solid #c8c8c8;border-radius:12px;overflow:hidden;gap:0;box-shadow:0 6px 16px rgba(0,0,0,.08)">
+          <div class="hatch" style="height:76px;border:0;border-bottom:1px solid #d9d9d9;border-radius:0"></div>
+          <div class="col" style="padding:10px;gap:4px"><span style="font-size:12px;font-weight:700">La Résidence</span><span class="star" style="font-size:11px">★ 4,9</span><span style="background:#efefef;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;align-self:flex-start">3 000 MAD</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:18px 28px">
+    <div class="col" style="gap:2px;align-items:center;text-align:center">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">CE QUE NOUS FAISONS</span>
+      <h2 style="margin:0 0 12px;font-size:24px">Choisir une école, enfin simple</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:120px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo — familles / campus</div>
+        <div class="col" style="padding:14px;gap:6px">
+          <div class="hatch" style="width:36px;height:36px;border-radius:9px">ic.</div>
+          <span style="font-size:14px;font-weight:700">Tout au même endroit</span>
+          <span class="mut" style="font-size:11.5px;line-height:1.55">Comparez établissements, filières, tarifs et avis sur une seule plateforme. Un vrai gain de temps pour choisir la bonne école.</span>
+        </div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:120px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo — salle de classe</div>
+        <div class="col" style="padding:14px;gap:6px">
+          <div class="hatch" style="width:36px;height:36px;border-radius:9px">ic.</div>
+          <span style="font-size:14px;font-weight:700">Des établissements vérifiés</span>
+          <span class="mut" style="font-size:11.5px;line-height:1.55">Chaque école référencée est contrôlée par nos équipes : informations à jour, coordonnées exactes, badge « Vérifié ».</span>
+        </div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:120px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo — parents</div>
+        <div class="col" style="padding:14px;gap:6px">
+          <div class="hatch" style="width:36px;height:36px;border-radius:9px">ic.</div>
+          <span style="font-size:14px;font-weight:700">Une communauté de parents</span>
+          <span class="mut" style="font-size:11.5px;line-height:1.55">Profitez des retours d'autres familles : lisez les avis, comparez les expériences et partagez le vôtre.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:18px 28px">
+    <div class="row" style="align-items:flex-start"><div class="col" style="flex:1;gap:2px"><span style="font-size:9.5px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">SÉLECTION VÉRIFIÉE</span><p class="eyeb" style="margin:0">Établissements à la une</p></div><span class="n">6</span></div>
+    <div class="row" style="gap:12px;align-items:center">
+      <div class="chip" style="width:40px;padding:0;flex:none">‹</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;flex:1">
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0"><div class="hatch" style="height:100px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo</div><div class="col" style="padding:9px;gap:3px"><div class="row" style="gap:4px"><span class="bdg">Sponsorisé</span><span class="bdg">✓ Vérifié</span></div><span style="font-size:12.5px;font-weight:700">Groupe Scolaire Atlas</span><span class="mut" style="font-size:10.5px">Casablanca — Maârif</span><div class="row" style="gap:5px"><span class="star" style="font-size:10.5px">★ 4,8 · 26</span><span class="mut" style="font-size:9.5px">···&nbsp;Premium</span></div></div></div>
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0"><div class="hatch" style="height:100px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo</div><div class="col" style="padding:9px;gap:3px"><div class="row" style="gap:4px"><span class="bdg">Sponsorisé</span><span class="bdg">✓ Vérifié</span></div><span style="font-size:12.5px;font-weight:700">Institut Al Manar</span><span class="mut" style="font-size:10.5px">Rabat — Agdal</span><div class="row" style="gap:5px"><span class="star" style="font-size:10.5px">★ 4,6 · 18</span><span class="mut" style="font-size:9.5px">··&nbsp;Gold</span></div></div></div>
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0"><div class="hatch" style="height:100px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo</div><div class="col" style="padding:9px;gap:3px"><div class="row" style="gap:4px"><span class="bdg">Sponsorisé</span><span class="bdg">✓ Vérifié</span></div><span style="font-size:12.5px;font-weight:700">Lycée Anfa Horizon</span><span class="mut" style="font-size:10.5px">Casablanca — Anfa</span><div class="row" style="gap:5px"><span class="star" style="font-size:10.5px">★ 4,7 · 41</span><span class="mut" style="font-size:9.5px">··&nbsp;Gold</span></div></div></div>
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0"><div class="hatch" style="height:100px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo</div><div class="col" style="padding:9px;gap:3px"><div class="row" style="gap:4px"><span class="bdg">Sponsorisé</span><span class="bdg">✓ Vérifié</span></div><span style="font-size:12.5px;font-weight:700">Crèche Les Poussins</span><span class="mut" style="font-size:10.5px">Marrakech — Guéliz</span><div class="row" style="gap:5px"><span class="star" style="font-size:10.5px">★ 4,9 · 12</span><span class="mut" style="font-size:9.5px">·&nbsp;Silver</span></div></div></div>
+      </div>
+      <div class="chip" style="width:40px;padding:0;flex:none">›</div>
+    </div>
+  </div>
+  <div class="sec" style="padding:18px 28px">
+      <p class="eyeb">12 villes couvertes</p>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:11.5px;font-weight:500;text-align:center">
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Casablanca</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Rabat</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Marrakech</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Fès</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Tanger</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Agadir</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Meknès</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Kénitra</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Oujda</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Tétouan</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Salé</div>
+        <div style="border:1.2px solid #8f8f8f;border-radius:99px;padding:10px 4px">Mohammedia</div>
+      </div>
+  </div>
+  <div class="sec" style="padding:18px 28px;background:#f6f6f6">
+    <div class="row"><p class="eyeb" style="flex:1">Ils ont trouvé leur école ici</p><span class="n">7</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:12px;background:#fff;gap:5px">
+        <div class="row" style="gap:6px"><span style="font-size:12px;font-weight:600">Samira B.</span><span class="bdg">Parent vérifié</span></div>
+        <span class="star" style="font-size:11px">★★★★★</span>
+        <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5">Inscription réglée en une semaine, très bon suivi de la direction.</p>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:12px;background:#fff;gap:5px">
+        <div class="row" style="gap:6px"><span style="font-size:12px;font-weight:600">Karim R.</span><span class="bdg">Parent vérifié</span></div>
+        <span class="star" style="font-size:11px">★★★★☆</span>
+        <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5">Les avis m'ont aidé à départager deux collèges du quartier.</p>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:12px;background:#fff;gap:5px">
+        <div class="row" style="gap:6px"><span style="font-size:12px;font-weight:600">Imane L.</span><span class="bdg">Parent vérifié</span></div>
+        <span class="star" style="font-size:11px">★★★★★</span>
+        <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5">Contact WhatsApp direct avec la crèche, réponse le jour même.</p>
+      </div>
+    </div>
+    <div class="row" style="justify-content:center;gap:5px">
+      <div style="width:7px;height:7px;border-radius:99px;background:#2f2f2f"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#c9c9c9"></div>
+      <div style="width:7px;height:7px;border-radius:99px;background:#c9c9c9"></div>
+    </div>
+  </div>
+  <div class="row" style="margin:0 28px 18px;background:#2f2f2f;border-radius:14px;padding:20px 28px;gap:10px;text-align:center">
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:26px;font-weight:800;color:#fff">1 250</span><span style="font-size:11px;color:#c9c9c9">établissements référencés</span></div>
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:26px;font-weight:800;color:#fff">8 400</span><span style="font-size:11px;color:#c9c9c9">demandes traitées</span></div>
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:26px;font-weight:800;color:#fff">3 900</span><span style="font-size:11px;color:#c9c9c9">avis publiés</span></div>
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:26px;font-weight:800;color:#fff">12</span><span style="font-size:11px;color:#c9c9c9">villes couvertes</span></div>
+  </div>
+  <div class="sec" style="padding:18px 28px">
+    <div class="row"><p class="eyeb" style="flex:1">Conseils &amp; guides pour les parents</p><span class="n">9</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:110px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">visuel article</div>
+        <div class="col" style="padding:12px;gap:5px">
+          <span class="bdg" style="align-self:flex-start">Choisir une école</span>
+          <span style="font-size:13px;font-weight:700;line-height:1.35">Mission, semi-privé, international : quel programme choisir ?</span>
+          <span class="mut" style="font-size:10.5px">5 min de lecture · 12/07/2026</span>
+          <span style="font-size:11px;text-decoration:underline">Lire l'article →</span>
+        </div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:110px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">visuel article</div>
+        <div class="col" style="padding:12px;gap:5px">
+          <span class="bdg" style="align-self:flex-start">Budget</span>
+          <span style="font-size:13px;font-weight:700;line-height:1.35">Frais de scolarité au Maroc : à quoi s'attendre en 2026 ?</span>
+          <span class="mut" style="font-size:10.5px">4 min de lecture · 05/07/2026</span>
+          <span style="font-size:11px;text-decoration:underline">Lire l'article →</span>
+        </div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:110px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">visuel article</div>
+        <div class="col" style="padding:12px;gap:5px">
+          <span class="bdg" style="align-self:flex-start">Inscription</span>
+          <span style="font-size:13px;font-weight:700;line-height:1.35">Dossier d'inscription : les 6 pièces à préparer avant juin</span>
+          <span class="mut" style="font-size:10.5px">3 min de lecture · 28/06/2026</span>
+          <span style="font-size:11px;text-decoration:underline">Lire l'article →</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:0 28px 18px;border:0">
+    <div style="position:relative;max-width:970px;margin:0 auto;width:100%">
+      <div class="hatch" style="height:90px">bannière annonceur · 970 × 90</div>
+      <span class="bdg" style="position:absolute;top:6px;right:6px;background:#fff">Publicité</span>
+    </div>
+  </div>
+  <div class="sec" style="padding:18px 28px;border:0">
+    <div class="row" style="border:1.2px solid #b5b5b5;border-radius:14px;background:#fff;padding:20px;gap:16px;align-items:center">
+      <div class="col" style="flex:1;gap:3px">
+        <span style="font-size:18px;font-weight:800">Besoin d'aide pour choisir ?</span>
+        <span class="mut" style="font-size:12px;line-height:1.5;max-width:440px">Notre équipe vous accompagne gratuitement pour trouver l'établissement idéal pour votre enfant.</span>
+      </div>
+      <div class="b2" style="height:46px">✆&#xFE0E; 06 61 18 98 21</div>
+      <div class="b1" style="height:46px;background:#5a5a5a">Nous écrire</div>
+      <span class="n">10</span>
+    </div>
+    <div class="row" style="background:#2f2f2f;border-radius:14px;padding:26px 20px;gap:16px;align-items:center;margin-top:14px">
+      <div class="col" style="flex:1;gap:3px">
+        <span style="font-size:18px;font-weight:800;color:#fff">Vous dirigez un établissement ?</span>
+        <span style="font-size:12px;line-height:1.5;color:#c9c9c9;max-width:440px">Référencez votre école, gagnez en visibilité et recevez des contacts de parents qualifiés près de chez vous.</span>
+      </div>
+      <div class="b1" style="height:46px;background:#fff;color:#1a1a1a">Inscrire mon établissement</div>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:26px 28px 0;gap:0;position:relative">
+    <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:24px;padding-bottom:22px">
+      <div class="col" style="gap:10px">
+        <div class="hatch" style="width:96px;height:32px">logo</div>
+        <p style="margin:0;font-size:11px;line-height:1.6;color:#c9c9c9;max-width:280px">L'annuaire de référence des établissements scolaires privés au Maroc. Recherchez, comparez et contactez en toute confiance.</p>
+        <div class="row" style="gap:7px">
+          <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">FB</div>
+          <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">IG</div>
+          <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">LI</div>
+          <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">YT</div>
+          <div style="width:34px;height:34px;border-radius:99px;border:1px solid #6f6f6f;color:#c9c9c9;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">TK</div>
+        </div>
+      </div>
+      <div class="col" style="gap:7px"><span style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#9a9a9a">PARENTS</span><span style="font-size:12px;color:#e3e3e3">Rechercher</span><span style="font-size:12px;color:#e3e3e3">Blog</span><span style="font-size:12px;color:#e3e3e3">À propos</span><span style="font-size:12px;color:#e3e3e3">Contact</span></div>
+      <div class="col" style="gap:7px"><span style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#9a9a9a">ÉTABLISSEMENTS</span><span style="font-size:12px;color:#e3e3e3">Inscrire mon établissement</span><span style="font-size:12px;color:#e3e3e3">Formules &amp; tarifs</span><span style="font-size:12px;color:#e3e3e3">Espace pro</span></div>
+      <div class="col" style="gap:7px"><span style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#9a9a9a">AIDE</span><span style="font-size:12px;color:#e3e3e3">Contact</span><span style="font-size:12px;color:#e3e3e3">FAQ</span><span style="font-size:12px;color:#e3e3e3">Mentions légales</span><span style="font-size:12px;color:#e3e3e3">Confidentialité</span></div>
+    </div>
+    <div class="row" style="border-top:1px solid #4a4a4a;padding:12px 0 14px;gap:14px">
+      <span style="font-size:10.5px;color:#9a9a9a;flex:1">© 2026 écoles360. Tous droits réservés.</span>
+      <span style="font-size:10.5px;color:#c9c9c9">CGU</span><span style="font-size:10.5px;color:#c9c9c9">Confidentialité</span><span style="font-size:10.5px;color:#c9c9c9">Espace pro</span>
+    </div>
+    <span class="n" style="position:absolute;top:12px;right:12px">11</span>
+  </div>
+  <div style="position:absolute;left:16px;bottom:16px;width:52px;height:52px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">WA</div>
+  <div class="row" style="position:absolute;right:16px;bottom:16px;background:#fff;border:1.2px solid #6f6f6f;border-radius:10px;padding:8px 10px;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,.12)">
+    <div class="col" style="gap:1px"><span style="font-size:11px;font-weight:700">Besoin d'aide ?</span><span style="font-size:11px">05 22 45 00 00</span></div>
+    <div style="width:22px;height:22px;border:1px solid #8f8f8f;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px">✕</div>
+  </div>
+</div>
+</div>
+<div class="ann">
+<h4>2a · Comportements</h4>
+<ol>
+<li><span class="n">1</span><span>Header du prototype repris : nav Accueil / Établissements / Blog / À propos / Contact + CTA « Inscrire mon établissement ». Mobile : burger ≡ → contenu détaillé en <a class="dv-oid" href="#2b">2b</a>. « Connexion » vit dans le menu ≡ et dans l'espace établissement.</span></li>
+<li><span class="n">2</span><span>Hero = slider 3 visuels (rotation auto 6 s, points cliquables) — 1er « slider à forme différente » de la page.</span></li>
+<li><span class="n">3</span><span>Recherche SANS mot-clé : Ville + Type uniquement. Desktop : carte à cheval sur le hero. → résultats <a class="dv-oid" href="#2c">2c</a>.</span></li>
+<li><span class="n">4</span><span>Types intégrés à la carte de recherche : puces compactes à PETITE icône (15 px, trait fin — cf. exemples fournis), multi-sélectionnables (état coché sombre + ✓). Les grandes tuiles sont SUPPRIMÉES. « Rechercher » ouvre <a class="dv-oid" href="#2c">2c</a> ; les groupes couvrant plusieurs cycles remontent en tête.</span></li>
+<li><span class="n">5</span><span>Guide « Comment ça marche » (SIMPLE ET RAPIDE) : 4 étapes — Choisissez le type · Affinez vos filtres · Comparez en confiance · Contactez directement — l'étape courante est mise en évidence ; aperçu produit à droite (mini-fiches). Suivi de la section « Ce que nous faisons » (3 promesses illustrées).</span></li>
+<li><span class="n">6</span><span>Sponsorisés en carrousel flèches + points (2ᵉ slider), sous le sur-titre « SÉLECTION VÉRIFIÉE ». Niveau de gamme ···&nbsp;Premium / ··&nbsp;Gold / ·&nbsp;Silver affiché. Rotation équitable entre annonceurs de même niveau.</span></li>
+<li><span class="n">7</span><span>Avis parents en slider à points (3ᵉ slider) + compteurs. Preuve sociale conservée.</span></li>
+<li><span class="n">8</span><span>Barre d'onglets mobile fixe (prototype) : Accueil · Rechercher · Inscrire · Menu. WhatsApp flottant remonté au-dessus ; bandeau d'aide fermable conservé (desktop bas-droite).</span></li>
+<li><span class="n">9</span><span>🆕 Enrichissement : section « Conseils &amp; guides » — derniers articles du blog (visuel, catégorie, titre, temps de lecture), relais vers l'onglet Blog du header.</span></li>
+<li><span class="n">10</span><span>Fin de page : carte « Besoin d'aide pour choisir ? » (accompagnement gratuit — appel 06 61 18 98 21 / Nous écrire en WhatsApp) + bandeau sombre « Vous dirigez un établissement ? » → <a class="dv-oid" href="#2f">2f</a>. Remplace l'ancien bloc « Revendiquer votre fiche » (la revendication reste sur la fiche <a class="dv-oid" href="#2d">2d</a>, note 7).</span></li>
+<li><span class="n">11</span><span>🆕 Footer sombre : logo + description + réseaux sociaux, colonnes PARENTS / ÉTABLISSEMENTS / AIDE, barre légale (© · CGU · Confidentialité · Espace pro). Commun à toutes les pages — représenté en version condensée sur les autres écrans (2c, 2d, 2e, 2f, 2g).</span></li>
+</ol>
+</div>
+
+</div>
+</div>
+
+<!-- ===== 2b MENU ===== -->
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>🆕 Contenu du menu ≡ (tiroir mobile)</div>
+<div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap">
+
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390 — visiteur non connecté</div>
+<div class="fr" data-screen-label="2b Menu — non connecté" style="width:390px;background:#9c9c9c">
+  <div class="row" style="align-items:stretch;min-height:600px">
+    <div style="flex:1;background:repeating-linear-gradient(45deg,#a8a8a8 0 8px,#9c9c9c 8px 16px);opacity:.6"></div>
+    <div class="col" style="width:300px;flex:none;background:#fff;box-shadow:-8px 0 24px rgba(0,0,0,.2);padding:16px;gap:0">
+      <div class="row" style="margin-bottom:14px">
+        <div class="hatch" style="width:80px;height:28px">logo</div>
+        <div style="flex:1"></div>
+        <div style="width:40px;height:40px;border:1px solid #8f8f8f;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px">✕</div>
+      </div>
+      <div class="row" style="padding:14px 4px;border-bottom:1px solid #e5e5e5;font-size:15px;font-weight:700">Accueil</div>
+      <div class="row" style="padding:14px 4px;border-bottom:1px solid #e5e5e5;font-size:15px;font-weight:600;color:#555">Établissements<span class="n" style="margin-left:auto">1</span></div>
+      <div class="col" style="padding:4px 4px 12px 14px;border-bottom:1px solid #e5e5e5;gap:8px">
+        <span class="mut" style="font-size:11.5px">Crèche · Primaire · Collège · Lycée · École sup. · Université · Formation</span>
+        <span class="mut" style="font-size:11.5px">Par ville : Casablanca, Rabat, Marrakech… (12)</span>
+      </div>
+      <div class="row" style="padding:14px 4px;border-bottom:1px solid #e5e5e5;font-size:15px;font-weight:600;color:#555">Blog</div>
+      <div class="row" style="padding:14px 4px;border-bottom:1px solid #e5e5e5;font-size:15px;font-weight:600;color:#555">À propos</div>
+      <div class="row" style="padding:14px 4px;border-bottom:1px solid #e5e5e5;font-size:15px;font-weight:600;color:#555">Contact</div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:12px;gap:8px;margin-top:14px">
+        <span style="font-size:12.5px;font-weight:700">Votre compte parent</span>
+        <p class="mut" style="margin:0;font-size:11px;line-height:1.45">Sert uniquement à signer vos avis — pas de tableau de bord.</p>
+        <div class="row" style="gap:8px"><div class="b2" style="height:42px;flex:1;font-size:11.5px">Se connecter</div><div class="b1" style="height:42px;flex:1;font-size:11.5px">Créer un compte</div></div>
+        <span class="n" style="align-self:flex-end">2</span>
+      </div>
+      <div class="b1" style="height:46px;margin-top:12px">Inscrire mon établissement</div>
+      <div class="row" style="margin-top:auto;padding-top:14px;gap:8px">
+        <div class="b2" style="height:42px;flex:1;font-size:11.5px">✆&#xFE0E; 05 22 45 00 00</div>
+        <div class="b2" style="height:42px;flex:1;font-size:11.5px">WhatsApp</div>
+      </div>
+      <span class="mut" style="font-size:10.5px;margin-top:10px">Connexion espace établissement →</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390 — connecté (compte avis)</div>
+<div class="fr" data-screen-label="2b Menu — connecté" style="width:390px;background:#9c9c9c">
+  <div class="row" style="align-items:stretch;min-height:600px">
+    <div style="flex:1;background:repeating-linear-gradient(45deg,#a8a8a8 0 8px,#9c9c9c 8px 16px);opacity:.6"></div>
+    <div class="col" style="width:300px;flex:none;background:#fff;box-shadow:-8px 0 24px rgba(0,0,0,.2);padding:16px;gap:0">
+      <div class="row" style="margin-bottom:14px">
+        <div class="hatch" style="width:80px;height:28px">logo</div>
+        <div style="flex:1"></div>
+        <div style="width:40px;height:40px;border:1px solid #8f8f8f;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px">✕</div>
+      </div>
+      <div class="row" style="gap:10px;padding:12px;border:1.2px solid #b5b5b5;border-radius:10px;margin-bottom:12px">
+        <div style="width:40px;height:40px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">Y</div>
+        <div class="col" style="gap:1px;flex:1"><span style="font-size:12.5px;font-weight:700">youssef.e@gmail.com</span><span class="mut" style="font-size:10.5px">Compte avis vérifié</span></div>
+        <span class="n">3</span>
+      </div>
+      <div class="row" style="padding:12px 4px;border-bottom:1px solid #e5e5e5;font-size:14px;font-weight:600">★ Mes avis</div>
+      <div class="row" style="padding:12px 4px;border-bottom:1px solid #e5e5e5;font-size:14px;font-weight:600">Historique de recherche</div>
+      <div class="row" style="padding:12px 4px;border-bottom:1px solid #e5e5e5;font-size:14px;font-weight:600">Historique de contact</div>
+      <div class="row" style="padding:12px 4px;border-bottom:1px solid #e5e5e5;font-size:14px;font-weight:600">Modifier mon mot de passe</div>
+      <div class="row" style="padding:12px 4px;border-bottom:1px solid #e5e5e5;font-size:14px;font-weight:600">Contactez-nous</div>
+      <div class="row" style="padding:12px 4px;font-size:14px;font-weight:600;color:#8a8a8a">Se déconnecter</div>
+      <div style="border-top:1.5px solid #c9c9c9;margin:10px 0"></div>
+      <div class="row" style="padding:11px 4px;font-size:14px;font-weight:600;color:#555">Accueil</div>
+      <div class="row" style="padding:11px 4px;font-size:14px;font-weight:600;color:#555">Établissements</div>
+      <div class="row" style="padding:11px 4px;font-size:14px;font-weight:600;color:#555">Blog · À propos · Contact</div>
+      <div class="b1" style="height:46px;margin-top:auto">Inscrire mon établissement</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="ann">
+<h4>2b · Comportements</h4>
+<ol>
+<li><span class="n">1</span><span>« Établissements » se déplie dans le tiroir : accès direct par type (7) et par ville (12) → résultats pré-filtrés <a class="dv-oid" href="#2c">2c</a>.</span></li>
+<li><span class="n">2</span><span>Compte parent minimal (remplace l'OTP) : sert uniquement à identifier les avis. Connexion / création → modales <a class="dv-oid" href="#2e">2e</a>.</span></li>
+<li><span class="n">3</span><span>Connecté : cercle initiale (comme Gmail) + entrées Mes avis / Historique de recherche / Historique de contact / Modifier mon mot de passe / Contactez-nous / Déconnexion. Le même menu s'affiche en desktop au clic sur le cercle du header (<a class="dv-oid" href="#2e">2e</a>).</span></li>
+</ol>
+</div>
+
+</div>
+</div>
+<!-- ===== 2c RÉSULTATS RÉVISÉS ===== -->
+<div class="dv-opt" id="2c">
+<div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Écran 2 révisé — Résultats : filtres horizontaux · budget · desktop liste + carte · bascule mobile</div>
+<div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap">
+
+<div class="col" style="gap:6px">
+<div class="vp">Desktop · 1200 — filtres horizontaux · liste à gauche, carte à droite</div>
+<div class="fr" data-screen-label="2c Résultats — desktop" style="width:1200px">
+  <div class="row" style="padding:12px 28px;border-bottom:1px solid #ddd;gap:14px">
+    <div class="hatch" style="width:96px;height:30px">logo</div>
+    <div class="row" style="gap:18px;font-size:12.5px;font-weight:500"><span>Accueil</span><span style="font-weight:700;border-bottom:2px solid #2f2f2f;padding-bottom:2px">Établissements</span><span>Blog</span><span>À propos</span><span>Contact</span></div>
+    <div style="flex:1"></div>
+    <div class="b1" style="height:40px">Inscrire mon établissement</div>
+  </div>
+  <div class="col" style="padding:12px 28px;border-bottom:1px solid #ddd;gap:10px;background:#fff">
+    <div class="row" style="gap:8px">
+      <span class="n">1</span>
+      <div class="inp" style="width:170px">Ville : Casablanca ▾</div>
+      <div class="inp" style="width:230px">Types : Crèche + Primaire (2) ▾</div>
+      <div class="row" style="gap:6px;border:1.2px solid #a3a3a3;border-radius:8px;padding:0 10px;min-height:44px;align-items:center">
+        <span class="lab" style="flex:none">Budget</span>
+        <div class="inp" style="width:64px;min-height:32px;border-radius:6px">Min</div>
+        <span class="mut">–</span>
+        <div class="inp" style="width:64px;min-height:32px;border-radius:6px">Max</div>
+        <span class="mut" style="font-size:10.5px">MAD/mois</span>
+        <span class="n">2</span>
+      </div>
+      <div class="inp" style="width:190px">Trier : pertinence ▾</div>
+      <span class="n">5</span>
+      <div style="flex:1"></div>
+    </div>
+    <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap">
+      <span class="n">3</span>
+      <span class="lab">Filtres Crèche :</span>
+      <div class="chip" style="height:34px">Langues : FR + AR ▾</div>
+      <div class="chip" style="height:34px">Activités : musique ▾</div>
+      <div style="width:1px;height:22px;background:#c9c9c9;margin:0 8px"></div>
+      <span class="lab">Filtres Primaire :</span>
+      <div class="chip" style="height:34px">Matières : anglais + sport ▾</div>
+      <div class="chip" style="height:34px">Activités : toutes ▾</div>
+      <div style="flex:1"></div>
+      <div class="chip" style="height:34px;border-style:dashed">Tout effacer</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1.05fr;background:#f6f6f6;align-items:stretch">
+    <div class="col" style="padding:14px 0 14px 28px;gap:10px">
+    <div class="row" style="gap:10px">
+      <span class="mut" style="font-size:12px;flex:1">64 résultats — dont 4 groupes couvrant Crèche + Primaire</span>
+      <span class="mut" style="font-size:11px">18 fiches/page · 1/4</span>
+    </div>
+    <div class="col" style="gap:10px">
+      <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;background:#fff;padding:10px;gap:10px;position:relative">
+        <div class="hatch" style="width:84px;height:84px">photo</div>
+        <div class="col" style="gap:3px;flex:1">
+          <div class="row" style="gap:5px"><span class="bdg">Sponsorisé</span><span class="bdg">✓ Vérifié</span><span class="bdg" style="border-style:dashed">Groupe : Crèche → Lycée</span></div>
+          <span style="font-size:13.5px;font-weight:700">Groupe Scolaire Atlas</span>
+          <span class="mut" style="font-size:11px">Casablanca — Maârif</span>
+          <div class="row" style="gap:6px"><span class="star" style="font-size:11px">★ 4,8 · 26 avis</span><span class="mut" style="font-size:10px">···&nbsp;Premium · 1 800–2 600 MAD/mois</span></div>
+        </div>
+        <span class="n" style="position:absolute;top:8px;right:8px">4</span>
+      </div>
+      <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;background:#fff;padding:10px;gap:10px">
+        <div class="hatch" style="width:84px;height:84px">photo</div>
+        <div class="col" style="gap:3px;flex:1">
+          <div class="row" style="gap:5px"><span class="bdg">✓ Vérifié</span><span class="bdg" style="border-style:dashed">Groupe : Crèche + Primaire</span></div>
+          <span style="font-size:13.5px;font-weight:700">École Les Orangers</span>
+          <span class="mut" style="font-size:11px">Casablanca — Oasis</span>
+          <div class="row" style="gap:6px"><span class="star" style="font-size:11px">★ 4,5 · 19 avis</span><span class="mut" style="font-size:10px">··&nbsp;· 1 400–1 900 MAD/mois</span></div>
+        </div>
+      </div>
+      <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;background:#fff;padding:10px;gap:10px">
+        <div class="hatch" style="width:84px;height:84px">photo</div>
+        <div class="col" style="gap:3px;flex:1">
+          <div class="row" style="gap:5px"><span class="bdg">✓ Vérifié</span></div>
+          <span style="font-size:13.5px;font-weight:700">Crèche Les Poussins</span>
+          <span class="mut" style="font-size:11px">Casablanca — Gauthier · Crèche</span>
+          <div class="row" style="gap:6px"><span class="star" style="font-size:11px">★ 4,3 · 31 avis</span><span class="mut" style="font-size:10px">· 900–1 300 MAD/mois</span></div>
+        </div>
+      </div>
+      <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;background:#fff;padding:10px;gap:10px">
+        <div class="hatch" style="width:84px;height:84px">photo</div>
+        <div class="col" style="gap:3px;flex:1">
+          <span style="font-size:13.5px;font-weight:700">École Al Firdaous</span>
+          <span class="mut" style="font-size:11px">Casablanca — Sidi Maârouf · Primaire</span>
+          <div class="row" style="gap:6px"><span class="star" style="font-size:11px">★ 4,1 · 8 avis</span><span class="mut" style="font-size:10px">· 1 100–1 500 MAD/mois</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="row" style="justify-content:center;gap:6px">
+      <div class="chip" style="width:40px;padding:0;height:34px">‹</div>
+      <div class="chip chipa" style="width:40px;padding:0;height:34px">1</div>
+      <div class="chip" style="width:40px;padding:0;height:34px">2</div>
+      <div class="chip" style="width:40px;padding:0;height:34px">3</div>
+      <div class="chip" style="width:40px;padding:0;height:34px">4</div>
+      <div class="chip" style="width:40px;padding:0;height:34px">›</div>
+    </div>
+    </div>
+    <div style="position:relative;margin:14px 28px 14px 18px;border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;min-height:520px">
+      <div class="hatch" style="position:absolute;inset:0;border:0;border-radius:0">carte OpenStreetMap — résultats localisés</div>
+      <span class="n" style="position:absolute;top:10px;left:10px">6</span>
+      <div style="position:absolute;left:20%;top:24%;background:#2f2f2f;color:#fff;border-radius:99px;padding:5px 10px;font:700 10.5px Helvetica,Arial,sans-serif">★ 4,8 · G.S. Atlas</div>
+      <div style="position:absolute;left:38%;top:64%;background:#2f2f2f;color:#fff;border-radius:99px;padding:5px 10px;font:700 10.5px Helvetica,Arial,sans-serif">★ 4,3 · Les Poussins</div>
+      <div style="position:absolute;left:72%;top:72%;background:#2f2f2f;color:#fff;border-radius:99px;padding:5px 10px;font:700 10.5px Helvetica,Arial,sans-serif">★ 4,1 · Al Firdaous</div>
+      <div style="position:absolute;left:58%;top:42%;background:#fff;border:2px solid #2f2f2f;border-radius:99px;padding:5px 10px;font:700 10.5px Helvetica,Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.2)">★ 4,5 · Les Orangers</div>
+      <div class="col" style="position:absolute;left:56%;top:12%;width:200px;background:#fff;border:1.2px solid #8f8f8f;border-radius:10px;overflow:hidden;gap:0;box-shadow:0 6px 18px rgba(0,0,0,.18)">
+        <div class="hatch" style="height:64px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">photo</div>
+        <div class="col" style="padding:8px 10px;gap:2px">
+          <span style="font-size:11.5px;font-weight:700">École Les Orangers</span>
+          <span class="star" style="font-size:10px">★ 4,5 · 19 avis</span>
+        </div>
+      </div>
+      <div class="col" style="position:absolute;right:12px;top:12px;gap:6px">
+        <div style="width:36px;height:36px;background:#fff;border:1.2px solid #8f8f8f;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">+</div>
+        <div style="width:36px;height:36px;background:#fff;border:1.2px solid #8f8f8f;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">−</div>
+      </div>
+      <div class="chip" style="position:absolute;left:50%;transform:translateX(-50%);top:12px;height:34px;background:#fff">Rechercher dans cette zone</div>
+      <span class="mut" style="position:absolute;right:10px;bottom:8px;font-size:9px;background:#fff;padding:2px 5px">© OpenStreetMap</span>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:16px 28px 12px;gap:9px">
+    <div class="row" style="gap:20px;align-items:center">
+      <div class="hatch" style="width:84px;height:28px;flex:none">logo</div>
+      <span style="font-size:10.5px;color:#c9c9c9;flex:1">L'annuaire de référence des établissements scolaires privés au Maroc.</span>
+      <div class="row" style="gap:14px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    </div>
+    <div class="row" style="border-top:1px solid #4a4a4a;padding-top:9px;gap:12px">
+      <span style="font-size:9.5px;color:#9a9a9a;flex:1">© 2026 écoles360 — footer commun (version détaillée : accueil 2a)</span>
+      <span style="font-size:9.5px;color:#c9c9c9">CGU</span><span style="font-size:9.5px;color:#c9c9c9">Confidentialité</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390 — bottom-sheet filtres par type</div>
+<div class="fr" data-screen-label="2c Filtres mobile" style="width:390px;background:#9c9c9c">
+  <div style="height:70px;background:repeating-linear-gradient(45deg,#a8a8a8 0 8px,#9c9c9c 8px 16px);opacity:.6"></div>
+  <div class="col" style="background:#fff;border-radius:16px 16px 0 0;padding:14px;gap:11px;box-shadow:0 -4px 14px rgba(0,0,0,.2)">
+    <div style="width:44px;height:5px;border-radius:99px;background:#c9c9c9;margin:0 auto"></div>
+    <div class="row"><span style="font-size:15px;font-weight:700;flex:1">Filtres</span><span style="font-size:12px;text-decoration:underline">Tout effacer</span></div>
+    <div class="col" style="gap:7px">
+      <span class="lab">Ville</span>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><div class="chip chipa">Casablanca</div><div class="chip">Rabat</div><div class="chip">+ 10</div></div>
+    </div>
+    <div class="col" style="gap:7px">
+      <div class="row"><span class="lab" style="flex:1">Types (multi-sélection)</span><span class="n">3</span></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <div class="chip chipa">Crèche ✓</div><div class="chip chipa">Primaire ✓</div><div class="chip">Collège</div><div class="chip">Lycée</div><div class="chip">École sup.</div><div class="chip">Université</div><div class="chip">Formation</div>
+      </div>
+    </div>
+    <div class="col" style="gap:7px">
+      <div class="row"><span class="lab" style="flex:1">Budget</span><span class="n">2</span></div>
+      <div class="row" style="gap:8px;align-items:center">
+        <div class="inp" style="flex:1">Min</div><span class="mut">–</span><div class="inp" style="flex:1">Max</div><span class="mut" style="font-size:11px;flex:none">MAD/mois</span>
+      </div>
+    </div>
+    <div class="col" style="gap:7px;border:1.2px solid #d9d9d9;border-radius:10px;padding:10px">
+      <span class="lab">Filtres Crèche</span>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="mut" style="font-size:10.5px;width:100%">Langues :</span><div class="chip chipa" style="height:34px">Français</div><div class="chip chipa" style="height:34px">Arabe</div><div class="chip" style="height:34px">Anglais</div><div class="chip" style="height:34px">Espagnol</div></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="mut" style="font-size:10.5px;width:100%">Activités :</span><div class="chip" style="height:34px">Dessin</div><div class="chip chipa" style="height:34px">Musique</div><div class="chip" style="height:34px">Cinéma</div><div class="chip" style="height:34px">Parascolaire</div></div>
+    </div>
+    <div class="col" style="gap:7px;border:1.2px solid #d9d9d9;border-radius:10px;padding:10px">
+      <span class="lab">Filtres Primaire</span>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="mut" style="font-size:10.5px;width:100%">Matières :</span><div class="chip" style="height:34px">Arabe</div><div class="chip" style="height:34px">Français</div><div class="chip chipa" style="height:34px">Anglais</div><div class="chip" style="height:34px">Espagnol</div><div class="chip chipa" style="height:34px">Sport</div></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="mut" style="font-size:10.5px;width:100%">Activités :</span><div class="chip" style="height:34px">Dessin</div><div class="chip" style="height:34px">Musique</div><div class="chip" style="height:34px">Théâtre</div><div class="chip" style="height:34px">Parascolaire</div></div>
+    </div>
+    <div class="col" style="gap:7px">
+      <span class="lab">Trier par</span>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <div class="chip chipa" style="height:38px">Pertinence</div><div class="chip" style="height:38px">Prix croissant</div><div class="chip" style="height:38px">Prix décroissant</div><div class="chip" style="height:38px">Mieux noté</div><div class="chip" style="height:38px">Récence</div>
+        <span class="n">5</span>
+      </div>
+    </div>
+    <div class="b1" style="height:48px">Afficher 64 résultats</div>
+  </div>
+</div>
+</div>
+
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390 — bascule Liste ⇄ Carte</div>
+<div class="fr" data-screen-label="2c Résultats carte — mobile" style="width:390px">
+  <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd;gap:8px">
+    <div class="hatch" style="width:84px;height:30px">logo</div>
+    <div style="flex:1"></div>
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1.2px solid #9a9a9a;border-radius:8px;font-size:19px;flex:none">≡</div>
+  </div>
+  <div class="row" style="padding:8px 12px;gap:6px;border-bottom:1px solid #ddd;overflow:hidden">
+    <div class="chip" style="height:36px;flex:none">Casablanca ▾</div>
+    <div class="chip chipa" style="height:36px;flex:none">Types (2) ▾</div>
+    <div class="chip" style="height:36px;flex:none">Budget ▾</div>
+    <div class="chip" style="height:36px;flex:none">Trier ▾</div>
+  </div>
+  <div style="position:relative;height:470px">
+    <div class="hatch" style="position:absolute;inset:0;border:0;border-radius:0">carte OpenStreetMap — 64 résultats</div>
+    <div style="position:absolute;left:18%;top:18%;background:#2f2f2f;color:#fff;border-radius:99px;padding:5px 9px;font:700 10px Helvetica,Arial,sans-serif">G.S. Atlas</div>
+    <div style="position:absolute;left:60%;top:30%;background:#2f2f2f;color:#fff;border-radius:99px;padding:5px 9px;font:700 10px Helvetica,Arial,sans-serif">Al Firdaous</div>
+    <div style="position:absolute;left:30%;top:48%;background:#fff;border:2px solid #2f2f2f;border-radius:99px;padding:5px 9px;font:700 10px Helvetica,Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.2)">Les Orangers</div>
+    <div style="position:absolute;left:68%;top:58%;background:#2f2f2f;color:#fff;border-radius:99px;padding:5px 9px;font:700 10px Helvetica,Arial,sans-serif">Les Poussins</div>
+    <div class="row" style="position:absolute;left:12px;right:12px;bottom:76px;background:#fff;border:1.2px solid #8f8f8f;border-radius:12px;padding:9px;gap:9px;box-shadow:0 6px 18px rgba(0,0,0,.18)">
+      <div class="hatch" style="width:64px;height:64px;flex:none">photo</div>
+      <div class="col" style="gap:3px;flex:1">
+        <div class="row" style="gap:5px"><span class="bdg">✓ Vérifié</span><span class="bdg" style="border-style:dashed">Groupe : Crèche + Primaire</span></div>
+        <span style="font-size:12.5px;font-weight:700">École Les Orangers</span>
+        <div class="row" style="gap:6px"><span class="star" style="font-size:10.5px">★ 4,5 · 19 avis</span><span class="mut" style="font-size:10px">1 400–1 900 MAD/mois</span></div>
+      </div>
+      <span style="align-self:center;font-size:14px;color:#8a8a8a">›</span>
+    </div>
+    <div class="row" style="position:absolute;left:50%;transform:translateX(-50%);bottom:16px;gap:8px;align-items:center">
+      <div class="b1" style="height:48px;padding:0 22px">≡&nbsp; Liste</div>
+      <span class="n">7</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="col" style="gap:6px">
+<div class="vp">Référence — filtres propres à chaque type</div>
+<div class="fr" style="width:390px;background:#fbfaf6">
+  <div class="col" style="padding:14px;gap:9px">
+    <div class="row"><span class="lab" style="flex:1">Matrice des filtres par type</span><span class="n">3</span></div>
+    <div class="col" style="border:1.2px solid #d9d9d9;border-radius:8px;padding:9px;gap:3px"><span style="font-size:12px;font-weight:700">Crèche</span><span class="mut" style="font-size:11px;line-height:1.5">Langues (AR·FR·EN·ES) · Activités (dessin, musique, cinéma, parascolaire…)</span></div>
+    <div class="col" style="border:1.2px solid #d9d9d9;border-radius:8px;padding:9px;gap:3px"><span style="font-size:12px;font-weight:700">Primaire</span><span class="mut" style="font-size:11px;line-height:1.5">Matières (arabe, français, anglais, espagnol, sport…) · Activités</span></div>
+    <div class="col" style="border:1.2px solid #d9d9d9;border-radius:8px;padding:9px;gap:3px"><span style="font-size:12px;font-weight:700">Collège</span><span class="mut" style="font-size:11px;line-height:1.5">Langues (sport inclus par défaut) · Activités</span></div>
+    <div class="col" style="border:1.2px solid #d9d9d9;border-radius:8px;padding:9px;gap:3px"><span style="font-size:12px;font-weight:700">Lycée</span><span class="mut" style="font-size:11px;line-height:1.5">Langues · Activités · Filière (Sciences Maths, PC, SVT, Lettres, Éco…)</span></div>
+    <div class="col" style="border:1.2px solid #d9d9d9;border-radius:8px;padding:9px;gap:3px"><span style="font-size:12px;font-weight:700">Université / École supérieure</span><span class="mut" style="font-size:11px;line-height:1.5">Langues · Activités · Filière (ingénierie, médecine, gestion, droit…) · Cursus (LMD / Cycle ingénieur)</span></div>
+    <div class="col" style="border:1.2px solid #d9d9d9;border-radius:8px;padding:9px;gap:3px"><span style="font-size:12px;font-weight:700">Centre de formation</span><span class="mut" style="font-size:11px;line-height:1.5">Langues · Type (continue, à distance, présentiel, certifiée) · Domaine (informatique, gestion, langues…) — pas d'activités</span></div>
+  </div>
+</div>
+</div>
+
+<div class="ann">
+<h4>2c · Comportements</h4>
+<ol>
+<li><span class="n">1</span><span>Desktop : filtres en BARRE HORIZONTALE collante sous le header (plus de colonne latérale). Ville, Types (multi), Budget, Tri toujours visibles ; les filtres par type s'affichent en 2ᵉ ligne.</span></li>
+<li><span class="n">2</span><span>Budget : Min – Max en MAD/mois, appliqué sur la fourchette déclarée des établissements.</span></li>
+<li><span class="n">3</span><span>Types multi-sélectionnables ; UNE ligne de filtres propres par type sélectionné (matrice ci-contre). Déselectionner un type retire sa ligne.</span></li>
+<li><span class="n">4</span><span>Chaînes multi-cycles : un groupe (même nom, crèche→lycée) = UNE fiche avec badge « Groupe : Crèche → Lycée » ; il remonte en tête quand la sélection couvre plusieurs de ses cycles. Détail de la gestion côté fiche : <a class="dv-oid" href="#2d">2d</a> note 3.</span></li>
+<li><span class="n">5</span><span>Tri : Pertinence · Prix croissant · Prix décroissant · Mieux noté · Récence (le prix = borne basse de la fourchette déclarée).</span></li>
+<li><span class="n">6</span><span>Desktop : écran DIVISÉ — liste des établissements à gauche, carte OpenStreetMap à droite avec repères NOMMÉS (nom court + note, jamais de prix sur la carte) ; survol d'une fiche ⇄ mise en avant du repère (repère blanc actif + mini-fiche). Inchangé : 18 fiches/page, sponsorisés étiquetés en tête, état vide avec suggestions.</span></li>
+<li><span class="n">7</span><span>Mobile : bouton flottant de BASCULE Liste ⇄ Carte (en vue liste, il affiche « Carte »). En vue carte : mini-fiche balayable au-dessus du bouton, ancrée au repère sélectionné ; tap → fiche <a class="dv-oid" href="#2d">2d</a>.</span></li>
+</ol>
+</div>
+
+</div>
+</div>
+<!-- ===== 2d FICHE RÉVISÉE ===== -->
+<div class="dv-opt" id="2d">
+<div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Écran 3 révisé — Fiche établissement (structure du prototype · contact direct, sans formulaire)</div>
+<div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap">
+<div class="col" style="gap:6px">
+<div class="vp">Desktop · 1200</div>
+<div class="fr" data-screen-label="2d Fiche — desktop" style="width:1200px">
+  <div class="row" style="padding:12px 28px;border-bottom:1px solid #ddd;gap:14px">
+    <div class="hatch" style="width:96px;height:30px">logo</div>
+    <div class="row" style="gap:18px;font-size:12.5px;font-weight:500"><span>Accueil</span><span style="font-weight:700;border-bottom:2px solid #2f2f2f;padding-bottom:2px">Établissements</span><span>Blog</span><span>À propos</span><span>Contact</span></div>
+    <div style="flex:1"></div>
+    <div class="b1" style="height:40px">Inscrire mon établissement</div>
+  </div>
+  <div class="col" style="padding:12px 28px 0;gap:10px">
+    <span class="mut" style="font-size:11px">Accueil › Établissements › Casablanca › Groupe Scolaire Atlas — Primaire</span>
+    <div style="position:relative;height:290px;border-radius:12px;overflow:hidden;border:1px solid #c8c8c8">
+      <div class="hatch" style="height:100%;border:0;border-radius:0">galerie photos de l'établissement — slider</div>
+      <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:99px;background:#fff;border:1.2px solid #6f6f6f;display:flex;align-items:center;justify-content:center;font-size:17px">‹</div>
+      <div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:99px;background:#fff;border:1.2px solid #6f6f6f;display:flex;align-items:center;justify-content:center;font-size:17px">›</div>
+      <div style="position:absolute;left:14px;bottom:12px;background:#fff;border:1px solid #8f8f8f;border-radius:6px;padding:4px 9px;font:600 10.5px Helvetica,Arial,sans-serif">3 / 12 · Cour de récréation</div>
+      <div class="row" style="position:absolute;right:14px;bottom:14px;gap:5px">
+        <div style="width:7px;height:7px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+        <div style="width:7px;height:7px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+        <div style="width:22px;height:7px;border-radius:99px;background:#2f2f2f"></div>
+        <div style="width:7px;height:7px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+        <div style="width:7px;height:7px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+      </div>
+      <span class="n" style="position:absolute;top:12px;left:14px">1</span>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:26px;padding:18px 28px 8px;align-items:start">
+    <div class="col" style="gap:0">
+      <div class="col" style="border:1.5px dashed #6f6f6f;border-radius:10px;padding:11px 12px;gap:8px;background:#fbfaf6">
+        <div class="row"><span class="lab" style="flex:1">Groupe Atlas — 4 cycles</span><span class="n">3</span></div>
+        <div class="seg" style="align-self:flex-start"><div style="height:38px">Crèche</div><div class="sega" style="height:38px">Primaire</div><div style="height:38px">Collège</div><div style="height:38px">Lycée</div></div>
+      </div>
+      <div class="row" style="gap:0;border-bottom:1.2px solid #c9c9c9;margin-top:18px">
+        <div style="padding:11px 12px;font-size:12px;font-weight:600;color:#777">À propos</div>
+        <div style="padding:11px 12px;font-size:12px;font-weight:600;color:#777">Cycles &amp; filières</div>
+        <div style="padding:11px 12px;font-size:12px;font-weight:600;color:#777">Équipements</div>
+        <div style="padding:11px 12px;font-size:12px;font-weight:600;color:#777">Tarifs</div>
+        <div style="padding:11px 12px;font-size:12px;font-weight:600;color:#777">Équipe</div>
+        <div style="padding:11px 12px;font-size:12px;font-weight:700;border-bottom:2.5px solid #2f2f2f">Avis</div>
+        <span class="n" style="margin-left:8px;align-self:center">4</span>
+      </div>
+      <div class="row" style="gap:18px;border:1.2px solid #b5b5b5;border-radius:10px;padding:14px;margin-top:14px;align-items:center">
+        <div class="col" style="align-items:center;gap:2px;flex:none">
+          <span style="font-size:30px;font-weight:800">4,8</span>
+          <span class="star" style="font-size:12px">★★★★★</span>
+          <span class="mut" style="font-size:10.5px">142 avis</span>
+        </div>
+        <div class="col" style="flex:1;gap:5px">
+          <div class="row" style="gap:7px"><span class="mut" style="font-size:10px;width:22px;flex:none">5 ★</span><div style="flex:1;height:7px;background:#e8e8e8;border-radius:99px"><div style="width:78%;height:7px;background:#4a4a4a;border-radius:99px"></div></div></div>
+          <div class="row" style="gap:7px"><span class="mut" style="font-size:10px;width:22px;flex:none">4 ★</span><div style="flex:1;height:7px;background:#e8e8e8;border-radius:99px"><div style="width:15%;height:7px;background:#4a4a4a;border-radius:99px"></div></div></div>
+          <div class="row" style="gap:7px"><span class="mut" style="font-size:10px;width:22px;flex:none">3 ★</span><div style="flex:1;height:7px;background:#e8e8e8;border-radius:99px"><div style="width:5%;height:7px;background:#4a4a4a;border-radius:99px"></div></div></div>
+          <div class="row" style="gap:7px"><span class="mut" style="font-size:10px;width:22px;flex:none">2 ★</span><div style="flex:1;height:7px;background:#e8e8e8;border-radius:99px"><div style="width:1%;height:7px;background:#4a4a4a;border-radius:99px"></div></div></div>
+          <div class="row" style="gap:7px"><span class="mut" style="font-size:10px;width:22px;flex:none">1 ★</span><div style="flex:1;height:7px;background:#e8e8e8;border-radius:99px"><div style="width:1%;height:7px;background:#4a4a4a;border-radius:99px"></div></div></div>
+        </div>
+        <div class="col" style="gap:5px;align-items:center;flex:none">
+          <div class="b1" style="height:44px">Laisser un avis</div>
+          <div class="row" style="gap:5px"><span class="mut" style="font-size:9.5px">publié après approbation</span><span class="n">11</span></div>
+        </div>
+      </div>
+      <div class="col" style="border:1.2px solid #d9d9d9;border-radius:10px;padding:12px;gap:7px;margin-top:10px">
+        <div class="row" style="gap:8px">
+          <div style="width:34px;height:34px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none">S</div>
+          <div class="col" style="gap:1px;flex:1"><span class="row" style="gap:6px;font-size:12px;font-weight:700">Samira K.<span class="bdg">✓ Parent vérifié</span></span><span class="mut" style="font-size:10.5px">Il y a 2 semaines</span></div>
+          <span class="star" style="font-size:11px">★★★★★</span>
+        </div>
+        <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5">Encadrement sérieux et équipe à l'écoute. La communication avec les familles est régulière.</p>
+        <div class="col" style="border-left:3px solid #8f8f8f;background:#f6f6f6;padding:8px 10px;gap:2px;border-radius:0 6px 6px 0">
+          <span style="font-size:10.5px;font-weight:700">Réponse de l'établissement</span>
+          <span class="mut" style="font-size:11px">Merci pour votre confiance. Au plaisir de vous accueillir à la réunion de rentrée.</span>
+        </div>
+      </div>
+      <div class="row" style="border:1.5px dashed #8f8f8f;border-radius:10px;padding:10px 12px;gap:8px;margin-top:14px;background:#fbfaf6">
+        <span class="n">5</span>
+        <span class="mut" style="font-size:11px;line-height:1.5"><span style="text-decoration:line-through">Formulaire « Demander des informations »</span> — supprimé : contact direct uniquement (Appeler · WhatsApp · Site web)</span>
+      </div>
+    </div>
+    <div class="col" style="gap:12px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:8px">
+        <div class="row" style="gap:5px"><span class="bdg">Sponsorisé</span><span class="bdg">✓ Vérifié</span></div>
+        <span style="font-size:15px;font-weight:700">Groupe Scolaire Atlas — Primaire</span>
+        <div class="row" style="gap:6px"><span class="star" style="font-size:11.5px;font-weight:700;text-decoration:underline">★ 4,8 · 142 avis</span><span class="n">2</span></div>
+        <span class="mut" style="font-size:11.5px">Maârif, Casablanca · ···&nbsp;Premium</span>
+        <div class="b1" style="height:44px">✆&#xFE0E; Appeler</div>
+        <div class="b1" style="height:44px;background:#5a5a5a">Contacter sur WhatsApp</div>
+        <div class="b2" style="height:44px">Site web</div>
+        <span class="n" style="align-self:flex-end">6</span>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:8px">
+        <span class="lab">Coordonnées</span>
+        <span class="mut" style="font-size:11.5px">12, rue des Écoles — Maârif, Casablanca</span>
+        <span class="mut" style="font-size:11.5px">+212 5 22 00 00 00 · contact@gsatlas.ma</span>
+        <div style="border-top:1px solid #e5e5e5;margin:2px 0"></div>
+        <span class="lab">Horaires</span>
+        <div class="row" style="font-size:11px"><span class="mut" style="flex:1">Lun – Ven</span><span>8h – 18h</span></div>
+        <div class="row" style="font-size:11px"><span class="mut" style="flex:1">Samedi</span><span>8h – 12h</span></div>
+        <div class="row" style="font-size:11px"><span class="mut" style="flex:1">Dimanche</span><span>Fermé</span></div>
+      </div>
+      <div class="hatch" style="height:120px;border-radius:12px">carte — localisation</div>
+      <div class="row" style="gap:7px">
+        <div class="hatch" style="width:36px;height:36px;border-radius:8px">FB</div>
+        <div class="hatch" style="width:36px;height:36px;border-radius:8px">IG</div>
+        <div class="hatch" style="width:36px;height:36px;border-radius:8px">YT</div>
+        <div class="hatch" style="width:36px;height:36px;border-radius:8px">TK</div>
+      </div>
+      <div class="col" style="border:1.5px dashed #6f6f6f;border-radius:12px;padding:12px;gap:7px;background:#fbfaf6">
+        <div class="row"><span style="font-size:12.5px;font-weight:700;flex:1">C'est votre établissement ?</span><span class="n">7</span></div>
+        <p class="mut" style="margin:0;font-size:11px;line-height:1.45">Revendiquez cette fiche pour répondre aux avis et mettre à jour vos informations.</p>
+        <div class="b2" style="height:40px">Revendiquer la fiche</div>
+      </div>
+    </div>
+  </div>
+  <div class="col" style="padding:18px 28px 24px;gap:20px">
+    <div class="col" style="gap:10px">
+      <div class="row"><p class="eyeb" style="flex:1">Autres projets du propriétaire</p><span class="n">8</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+          <div class="hatch" style="height:105px;border:0;border-radius:0">photo</div>
+          <div class="col" style="padding:10px 12px;gap:4px">
+            <div class="row" style="gap:5px"><span class="bdg">Restaurant</span><span class="bdg" style="border-style:dashed">Du même propriétaire</span></div>
+            <span style="font-size:13px;font-weight:700">Riad Atlas — Restaurant</span>
+            <span class="mut" style="font-size:11px">Casablanca · Maârif</span>
+            <span class="star" style="font-size:11px">★ 4,6 · 210 avis</span>
+          </div>
+        </div>
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+          <div class="hatch" style="height:105px;border:0;border-radius:0">photo</div>
+          <div class="col" style="padding:10px 12px;gap:4px">
+            <div class="row" style="gap:5px"><span class="bdg">Café</span><span class="bdg" style="border-style:dashed">Du même propriétaire</span></div>
+            <span style="font-size:13px;font-weight:700">Café Atlas Corner</span>
+            <span class="mut" style="font-size:11px">Casablanca · Gauthier</span>
+            <span class="star" style="font-size:11px">★ 4,4 · 96 avis</span>
+          </div>
+        </div>
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+          <div class="hatch" style="height:105px;border:0;border-radius:0">photo</div>
+          <div class="col" style="padding:10px 12px;gap:4px">
+            <div class="row" style="gap:5px"><span class="bdg">Hôtel</span><span class="bdg" style="border-style:dashed">Du même propriétaire</span></div>
+            <span style="font-size:13px;font-weight:700">Atlas Palace</span>
+            <span class="mut" style="font-size:11px">Marrakech · Hivernage</span>
+            <span class="star" style="font-size:11px">★ 4,7 · 480 avis</span>
+          </div>
+        </div>
+      </div>
+      <span class="mut" style="font-size:10.5px">Encart de publicité mutualisée entre les annuaires du groupe (restaurants360, hôtels360…).</span>
+    </div>
+    <div class="col" style="gap:10px">
+      <div class="row"><p class="eyeb" style="flex:1">Établissements similaires</p><span class="n">9</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+          <div class="hatch" style="height:105px;border:0;border-radius:0">photo</div>
+          <div class="col" style="padding:10px 12px;gap:4px">
+            <span class="bdg" style="align-self:flex-start">Primaire</span>
+            <span style="font-size:13px;font-weight:700">École Les Orangers</span>
+            <span class="mut" style="font-size:11px">Casablanca · Oasis</span>
+            <div class="row"><span class="star" style="font-size:11px;flex:1">★ 4,5 · 19 avis</span><span class="mut" style="font-size:10.5px">··&nbsp;Gold</span></div>
+          </div>
+        </div>
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+          <div class="hatch" style="height:105px;border:0;border-radius:0">photo</div>
+          <div class="col" style="padding:10px 12px;gap:4px">
+            <span class="bdg" style="align-self:flex-start">Primaire</span>
+            <span style="font-size:13px;font-weight:700">École Al Firdaous</span>
+            <span class="mut" style="font-size:11px">Casablanca · Sidi Maârouf</span>
+            <div class="row"><span class="star" style="font-size:11px;flex:1">★ 4,1 · 8 avis</span><span class="mut" style="font-size:10.5px">·&nbsp;Silver</span></div>
+          </div>
+        </div>
+        <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+          <div class="hatch" style="height:105px;border:0;border-radius:0">photo</div>
+          <div class="col" style="padding:10px 12px;gap:4px">
+            <span class="bdg" style="align-self:flex-start">Groupe scolaire</span>
+            <span style="font-size:13px;font-weight:700">Institut Ibn Rochd</span>
+            <span class="mut" style="font-size:11px">Casablanca · Aïn Diab</span>
+            <div class="row"><span class="star" style="font-size:11px;flex:1">★ 4,6 · 54 avis</span><span class="mut" style="font-size:10.5px">···&nbsp;Premium</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:16px 28px 12px;gap:9px">
+    <div class="row" style="gap:20px;align-items:center">
+      <div class="hatch" style="width:84px;height:28px;flex:none">logo</div>
+      <span style="font-size:10.5px;color:#c9c9c9;flex:1">L'annuaire de référence des établissements scolaires privés au Maroc.</span>
+      <div class="row" style="gap:14px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    </div>
+    <div class="row" style="border-top:1px solid #4a4a4a;padding-top:9px;gap:12px">
+      <span style="font-size:9.5px;color:#9a9a9a;flex:1">© 2026 écoles360 — footer commun (version détaillée : accueil 2a)</span>
+      <span style="font-size:9.5px;color:#c9c9c9">CGU</span><span style="font-size:9.5px;color:#c9c9c9">Confidentialité</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390 — barre contact collante</div>
+<div class="fr" data-screen-label="2d Fiche — mobile" style="width:390px">
+  <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd;gap:8px">
+    <div class="hatch" style="width:84px;height:30px">logo</div>
+    <div style="flex:1"></div>
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1.2px solid #9a9a9a;border-radius:8px;font-size:19px;flex:none">≡</div>
+  </div>
+  <div style="position:relative">
+    <div class="hatch" style="height:185px;border:0;border-radius:0">galerie — slider photos</div>
+    <div style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:99px;background:#fff;border:1.2px solid #6f6f6f;display:flex;align-items:center;justify-content:center;font-size:15px">‹</div>
+    <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:99px;background:#fff;border:1.2px solid #6f6f6f;display:flex;align-items:center;justify-content:center;font-size:15px">›</div>
+    <div style="position:absolute;left:10px;bottom:10px;background:#fff;border:1px solid #8f8f8f;border-radius:6px;padding:3px 8px;font:600 10px Helvetica,Arial,sans-serif">3 / 12</div>
+    <div class="row" style="position:absolute;right:12px;bottom:12px;gap:4px">
+      <div style="width:6px;height:6px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+      <div style="width:18px;height:6px;border-radius:99px;background:#2f2f2f"></div>
+      <div style="width:6px;height:6px;border-radius:99px;background:#fff;border:1px solid #6f6f6f"></div>
+    </div>
+  </div>
+  <div class="col" style="padding:12px 14px 0;gap:7px">
+    <div class="row" style="gap:5px;flex-wrap:wrap"><span class="bdg">Sponsorisé</span><span class="bdg">✓ Vérifié</span><span class="bdg" style="border-style:dashed">Primaire · Groupe Atlas</span></div>
+    <h2 style="margin:0;font-size:20px">Groupe Scolaire Atlas — Primaire</h2>
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <span class="star" style="font-size:12px;font-weight:700;text-decoration:underline">★ 4,8 (142 avis)</span>
+      <span class="mut" style="font-size:11.5px">Maârif, Casablanca</span>
+      <span style="font-size:11.5px;font-weight:600">···&nbsp;Premium</span>
+    </div>
+    <div class="col" style="border:1.5px dashed #6f6f6f;border-radius:10px;padding:9px 10px;gap:7px;background:#fbfaf6">
+      <span class="lab">Groupe Atlas — 4 cycles</span>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><div class="chip" style="height:34px">Crèche</div><div class="chip chipa" style="height:34px">Primaire</div><div class="chip" style="height:34px">Collège</div><div class="chip" style="height:34px">Lycée</div></div>
+    </div>
+  </div>
+  <div class="row" style="gap:0;border-bottom:1.2px solid #c9c9c9;margin-top:12px;padding:0 14px;overflow:hidden">
+    <div style="padding:10px 10px;font-size:11.5px;font-weight:600;color:#777;white-space:nowrap">À propos</div>
+    <div style="padding:10px 10px;font-size:11.5px;font-weight:600;color:#777;white-space:nowrap">Cycles</div>
+    <div style="padding:10px 10px;font-size:11.5px;font-weight:600;color:#777;white-space:nowrap">Équip.</div>
+    <div style="padding:10px 10px;font-size:11.5px;font-weight:700;border-bottom:2.5px solid #2f2f2f;white-space:nowrap">Tarifs</div>
+    <div style="padding:10px 10px;font-size:11.5px;font-weight:600;color:#777;white-space:nowrap">Équipe</div>
+    <div style="padding:10px 10px;font-size:11.5px;font-weight:600;color:#777;white-space:nowrap">Avis</div>
+    <span class="n" style="align-self:center;margin-left:2px">4</span>
+  </div>
+  <div class="col" style="padding:12px 14px;gap:10px">
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:12px;gap:4px">
+      <span class="lab">Fourchette indicative</span>
+      <span style="font-size:20px;font-weight:800">1 800 – 2 600 MAD/mois</span>
+      <span class="mut" style="font-size:10.5px">···&nbsp;Premium · détail des frais communiqué sur demande</span>
+    </div>
+    <div class="col" style="gap:5px">
+      <span class="lab">Facilités de paiement</span>
+      <span class="mut" style="font-size:11.5px">✓ Règlement mensuel ou trimestriel</span>
+      <span class="mut" style="font-size:11.5px">✓ Réduction dès le 2ᵉ enfant inscrit</span>
+      <span class="mut" style="font-size:11.5px">✓ Virement ou prélèvement</span>
+    </div>
+    <div class="col" style="border:1.5px dashed #6f6f6f;border-radius:10px;padding:10px 11px;gap:6px;background:#fbfaf6">
+      <span style="font-size:12px;font-weight:700">C'est votre établissement ?</span>
+      <div class="b2" style="height:40px">Revendiquer la fiche</div>
+    </div>
+    <span class="mut" style="font-size:10px;text-align:center">⌄ suite de la fiche au scroll — Autres projets · Similaires ⌄</span>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:14px;gap:7px">
+    <div class="hatch" style="width:74px;height:26px">logo</div>
+    <div class="row" style="flex-wrap:wrap;gap:10px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    <span style="font-size:9.5px;color:#9a9a9a">© 2026 écoles360 · CGU · Confidentialité — footer commun (détail : accueil 2a)</span>
+  </div>
+  <div class="row" style="border-top:1.2px solid #b5b5b5;padding:10px 12px;gap:8px;box-shadow:0 -4px 12px rgba(0,0,0,.1);position:relative">
+    <div class="b1" style="height:48px;flex:1">✆&#xFE0E; Appeler</div>
+    <div class="b1" style="height:48px;flex:1;background:#5a5a5a">WhatsApp</div>
+    <div class="b2" style="height:48px;flex:1">Site web</div>
+    <span class="n" style="position:absolute;top:-8px;right:10px">10</span>
+  </div>
+</div>
+</div>
+<div class="ann">
+<h4>2d · Comportements</h4>
+<ol>
+<li><span class="n">1</span><span>Galerie du prototype : flèches, points cliquables, compteur « 3 / 12 » + légende. Photos fournies par l'établissement.</span></li>
+<li><span class="n">2</span><span>« ★ 4,8 · 142 avis » (aside desktop, en-tête mobile) cliquable → défilement vers l'onglet Avis.</span></li>
+<li><span class="n">3</span><span>Sélecteur de groupe multi-cycles : une fiche = UN cycle ; le sélecteur bascule vers les fiches Crèche / Collège / Lycée du même groupe sans repasser par la recherche. Répond à <a class="dv-oid" href="#2c">2c</a> note 4.</span></li>
+<li><span class="n">4</span><span>Onglets du prototype conservés : À propos · Cycles &amp; filières · Équipements · Tarifs (fourchette MAD/mois + facilités — visible sur la vue mobile) · Équipe · Avis. Contenus adaptés au type (matrice <a class="dv-oid" href="#2c">2c</a>).</span></li>
+<li><span class="n">5</span><span>SUPPRIMÉ : formulaire « Demander des informations ». Contact direct uniquement — Appeler · WhatsApp · Site web. « Laisser un avis » → connexion <a class="dv-oid" href="#2e">2e</a>.</span></li>
+<li><span class="n">6</span><span>Aside : bloc identité (badges + nom + note + 3 boutons) placé AU-DESSUS des coordonnées + horaires + carte + réseaux sociaux — le contact reste visible pendant la lecture (aside collante).</span></li>
+<li><span class="n">7</span><span>Encart « C'est votre établissement ? » affiché uniquement sur les fiches non revendiquées.</span></li>
+<li><span class="n">8</span><span>« Autres projets » placé AVANT « Établissements similaires » : autres commerces du même propriétaire (restaurant, café, hôtel…) en cartes riches — publicité mutualisée entre les annuaires du groupe.</span></li>
+<li><span class="n">9</span><span>Établissements similaires en cartes riches : photo, type, nom, ville · quartier, note + nb d'avis, gamme. Jamais au-dessus des contenus du propriétaire.</span></li>
+<li><span class="n">10</span><span>Mobile : barre collante Appeler · WhatsApp · Site web, visible en permanence au scroll.</span></li>
+<li><span class="n">11</span><span>Modération : l'avis d'un utilisateur n'est PUBLIÉ qu'après approbation par la direction. En attente, il n'apparaît pas sur la fiche ; l'auteur voit le statut « En modération » dans Mes avis <a class="dv-oid" href="#2e">2e</a>.</span></li>
+</ol>
+</div>
+</div>
+</div>
+<!-- ===== 2e COMPTE & AVIS ===== -->
+<div class="dv-opt" id="2e">
+<div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>Écran 5 remplacé — Compte &amp; avis (e-mail + mot de passe, sans OTP)</div>
+<div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap">
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390 — modale connexion (via « Laisser un avis »)</div>
+<div class="fr" data-screen-label="2e Connexion" style="width:390px;background:#9c9c9c">
+  <div style="position:relative;min-height:600px;background:repeating-linear-gradient(45deg,#a8a8a8 0 8px,#9c9c9c 8px 16px)">
+    <div class="row" style="position:absolute;top:16px;left:16px;right:16px;gap:8px;opacity:.9">
+      <div class="b1" style="height:44px;flex:1;background:#6f6f6f">Laisser un avis</div>
+      <span class="n">1</span>
+    </div>
+    <div class="col" style="position:absolute;left:18px;right:18px;top:88px;background:#fff;border-radius:14px;padding:16px;gap:9px;box-shadow:0 10px 30px rgba(0,0,0,.25)">
+      <div class="row"><span style="font-size:16px;font-weight:700;flex:1">Connectez-vous</span><div style="width:36px;height:36px;border:1px solid #8f8f8f;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px">✕</div></div>
+      <p class="mut" style="margin:0;font-size:11px;line-height:1.45">Votre compte sert uniquement à identifier vos avis — rien d'autre.</p>
+      <span class="lab">E-mail</span>
+      <div class="inp">vous@exemple.com</div>
+      <span class="lab">Mot de passe</span>
+      <div class="inp">••••••••</div>
+      <div class="row" style="gap:8px"><div class="b1" style="height:48px;flex:1">Se connecter</div><span class="n">2</span></div>
+      <div class="row" style="gap:6px"><span style="font-size:11.5px;text-decoration:underline">Mot de passe oublié ?</span><span class="n">3</span></div>
+      <div class="row" style="gap:10px;margin-top:2px">
+        <div style="flex:1;border-top:1px solid #d9d9d9"></div><span class="mut" style="font-size:10.5px">ou</span><div style="flex:1;border-top:1px solid #d9d9d9"></div>
+      </div>
+      <div class="b2" style="height:48px">Créer un compte</div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390 — mot de passe oublié</div>
+<div class="fr" data-screen-label="2e Mot de passe oublié" style="width:390px">
+  <div class="col" style="padding:16px 16px 20px;gap:10px">
+    <div class="row" style="gap:8px"><span style="font-size:14px">‹</span><span class="mut" style="font-size:11.5px">Retour à la connexion</span></div>
+    <h2 style="margin:4px 0 0;font-size:19px">Mot de passe oublié</h2>
+    <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5">Indiquez l'e-mail ou le téléphone de votre compte.</p>
+    <span class="lab">E-mail ou téléphone</span>
+    <div class="inp">vous@exemple.com</div>
+    <div class="row" style="gap:8px"><div class="b1" style="height:48px;flex:1">Envoyer</div><span class="n">3</span></div>
+    <div class="row" style="border:1.2px solid #8f8f8f;border-radius:10px;padding:10px 12px;gap:8px;background:#f1f1f1">
+      <span style="font-size:13px;flex:none">✓</span>
+      <span style="font-size:11.5px;line-height:1.5">Un nouveau mot de passe vous a été envoyé par e-mail. Vous pourrez le modifier une fois connecté.</span>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:16px 14px;gap:9px">
+    <div class="hatch" style="width:74px;height:26px">logo</div>
+    <div class="row" style="flex-wrap:wrap;gap:10px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    <span style="font-size:9.5px;color:#9a9a9a">© 2026 écoles360 · CGU · Confidentialité — footer commun (détail : accueil 2a)</span>
+  </div>
+</div>
+</div>
+
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390 — créer un compte</div>
+<div class="fr" data-screen-label="2e Créer un compte" style="width:390px">
+  <div class="col" style="padding:16px 16px 20px;gap:9px">
+    <div class="row" style="gap:8px"><span style="font-size:14px">‹</span><span class="mut" style="font-size:11.5px">Retour à la connexion</span></div>
+    <h2 style="margin:4px 0 0;font-size:19px">Créer un compte</h2>
+    <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:9px 11px;gap:8px;background:#fbfaf6">
+      <span class="n">4</span>
+      <span class="mut" style="font-size:11px;line-height:1.5">Ce compte sert uniquement à identifier vos avis. Pas de tableau de bord, pas de newsletter.</span>
+    </div>
+    <span class="lab">E-mail</span>
+    <div class="inp">vous@exemple.com</div>
+    <span class="lab">Mot de passe</span>
+    <div class="inp">8 caractères minimum</div>
+    <span class="lab">Confirmer le mot de passe</span>
+    <div class="inp">••••••••</div>
+    <div class="b1" style="height:48px">Créer mon compte</div>
+    <span class="mut" style="font-size:10.5px;line-height:1.5">En créant un compte, vous acceptez les CGU et la politique de confidentialité.</span>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:16px 14px;gap:9px">
+    <div class="hatch" style="width:74px;height:26px">logo</div>
+    <div class="row" style="flex-wrap:wrap;gap:10px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    <span style="font-size:9.5px;color:#9a9a9a">© 2026 écoles360 · CGU · Confidentialité — footer commun (détail : accueil 2a)</span>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Desktop · 1200 — menu profil (header connecté)</div>
+<div class="fr" data-screen-label="2e Menu profil — desktop" style="width:1200px">
+  <div class="row" style="padding:12px 28px;border-bottom:1px solid #ddd;gap:14px">
+    <div class="hatch" style="width:96px;height:30px">logo</div>
+    <div class="row" style="gap:18px;font-size:12.5px;font-weight:500"><span>Accueil</span><span>Établissements</span><span>Blog</span><span>À propos</span><span>Contact</span></div>
+    <div style="flex:1"></div>
+    <div class="b1" style="height:40px">Inscrire mon établissement</div>
+    <div style="width:42px;height:42px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;border:2.5px solid #8f8f8f">Y</div>
+    <span class="n">5</span>
+  </div>
+  <div style="position:relative;height:330px;background:repeating-linear-gradient(45deg,#ededed 0 8px,#f8f8f8 8px 16px)">
+    <div class="col" style="position:absolute;right:24px;top:10px;width:280px;background:#fff;border:1.2px solid #8f8f8f;border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.18);padding:6px 0;gap:0">
+      <div class="row" style="padding:11px 16px;gap:10px;border-bottom:1px solid #e5e5e5">
+        <div style="width:36px;height:36px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">Y</div>
+        <div class="col" style="gap:1px"><span style="font-size:12px;font-weight:700">youssef.e@gmail.com</span><span class="mut" style="font-size:10.5px">Compte avis</span></div>
+      </div>
+      <div class="row" style="padding:11px 16px;font-size:12.5px;font-weight:600;border-bottom:1px solid #efefef">★ Mes avis</div>
+      <div class="row" style="padding:11px 16px;font-size:12.5px;font-weight:600;border-bottom:1px solid #efefef">Historique de recherche</div>
+      <div class="row" style="padding:11px 16px;font-size:12.5px;font-weight:600;border-bottom:1px solid #efefef">Historique de contact</div>
+      <div class="row" style="padding:11px 16px;font-size:12.5px;font-weight:600;border-bottom:1px solid #efefef">Modifier mon mot de passe</div>
+      <div class="row" style="padding:11px 16px;font-size:12.5px;font-weight:600;border-bottom:1px solid #efefef">Contactez-nous</div>
+      <div class="row" style="padding:11px 16px;font-size:12.5px;font-weight:600;color:#8a8a8a">Se déconnecter</div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390 — page « Mes avis »</div>
+<div class="fr" data-screen-label="2e Mes avis" style="width:390px">
+  <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd;gap:8px">
+    <div class="hatch" style="width:84px;height:30px">logo</div>
+    <div style="flex:1"></div>
+    <div style="width:40px;height:40px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">Y</div>
+  </div>
+  <div class="col" style="padding:14px;gap:11px">
+    <h2 style="margin:0;font-size:20px">Mon compte</h2>
+    <div class="row" style="gap:0;border-bottom:1.2px solid #c9c9c9">
+      <div style="padding:9px 10px;font-size:11.5px;font-weight:700;border-bottom:2.5px solid #2f2f2f;white-space:nowrap">Mes avis</div>
+      <div style="padding:9px 10px;font-size:11.5px;font-weight:600;color:#777;white-space:nowrap">Hist. de recherche</div>
+      <div style="padding:9px 10px;font-size:11.5px;font-weight:600;color:#777;white-space:nowrap">Hist. de contact</div>
+      <span class="n" style="align-self:center;margin-left:2px">6</span>
+    </div>
+    <div class="col" style="border:1.2px solid #d9d9d9;border-radius:10px;padding:11px;gap:6px">
+      <div class="row" style="gap:8px">
+        <div class="col" style="gap:1px;flex:1"><span style="font-size:12.5px;font-weight:700">Groupe Scolaire Atlas — Primaire</span><span class="mut" style="font-size:10.5px">Casablanca · publié le 02/07/2026</span></div>
+        <span class="bdg">Publié</span>
+      </div>
+      <span class="star" style="font-size:11px">★★★★★</span>
+      <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5">Encadrement sérieux et équipe à l'écoute…</p>
+      <div class="row" style="gap:12px;font-size:11px"><span style="text-decoration:underline">Modifier</span><span style="text-decoration:underline">Supprimer</span></div>
+    </div>
+    <div class="col" style="border:1.2px solid #d9d9d9;border-radius:10px;padding:11px;gap:6px">
+      <div class="row" style="gap:8px">
+        <div class="col" style="gap:1px;flex:1"><span style="font-size:12.5px;font-weight:700">Crèche Les Poussins</span><span class="mut" style="font-size:10.5px">Casablanca · envoyé le 12/07/2026</span></div>
+        <span class="bdg" style="border-style:dashed">En modération</span>
+        <span class="n">7</span>
+      </div>
+      <span class="star" style="font-size:11px">★★★★☆</span>
+      <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5">Locaux propres, bonne équipe. Un peu d'attente à la sortie…</p>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:14px;gap:7px">
+    <div class="hatch" style="width:74px;height:26px">logo</div>
+    <div class="row" style="flex-wrap:wrap;gap:10px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    <span style="font-size:9.5px;color:#9a9a9a">© 2026 écoles360 · CGU · Confidentialité — footer commun (détail : accueil 2a)</span>
+  </div>
+</div>
+</div>
+<div class="ann">
+<h4>2e · Comportements</h4>
+<ol>
+<li><span class="n">1</span><span>Déclencheur : « Laisser un avis » sur la fiche <a class="dv-oid" href="#2d">2d</a> (onglet Avis). Non connecté → modale de connexion ; connecté → formulaire d'avis direct.</span></li>
+<li><span class="n">2</span><span>Connexion e-mail + mot de passe (remplace l'OTP SMS). Session conservée sur l'appareil.</span></li>
+<li><span class="n">3</span><span>Mot de passe oublié : e-mail ou téléphone → un nouveau mot de passe est envoyé par e-mail, modifiable ensuite via « Modifier mon mot de passe ».</span></li>
+<li><span class="n">4</span><span>Création de compte : e-mail + mot de passe ×2. Message rassurant : le compte sert uniquement à identifier vos avis — pas de tableau de bord.</span></li>
+<li><span class="n">5</span><span>Header connecté : cercle initiale (type Gmail) → menu avec e-mail affiché, Mes avis, Historique de recherche, Historique de contact, Modifier mon mot de passe, Contactez-nous, Se déconnecter. Version mobile dans le tiroir <a class="dv-oid" href="#2b">2b</a>.</span></li>
+<li><span class="n">6</span><span>Page « Mes avis » : onglets Mes avis / Historique de recherche / Historique de contact (recherches récentes et établissements contactés, effaçables).</span></li>
+<li><span class="n">7</span><span>Statut de chaque avis : Publié ou En modération (contrôle anti-faux avis avant publication). Modifier / Supprimer possibles à tout moment.</span></li>
+</ol>
+</div>
+</div>
+</div>
+<!-- ===== 2f INSCRIPTION ÉTABLISSEMENT ===== -->
+<div class="dv-opt" id="2f">
+<div class="dv-olabel"><a class="dv-oid" href="#2f">2f</a>Écran 4 révisé — Inscription établissement (formules sans aucun prix)</div>
+<div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap">
+<div class="col" style="gap:6px">
+<div class="vp">Desktop · 1200</div>
+<div class="fr" data-screen-label="2f Inscription — desktop" style="width:1200px">
+  <div class="row" style="padding:12px 28px;border-bottom:1px solid #ddd;gap:14px">
+    <div class="hatch" style="width:96px;height:30px">logo</div>
+    <div class="row" style="gap:18px;font-size:12.5px;font-weight:500"><span>Accueil</span><span>Établissements</span><span>Blog</span><span>À propos</span><span>Contact</span></div>
+    <div style="flex:1"></div>
+    <div class="b1" style="height:40px">Inscrire mon établissement</div>
+  </div>
+  <div class="row" style="background:#2f2f2f;padding:30px 28px;gap:26px;align-items:center">
+    <div class="col" style="flex:1.1;gap:10px">
+      <span class="bdg" style="align-self:flex-start;background:#4a4a4a;color:#fff;border-color:#777">Espace établissements</span>
+      <h1 style="margin:0;color:#fff;font-size:30px;line-height:1.15">Référencez votre établissement sur écoles360</h1>
+      <p style="margin:0;color:#c9c9c9;font-size:13px;line-height:1.55;max-width:430px">Rejoignez l'annuaire des écoles privées au Maroc et touchez des milliers de parents en recherche active.</p>
+      <div class="row" style="gap:10px;margin-top:4px">
+        <div class="b1" style="height:48px;background:#fff;color:#1a1a1a">Commencer l'inscription</div>
+        <span class="n" style="background:#fff;color:#1a1a1a">1</span>
+      </div>
+    </div>
+    <div class="hatch" style="flex:.9;height:180px;align-self:stretch">visuel — vie d'école</div>
+  </div>
+  <div class="sec" style="padding:18px 28px;border:0">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:7px">
+        <div class="hatch" style="width:40px;height:40px;border-radius:10px">ic.</div>
+        <span style="font-size:13px;font-weight:700">Visibilité locale</span>
+        <span class="mut" style="font-size:11px;line-height:1.45">Apparaissez dans les recherches de votre ville et de votre quartier.</span>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:7px">
+        <div class="hatch" style="width:40px;height:40px;border-radius:10px">ic.</div>
+        <span style="font-size:13px;font-weight:700">Avis vérifiés</span>
+        <span class="mut" style="font-size:11px;line-height:1.45">Des avis de parents modérés qui renforcent la confiance.</span>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:7px">
+        <div class="hatch" style="width:40px;height:40px;border-radius:10px">ic.</div>
+        <span style="font-size:13px;font-weight:700">Contacts directs</span>
+        <span class="mut" style="font-size:11px;line-height:1.45">Appels, WhatsApp et visites de votre site — sans intermédiaire.</span>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:7px">
+        <div class="hatch" style="width:40px;height:40px;border-radius:10px">ic.</div>
+        <span style="font-size:13px;font-weight:700">Statistiques</span>
+        <span class="mut" style="font-size:11px;line-height:1.45">Vues, appels et clics de votre fiche, mois par mois.</span>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:16px 28px 18px;background:#f6f6f6">
+    <div class="row"><p class="eyeb" style="flex:1">Formules — aucun tarif affiché sur le site</p><span class="n">2</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;padding-top:8px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:14px;padding:16px;gap:9px;background:#fff">
+        <span class="lab">① Pour découvrir</span>
+        <span style="font-size:17px;font-weight:800">Essai gratuit — 1 mois</span>
+        <div class="col" style="gap:5px">
+          <span class="mut" style="font-size:11.5px">✓ Fiche complète (photos, avis, contact)</span>
+          <span class="mut" style="font-size:11.5px">✓ Présence dans les résultats</span>
+          <span class="row" style="font-size:11.5px;font-weight:600;gap:6px">✓ Sans carte bancaire<span class="n">3</span></span>
+        </div>
+        <div class="b2" style="height:44px;margin-top:4px">Commencer l'essai</div>
+      </div>
+      <div class="col" style="border:2.5px solid #2f2f2f;border-radius:14px;padding:16px;gap:9px;background:#fff;position:relative">
+        <span class="bdg" style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#2f2f2f;color:#fff;border-color:#2f2f2f">Recommandé</span>
+        <span class="lab">② Visibilité continue</span>
+        <span style="font-size:17px;font-weight:800">Abonnement</span>
+        <div class="row" style="gap:8px">
+          <div class="seg"><div class="sega" style="height:36px">Mensuel</div><div style="height:36px">Annuel</div></div>
+          <span class="n">4</span>
+        </div>
+        <span class="mut" style="font-size:10.5px">−10 % si paiement annuel</span>
+        <div class="col" style="gap:5px">
+          <span class="mut" style="font-size:11.5px">✓ Mise en avant dans les résultats</span>
+          <span class="mut" style="font-size:11.5px">✓ Badge ✓ Vérifié + statistiques</span>
+          <span class="mut" style="font-size:11.5px">✓ Accompagnement dédié</span>
+        </div>
+        <div class="b1" style="height:44px;margin-top:4px">Choisir l'abonnement</div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:14px;padding:16px;gap:9px;background:#fff">
+        <span class="lab">③ À la performance</span>
+        <span style="font-size:17px;font-weight:800">Paiement à la vue</span>
+        <div class="col" style="gap:5px">
+          <span class="mut" style="font-size:11.5px">✓ Vous payez selon les vues de votre fiche</span>
+          <span class="mut" style="font-size:11.5px">✓ Sans engagement de durée</span>
+          <span class="row" style="font-size:11.5px;font-weight:600;gap:6px">✓ Tarif défini avec votre conseiller<span class="n">5</span></span>
+        </div>
+        <div class="b2" style="height:44px;margin-top:4px">Être rappelé</div>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:16px 28px">
+    <p class="eyeb">Comment ça marche</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div class="col" style="gap:6px">
+        <div style="width:34px;height:34px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">1</div>
+        <span style="font-size:13px;font-weight:700">Créez votre fiche</span>
+        <span class="mut" style="font-size:11px;line-height:1.45">3 étapes, moins de 5 minutes — ou par téléphone.</span>
+      </div>
+      <div class="col" style="gap:6px">
+        <div style="width:34px;height:34px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">2</div>
+        <span style="font-size:13px;font-weight:700">Un conseiller vous rappelle</span>
+        <span class="mut" style="font-size:11px;line-height:1.45">Vérification des informations et choix de la formule.</span>
+      </div>
+      <div class="col" style="gap:6px">
+        <div style="width:34px;height:34px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">3</div>
+        <span style="font-size:13px;font-weight:700">Votre fiche est en ligne</span>
+        <span class="mut" style="font-size:11px;line-height:1.45">Badge ✓ Vérifié, avis et statistiques activés.</span>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:16px 28px;background:#f6f6f6">
+    <div class="col" style="max-width:860px;margin:0 auto;width:100%;gap:14px">
+      <div class="col" style="gap:5px;align-items:center;text-align:center">
+        <h2 style="margin:0;font-size:22px">Créer ma fiche établissement</h2>
+        <span class="mut" style="font-size:12px">Deux façons de démarrer — choisissez celle qui vous convient.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch">
+        <div class="col" style="background:#2f2f2f;border-radius:14px;padding:18px;gap:9px">
+          <div style="width:44px;height:44px;border-radius:99px;background:#4a4a4a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px">✆&#xFE0E;</div>
+          <span style="font-size:16px;font-weight:700;color:#fff;line-height:1.3">On s'occupe de tout par téléphone</span>
+          <p style="margin:0;font-size:11.5px;line-height:1.5;color:#c9c9c9">Appelez-nous : notre équipe crée votre fiche avec vous et vous fait bénéficier de l'offre adaptée à votre établissement.</p>
+          <span style="font-size:21px;font-weight:800;color:#fff;letter-spacing:.5px">06 61 18 98 21</span>
+          <div class="row" style="gap:8px">
+            <div class="b1" style="height:44px;background:#fff;color:#1a1a1a">✆&#xFE0E; Appeler maintenant</div>
+            <div class="b1" style="height:44px;background:#5a5a5a">WhatsApp</div>
+            <span class="n" style="align-self:center">6</span>
+          </div>
+          <span style="font-size:10.5px;color:#9a9a9a">Du lundi au samedi, de 9h à 18h.</span>
+        </div>
+        <div class="col" style="background:#fff;border:1.2px solid #b5b5b5;border-radius:14px;padding:18px;gap:9px">
+          <div style="width:44px;height:44px;border-radius:99px;background:#efefef;display:flex;align-items:center;justify-content:center;font-size:17px">✎</div>
+          <span style="font-size:16px;font-weight:700;line-height:1.3">Vous préférez écrire ?</span>
+          <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5">Remplissez le formulaire : notre équipe vous recontacte le plus tôt possible pour finaliser votre fiche et la formule souhaitée.</p>
+          <span style="font-size:11.5px;font-weight:700">✓ Réponse sous 24 h ouvrées</span>
+          <div style="flex:1"></div>
+          <div class="b2" style="height:44px">Remplir le formulaire</div>
+        </div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:14px;background:#fff;padding:22px;gap:12px">
+        <div class="row"><span class="lab" style="letter-spacing:1px;flex:1">VOTRE ÉTABLISSEMENT</span><span class="n">7</span></div>
+        <div class="col" style="gap:5px"><span class="lab">Nom de l'établissement</span><div class="inp">Ex. Lycée Al Massira</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="col" style="gap:5px"><span class="lab">Type</span><div class="inp">Lycée ▾</div></div>
+          <div class="col" style="gap:5px"><span class="lab">Ville</span><div class="inp">Casablanca ▾</div></div>
+        </div>
+        <div class="col" style="gap:5px"><span class="lab">Quartier / adresse</span><div class="inp">Quartier, rue…</div></div>
+        <span class="lab" style="letter-spacing:1px;margin-top:6px">VOTRE CONTACT</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="col" style="gap:5px"><span class="lab">Nom du responsable</span><div class="inp">Prénom et nom</div></div>
+          <div class="col" style="gap:5px"><span class="lab">Fonction</span><div class="inp">Ex. Directeur, gérante…</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="col" style="gap:5px"><span class="lab">Adresse e-mail</span><div class="inp">contact@etablissement.ma</div></div>
+          <div class="col" style="gap:5px"><span class="lab">Téléphone / WhatsApp</span><div class="inp">+212 6 00 00 00 00</div></div>
+        </div>
+        <div class="row" style="margin-top:6px;gap:8px"><span class="lab" style="letter-spacing:1px">FORMULE SOUHAITÉE</span><span class="mut" style="font-size:10.5px">— votre conseiller vous confirmera le tarif adapté à votre établissement</span></div>
+        <div class="row" style="flex-wrap:wrap;gap:6px">
+          <div class="chip chipa" style="height:38px">Essai gratuit 1 mois</div>
+          <div class="chip" style="height:38px">Abonnement mensuel</div>
+          <div class="chip" style="height:38px">Abonnement annuel −10 %</div>
+          <div class="chip" style="height:38px">Paiement à la vue</div>
+          <div class="chip" style="height:38px">À définir avec un conseiller</div>
+        </div>
+        <div class="col" style="gap:5px"><span class="lab">Message (facultatif)</span><div class="inp" style="min-height:72px;align-items:flex-start;padding-top:10px">Précisez vos besoins : effectifs, période d'inscription, questions…</div></div>
+        <div class="row" style="gap:10px;align-items:flex-start">
+          <div style="width:20px;height:20px;border:1.5px solid #5a5a5a;border-radius:6px;flex:none;margin-top:1px"></div>
+          <span class="mut" style="font-size:11px;line-height:1.5">J'accepte d'être recontacté(e) par l'équipe écoles360 au sujet de ma demande, conformément à la politique de confidentialité.</span>
+        </div>
+        <div class="row" style="margin-top:4px;align-items:center"><span class="mut" style="font-size:10.5px;flex:1">Réponse sous 24 h ouvrées.</span><div class="b1" style="height:44px">Envoyer ma demande</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="background:#2f2f2f;padding:20px 28px;gap:22px">
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:24px;font-weight:800;color:#fff">320</span><span style="font-size:11px;color:#c9c9c9">établissements abonnés</span></div>
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:24px;font-weight:800;color:#fff">41 000</span><span style="font-size:11px;color:#c9c9c9">contacts générés</span></div>
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:24px;font-weight:800;color:#fff">92 %</span><span style="font-size:11px;color:#c9c9c9">renouvellent leur formule</span></div>
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:24px;font-weight:800;color:#fff">12</span><span style="font-size:11px;color:#c9c9c9">villes couvertes</span></div>
+  </div>
+  <div class="sec" style="padding:16px 28px">
+    <p class="eyeb">La parole aux directeurs</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:8px">
+        <span class="star" style="font-size:11px">★★★★★</span>
+        <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5;flex:1">« La majorité de nos nouvelles inscriptions arrivent désormais via écoles360. »</p>
+        <div class="row" style="gap:8px"><div style="width:32px;height:32px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">AB</div><div class="col" style="gap:0"><span style="font-size:11.5px;font-weight:700">A. Bennis</span><span class="mut" style="font-size:10px">Directeur, Casablanca</span></div></div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:8px">
+        <span class="star" style="font-size:11px">★★★★★</span>
+        <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5;flex:1">« L'équipe a créé notre fiche par téléphone en vingt minutes. »</p>
+        <div class="row" style="gap:8px"><div style="width:32px;height:32px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">SA</div><div class="col" style="gap:0"><span style="font-size:11.5px;font-weight:700">S. Alaoui</span><span class="mut" style="font-size:10px">Directrice, Rabat</span></div></div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:8px">
+        <span class="star" style="font-size:11px">★★★★★</span>
+        <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5;flex:1">« Les avis vérifiés ont renforcé la confiance des parents. »</p>
+        <div class="row" style="gap:8px"><div style="width:32px;height:32px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">MT</div><div class="col" style="gap:0"><span style="font-size:11.5px;font-weight:700">M. Tazi</span><span class="mut" style="font-size:10px">Directeur, Marrakech</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:0 28px 22px;border:0">
+    <div class="row"><p class="eyeb" style="flex:1">Questions fréquentes</p><span class="n">8</span></div>
+    <div class="col" style="gap:7px;max-width:760px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:11px 14px;gap:6px">
+        <div class="row"><span style="font-size:12.5px;font-weight:700;flex:1">Puis-je essayer sans engagement ?</span><span style="font-size:16px">−</span></div>
+        <p class="mut" style="margin:0;font-size:11.5px;line-height:1.5">Oui : 1 mois d'essai gratuit, sans carte bancaire. La formule ne démarre qu'après votre accord avec le conseiller.</p>
+      </div>
+      <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:11px 14px"><span style="font-size:12.5px;font-weight:600;flex:1">Comment le tarif est-il défini ?</span><span style="font-size:16px">+</span></div>
+      <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:11px 14px"><span style="font-size:12.5px;font-weight:600;flex:1">Qui rédige ma fiche ?</span><span style="font-size:16px">+</span></div>
+      <div class="row" style="border:1.2px solid #b5b5b5;border-radius:10px;padding:11px 14px"><span style="font-size:12.5px;font-weight:600;flex:1">Puis-je répondre aux avis ?</span><span style="font-size:16px">+</span></div>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:16px 28px 12px;gap:9px">
+    <div class="row" style="gap:20px;align-items:center">
+      <div class="hatch" style="width:84px;height:28px;flex:none">logo</div>
+      <span style="font-size:10.5px;color:#c9c9c9;flex:1">L'annuaire de référence des établissements scolaires privés au Maroc.</span>
+      <div class="row" style="gap:14px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    </div>
+    <div class="row" style="border-top:1px solid #4a4a4a;padding-top:9px;gap:12px">
+      <span style="font-size:9.5px;color:#9a9a9a;flex:1">© 2026 écoles360 — footer commun (version détaillée : accueil 2a)</span>
+      <span style="font-size:9.5px;color:#c9c9c9">CGU</span><span style="font-size:9.5px;color:#c9c9c9">Confidentialité</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Mobile · 390</div>
+<div class="fr" data-screen-label="2f Inscription — mobile" style="width:390px">
+  <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd;gap:8px">
+    <div class="hatch" style="width:84px;height:30px">logo</div>
+    <div style="flex:1"></div>
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1.2px solid #9a9a9a;border-radius:8px;font-size:19px;flex:none">≡</div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:22px 16px;gap:9px">
+    <span class="bdg" style="align-self:flex-start;background:#4a4a4a;color:#fff;border-color:#777">Espace établissements</span>
+    <h2 style="margin:0;color:#fff;font-size:22px;line-height:1.2">Référencez votre établissement sur écoles360</h2>
+    <div class="b1" style="height:48px;background:#fff;color:#1a1a1a">Commencer l'inscription</div>
+  </div>
+  <div class="col" style="padding:14px;gap:10px;background:#f6f6f6">
+    <span class="lab">Formules — aucun tarif affiché</span>
+    <div class="row" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:12px;gap:10px;background:#fff">
+      <div class="col" style="gap:2px;flex:1"><span style="font-size:13px;font-weight:700">① Essai gratuit — 1 mois</span><span class="mut" style="font-size:10.5px">Sans carte bancaire</span></div>
+      <div class="b2" style="height:40px;flex:none;font-size:11px">Essayer</div>
+    </div>
+    <div class="col" style="border:2.5px solid #2f2f2f;border-radius:12px;padding:12px;gap:8px;background:#fff;position:relative">
+      <span class="bdg" style="position:absolute;top:-9px;left:12px;background:#2f2f2f;color:#fff;border-color:#2f2f2f">Recommandé</span>
+      <span style="font-size:13px;font-weight:700">② Abonnement</span>
+      <div class="row" style="gap:8px"><div class="seg"><div class="sega" style="height:34px">Mensuel</div><div style="height:34px">Annuel</div></div><span class="mut" style="font-size:10px">−10 % si annuel</span></div>
+      <div class="b1" style="height:44px">Choisir l'abonnement</div>
+    </div>
+    <div class="row" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:12px;gap:10px;background:#fff">
+      <div class="col" style="gap:2px;flex:1"><span style="font-size:13px;font-weight:700">③ Paiement à la vue</span><span class="mut" style="font-size:10.5px">Tarif défini avec votre conseiller</span></div>
+      <div class="b2" style="height:40px;flex:none;font-size:11px">Être rappelé</div>
+    </div>
+  </div>
+  <div class="col" style="padding:14px;gap:10px">
+    <div class="col" style="gap:3px;align-items:center;text-align:center">
+      <span style="font-size:16px;font-weight:700">Créer ma fiche établissement</span>
+      <span class="mut" style="font-size:11px">Deux façons de démarrer.</span>
+    </div>
+    <div class="col" style="background:#2f2f2f;border-radius:12px;padding:14px;gap:7px">
+      <span style="font-size:13.5px;font-weight:700;color:#fff">On s'occupe de tout par téléphone</span>
+      <span style="font-size:17px;font-weight:800;color:#fff">06 61 18 98 21</span>
+      <div class="row" style="gap:8px"><div class="b1" style="height:44px;flex:1;background:#fff;color:#1a1a1a;font-size:11.5px">✆&#xFE0E; Appeler</div><div class="b1" style="height:44px;flex:1;background:#5a5a5a;font-size:11.5px">WhatsApp</div></div>
+      <span style="font-size:10px;color:#9a9a9a">Du lundi au samedi, de 9h à 18h.</span>
+    </div>
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:14px;gap:7px">
+      <span style="font-size:13.5px;font-weight:700">Vous préférez écrire ?</span>
+      <span class="mut" style="font-size:11px;line-height:1.45">Formulaire : Votre établissement · Votre contact · Formule souhaitée (sans prix) · message.</span>
+      <span style="font-size:11px;font-weight:700">✓ Réponse sous 24 h ouvrées</span>
+      <div class="col" style="gap:5px;margin-top:2px"><span class="lab">Nom de l'établissement</span><div class="inp">Ex. Lycée Al Massira</div></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><div class="chip chipa" style="height:36px;font-size:10.5px">Essai gratuit 1 mois</div><div class="chip" style="height:36px;font-size:10.5px">Abonnement</div><div class="chip" style="height:36px;font-size:10.5px">À définir</div></div>
+      <div class="b1" style="height:48px">Envoyer ma demande</div>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:14px;gap:7px">
+    <div class="hatch" style="width:74px;height:26px">logo</div>
+    <div class="row" style="flex-wrap:wrap;gap:10px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    <span style="font-size:9.5px;color:#9a9a9a">© 2026 écoles360 · CGU · Confidentialité — footer commun (détail : accueil 2a)</span>
+  </div>
+</div>
+</div>
+<div class="ann">
+<h4>2f · Comportements</h4>
+<ol>
+<li><span class="n">1</span><span>Hero « Espace établissements » du prototype conservé ; le CTA fait défiler vers le formulaire (stepper).</span></li>
+<li><span class="n">2</span><span>Règle contractuelle : AUCUN prix affiché sur le site — les 3 formules décrivent le contenu, jamais le montant.</span></li>
+<li><span class="n">3</span><span>Formule ① : essai gratuit 1 mois, sans carte bancaire. Bascule vers ② ou ③ à l'issue, après échange avec le conseiller.</span></li>
+<li><span class="n">4</span><span>Formule ② « Recommandé » : bascule Mensuel / Annuel — mention « −10 % si paiement annuel » (remise en %, pas de montant).</span></li>
+<li><span class="n">5</span><span>Formule ③ paiement à la vue : facturation selon les vues de la fiche ; tarif défini avec le conseiller, hors site.</span></li>
+<li><span class="n">6</span><span>« Deux façons de démarrer » : carte sombre téléphone (06 61 18 98 21, appel + WhatsApp, lun–sam 9h–18h) OU formulaire écrit — le téléphone reste le parcours principal pour les directeurs peu à l'aise avec les formulaires.</span></li>
+<li><span class="n">7</span><span>Formulaire de DEMANDE en une page (remplace le stepper à compte) : Votre établissement → Votre contact → Formule souhaitée en puces SANS prix (essai gratuit · mensuel · annuel −10 % · à la vue · à définir) → message libre + consentement de recontact. Pas de mot de passe ici : le compte est créé par l'équipe après validation.</span></li>
+<li><span class="n">8</span><span>Réassurance en bas de page : bande de stats, témoignages de directeurs ★, FAQ en accordéon (1ʳᵉ question ouverte).</span></li>
+</ol>
+</div>
+</div>
+</div>
+<!-- ===== 2g BLOG / À PROPOS / CONTACT ===== -->
+<div class="dv-opt" id="2g">
+<div class="dv-olabel"><a class="dv-oid" href="#2g">2g</a>🆕 Pages Blog · À propos · Contact — reprises du prototype (gris)</div>
+<div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap">
+<div class="col" style="gap:6px">
+<div class="vp">Blog — Desktop · 1200</div>
+<div class="fr" data-screen-label="2g Blog — desktop" style="width:1200px">
+  <div class="row" style="padding:12px 28px;border-bottom:1px solid #ddd;gap:14px">
+    <div class="hatch" style="width:96px;height:30px">logo</div>
+    <div class="row" style="gap:18px;font-size:12.5px;font-weight:500"><span>Accueil</span><span>Établissements</span><span style="font-weight:700;border-bottom:2px solid #2f2f2f;padding-bottom:2px">Blog</span><span>À propos</span><span>Contact</span></div>
+    <div style="flex:1"></div>
+    <div class="b1" style="height:40px">Inscrire mon établissement</div>
+  </div>
+  <div class="col" style="padding:28px 28px 0;gap:8px;align-items:center;text-align:center">
+    <span style="font-size:10px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">LE BLOG ÉCOLES360</span>
+    <h1 style="margin:0;font-size:30px">Conseils &amp; guides pour les parents</h1>
+    <p class="mut" style="margin:0;font-size:13px;max-width:480px;line-height:1.5">Tout pour choisir, comprendre et accompagner la scolarité de votre enfant au Maroc.</p>
+  </div>
+  <div class="sec" style="padding:20px 28px 0;border:0">
+    <div style="display:grid;grid-template-columns:1.15fr 1fr;border:1.2px solid #b5b5b5;border-radius:14px;overflow:hidden;position:relative">
+      <div class="hatch" style="min-height:230px;border:0;border-radius:0">visuel article à la une</div>
+      <div class="col" style="padding:22px;gap:9px;justify-content:center">
+        <div class="row" style="gap:8px"><span class="bdg">Choisir une école</span><span class="mut" style="font-size:10.5px">À la une</span></div>
+        <span style="font-size:20px;font-weight:800;line-height:1.25">Mission, semi-privé, international : quel programme choisir pour votre enfant ?</span>
+        <p class="mut" style="margin:0;font-size:12px;line-height:1.55">Les différences concrètes entre les systèmes, leurs coûts et comment décider selon le profil de votre enfant.</p>
+        <span class="mut" style="font-size:10.5px">12/07/2026 · 5 min de lecture</span>
+      </div>
+      <span class="n" style="position:absolute;top:12px;right:12px">2</span>
+    </div>
+  </div>
+  <div class="row" style="padding:18px 28px 0;gap:8px;justify-content:center;flex-wrap:wrap">
+    <div class="chip chipa" style="height:36px">Tous</div>
+    <div class="chip" style="height:36px">Choisir une école</div>
+    <div class="chip" style="height:36px">Budget</div>
+    <div class="chip" style="height:36px">Inscription</div>
+    <div class="chip" style="height:36px">Pédagogie</div>
+    <div class="chip" style="height:36px">Bilinguisme</div>
+    <span class="n" style="align-self:center">1</span>
+  </div>
+  <div class="sec" style="padding:16px 28px;border:0">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:120px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">visuel</div>
+        <div class="col" style="padding:12px;gap:5px">
+          <span class="bdg" style="align-self:flex-start">Budget</span>
+          <span style="font-size:13.5px;font-weight:700;line-height:1.35">Frais de scolarité au Maroc : à quoi s'attendre en 2026 ?</span>
+          <p class="mut" style="margin:0;font-size:11px;line-height:1.5">Mensualités, frais d'inscription, cantine : le vrai coût d'une année.</p>
+          <span class="mut" style="font-size:10px">05/07/2026 · 4 min</span>
+        </div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:120px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">visuel</div>
+        <div class="col" style="padding:12px;gap:5px">
+          <span class="bdg" style="align-self:flex-start">Inscription</span>
+          <span style="font-size:13.5px;font-weight:700;line-height:1.35">Dossier d'inscription : les 6 pièces à préparer avant juin</span>
+          <p class="mut" style="margin:0;font-size:11px;line-height:1.5">La check-list complète pour ne rien oublier le jour J.</p>
+          <span class="mut" style="font-size:10px">28/06/2026 · 3 min</span>
+        </div>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+        <div class="hatch" style="height:120px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">visuel</div>
+        <div class="col" style="padding:12px;gap:5px">
+          <span class="bdg" style="align-self:flex-start">Pédagogie</span>
+          <span style="font-size:13.5px;font-weight:700;line-height:1.35">Montessori, classique, bilingue : comprendre les approches</span>
+          <p class="mut" style="margin:0;font-size:11px;line-height:1.5">Forces et limites de chaque méthode, expliquées simplement.</p>
+          <span class="mut" style="font-size:10px">20/06/2026 · 6 min</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:0 28px 24px;border:0">
+    <div class="col" style="background:#2f2f2f;border-radius:14px;padding:26px;gap:8px;align-items:center;text-align:center;position:relative">
+      <span style="font-size:19px;font-weight:800;color:#fff">Recevez nos meilleurs conseils</span>
+      <p style="margin:0;font-size:12px;color:#c9c9c9;max-width:400px;line-height:1.5">Un e-mail par mois, des guides pratiques pour accompagner la scolarité de votre enfant.</p>
+      <div class="row" style="gap:8px;width:420px;max-width:100%;margin-top:4px">
+        <div class="inp" style="flex:1;background:#fff">Votre adresse e-mail</div>
+        <div class="b1" style="height:44px;background:#fff;color:#1a1a1a">S'inscrire</div>
+      </div>
+      <span class="n" style="position:absolute;top:12px;right:12px">3</span>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:16px 28px 12px;gap:9px">
+    <div class="row" style="gap:20px;align-items:center">
+      <div class="hatch" style="width:84px;height:28px;flex:none">logo</div>
+      <span style="font-size:10.5px;color:#c9c9c9;flex:1">L'annuaire de référence des établissements scolaires privés au Maroc.</span>
+      <div class="row" style="gap:14px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    </div>
+    <div class="row" style="border-top:1px solid #4a4a4a;padding-top:9px;gap:12px">
+      <span style="font-size:9.5px;color:#9a9a9a;flex:1">© 2026 écoles360 — footer commun (version détaillée : accueil 2a)</span>
+      <span style="font-size:9.5px;color:#c9c9c9">CGU</span><span style="font-size:9.5px;color:#c9c9c9">Confidentialité</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Blog — Mobile · 390</div>
+<div class="fr" data-screen-label="2g Blog — mobile" style="width:390px">
+  <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd;gap:8px">
+    <div class="hatch" style="width:84px;height:30px">logo</div>
+    <div style="flex:1"></div>
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1.2px solid #9a9a9a;border-radius:8px;font-size:19px;flex:none">≡</div>
+  </div>
+  <div class="col" style="padding:18px 14px 0;gap:6px;align-items:center;text-align:center">
+    <span style="font-size:9.5px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">LE BLOG ÉCOLES360</span>
+    <h2 style="margin:0;font-size:21px">Conseils &amp; guides pour les parents</h2>
+  </div>
+  <div class="row" style="padding:12px 14px 0;gap:6px;overflow:hidden">
+    <div class="chip chipa" style="height:36px;flex:none">Tous</div>
+    <div class="chip" style="height:36px;flex:none">Choisir une école</div>
+    <div class="chip" style="height:36px;flex:none">Budget</div>
+    <div class="chip" style="height:36px;flex:none">Inscri…</div>
+  </div>
+  <div class="col" style="padding:12px 14px 18px;gap:11px">
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+      <div class="hatch" style="height:130px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">visuel à la une</div>
+      <div class="col" style="padding:12px;gap:5px">
+        <div class="row" style="gap:8px"><span class="bdg">Choisir une école</span><span class="mut" style="font-size:10px">À la une</span></div>
+        <span style="font-size:14.5px;font-weight:700;line-height:1.3">Mission, semi-privé, international : quel programme choisir ?</span>
+        <span class="mut" style="font-size:10px">12/07/2026 · 5 min de lecture</span>
+      </div>
+    </div>
+    <div class="row" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+      <div class="hatch" style="width:92px;flex:none;border:0;border-right:1px solid #c8c8c8;border-radius:0">visuel</div>
+      <div class="col" style="padding:10px;gap:4px;flex:1">
+        <span class="bdg" style="align-self:flex-start">Budget</span>
+        <span style="font-size:12px;font-weight:700;line-height:1.35">Frais de scolarité au Maroc : à quoi s'attendre en 2026 ?</span>
+        <span class="mut" style="font-size:10px">05/07/2026 · 4 min</span>
+      </div>
+    </div>
+    <div class="row" style="border:1.2px solid #b5b5b5;border-radius:12px;overflow:hidden;gap:0">
+      <div class="hatch" style="width:92px;flex:none;border:0;border-right:1px solid #c8c8c8;border-radius:0">visuel</div>
+      <div class="col" style="padding:10px;gap:4px;flex:1">
+        <span class="bdg" style="align-self:flex-start">Inscription</span>
+        <span style="font-size:12px;font-weight:700;line-height:1.35">Dossier d'inscription : les 6 pièces à préparer avant juin</span>
+        <span class="mut" style="font-size:10px">28/06/2026 · 3 min</span>
+      </div>
+    </div>
+    <div class="col" style="background:#2f2f2f;border-radius:12px;padding:16px;gap:7px;align-items:center;text-align:center">
+      <span style="font-size:14.5px;font-weight:800;color:#fff">Recevez nos meilleurs conseils</span>
+      <div class="inp" style="width:100%;background:#fff">Votre adresse e-mail</div>
+      <div class="b1" style="height:44px;background:#fff;color:#1a1a1a;width:100%">S'inscrire</div>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:14px;gap:7px">
+    <div class="hatch" style="width:74px;height:26px">logo</div>
+    <div class="row" style="flex-wrap:wrap;gap:10px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    <span style="font-size:9.5px;color:#9a9a9a">© 2026 écoles360 · CGU · Confidentialité — footer commun (détail : accueil 2a)</span>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">À propos — Desktop · 1200</div>
+<div class="fr" data-screen-label="2g À propos — desktop" style="width:1200px">
+  <div class="row" style="padding:12px 28px;border-bottom:1px solid #ddd;gap:14px">
+    <div class="hatch" style="width:96px;height:30px">logo</div>
+    <div class="row" style="gap:18px;font-size:12.5px;font-weight:500"><span>Accueil</span><span>Établissements</span><span>Blog</span><span style="font-weight:700;border-bottom:2px solid #2f2f2f;padding-bottom:2px">À propos</span><span>Contact</span></div>
+    <div style="flex:1"></div>
+    <div class="b1" style="height:40px">Inscrire mon établissement</div>
+  </div>
+  <div class="col" style="padding:32px 28px 0;gap:9px;align-items:center;text-align:center;position:relative">
+    <span style="font-size:10px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">NOTRE MISSION</span>
+    <h1 style="margin:0;font-size:30px;max-width:620px;line-height:1.15">Aider chaque famille à trouver la bonne école, en toute confiance</h1>
+    <p class="mut" style="margin:0;font-size:13px;max-width:520px;line-height:1.55">écoles360 rassemble, vérifie et présente les établissements scolaires privés du Maroc pour que choisir devienne simple, clair et serein.</p>
+    <span class="n" style="position:absolute;top:24px;right:28px">4</span>
+  </div>
+  <div class="sec" style="padding:26px 28px 0;border:0">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center">
+      <div class="col" style="gap:8px">
+        <h2 style="margin:0;font-size:20px">Notre histoire</h2>
+        <p class="mut" style="margin:0;font-size:12px;line-height:1.65">Née d'un constat simple — les parents marocains manquaient d'un endroit fiable pour comparer les écoles privées — écoles360 a vu le jour en 2024. Trop d'informations dispersées, trop d'incertitude au moment de décider.</p>
+        <p class="mut" style="margin:0;font-size:12px;line-height:1.65">Aujourd'hui, la plateforme référence plus de 1 200 établissements dans 12 villes, et accompagne chaque mois des dizaines de milliers de familles dans l'une des décisions les plus importantes de leur vie.</p>
+      </div>
+      <div class="hatch" style="height:190px;border-radius:14px">visuel — équipe / vie d'école</div>
+    </div>
+  </div>
+  <div class="row" style="margin:22px 28px 0;background:#2f2f2f;border-radius:14px;padding:20px 28px;gap:10px;text-align:center">
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:24px;font-weight:800;color:#fff">1 250</span><span style="font-size:10.5px;color:#c9c9c9">établissements référencés</span></div>
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:24px;font-weight:800;color:#fff">12</span><span style="font-size:10.5px;color:#c9c9c9">villes couvertes</span></div>
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:24px;font-weight:800;color:#fff">3 900</span><span style="font-size:10.5px;color:#c9c9c9">avis vérifiés</span></div>
+    <div class="col" style="flex:1;gap:2px"><span style="font-size:24px;font-weight:800;color:#fff">40 000</span><span style="font-size:10.5px;color:#c9c9c9">familles accompagnées / mois</span></div>
+  </div>
+  <div class="sec" style="padding:22px 28px 0;border:0">
+    <div class="col" style="gap:3px;align-items:center;text-align:center">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">CE QUI NOUS GUIDE</span>
+      <h2 style="margin:0 0 12px;font-size:20px">Nos valeurs</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:18px;gap:7px;align-items:center;text-align:center">
+        <div class="hatch" style="width:48px;height:48px;border-radius:12px">ic.</div>
+        <span style="font-size:14px;font-weight:700">Transparence</span>
+        <p class="mut" style="margin:0;font-size:11px;line-height:1.5">Des informations vérifiées et des avis modérés, sans complaisance.</p>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:18px;gap:7px;align-items:center;text-align:center">
+        <div class="hatch" style="width:48px;height:48px;border-radius:12px">ic.</div>
+        <span style="font-size:14px;font-weight:700">Proximité</span>
+        <p class="mut" style="margin:0;font-size:11px;line-height:1.5">Une équipe joignable par téléphone et WhatsApp, qui accompagne gratuitement.</p>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:18px;gap:7px;align-items:center;text-align:center">
+        <div class="hatch" style="width:48px;height:48px;border-radius:12px">ic.</div>
+        <span style="font-size:14px;font-weight:700">Indépendance</span>
+        <p class="mut" style="margin:0;font-size:11px;line-height:1.5">Les contenus sponsorisés sont toujours étiquetés comme tels.</p>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:22px 28px 0;border:0">
+    <div class="col" style="gap:3px;align-items:center;text-align:center">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">LES VISAGES</span>
+      <h2 style="margin:0 0 12px;font-size:20px">L'équipe écoles360</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:18px;gap:5px;align-items:center;text-align:center">
+        <div style="width:60px;height:60px;border-radius:99px;background:#2f2f2f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px">YE</div>
+        <span style="font-size:13px;font-weight:700;margin-top:5px">Youssef E.</span>
+        <span class="mut" style="font-size:11px">Fondateur</span>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:18px;gap:5px;align-items:center;text-align:center">
+        <div style="width:60px;height:60px;border-radius:99px;background:#5a5a5a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px">SB</div>
+        <span style="font-size:13px;font-weight:700;margin-top:5px">Salma B.</span>
+        <span class="mut" style="font-size:11px">Relations établissements</span>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:18px;gap:5px;align-items:center;text-align:center">
+        <div style="width:60px;height:60px;border-radius:99px;background:#7a7a7a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px">KT</div>
+        <span style="font-size:13px;font-weight:700;margin-top:5px">Karim T.</span>
+        <span class="mut" style="font-size:11px">Produit &amp; technique</span>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;padding:18px;gap:5px;align-items:center;text-align:center">
+        <div style="width:60px;height:60px;border-radius:99px;background:#9a9a9a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px">NA</div>
+        <span style="font-size:13px;font-weight:700;margin-top:5px">Nadia A.</span>
+        <span class="mut" style="font-size:11px">Accompagnement familles</span>
+      </div>
+    </div>
+  </div>
+  <div class="sec" style="padding:22px 28px 26px;border:0">
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:14px;background:#f6f6f6;padding:26px;gap:9px;align-items:center;text-align:center;position:relative">
+      <span style="font-size:19px;font-weight:800">Vous dirigez un établissement ?</span>
+      <p class="mut" style="margin:0;font-size:12px;max-width:420px;line-height:1.5">Rejoignez écoles360 et touchez les familles qui cherchent une école comme la vôtre.</p>
+      <div class="row" style="gap:10px;margin-top:4px">
+        <div class="b1" style="height:44px">Inscrire mon établissement</div>
+        <div class="b2" style="height:44px">Nous contacter</div>
+      </div>
+      <span class="n" style="position:absolute;top:12px;right:12px">5</span>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:16px 28px 12px;gap:9px">
+    <div class="row" style="gap:20px;align-items:center">
+      <div class="hatch" style="width:84px;height:28px;flex:none">logo</div>
+      <span style="font-size:10.5px;color:#c9c9c9;flex:1">L'annuaire de référence des établissements scolaires privés au Maroc.</span>
+      <div class="row" style="gap:14px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    </div>
+    <div class="row" style="border-top:1px solid #4a4a4a;padding-top:9px;gap:12px">
+      <span style="font-size:9.5px;color:#9a9a9a;flex:1">© 2026 écoles360 — footer commun (version détaillée : accueil 2a)</span>
+      <span style="font-size:9.5px;color:#c9c9c9">CGU</span><span style="font-size:9.5px;color:#c9c9c9">Confidentialité</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">À propos — Mobile · 390</div>
+<div class="fr" data-screen-label="2g À propos — mobile" style="width:390px">
+  <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd;gap:8px">
+    <div class="hatch" style="width:84px;height:30px">logo</div>
+    <div style="flex:1"></div>
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1.2px solid #9a9a9a;border-radius:8px;font-size:19px;flex:none">≡</div>
+  </div>
+  <div class="col" style="padding:18px 14px 0;gap:7px;align-items:center;text-align:center">
+    <span style="font-size:9.5px;font-weight:700;letter-spacing:1.6px;color:#8a8a8a">NOTRE MISSION</span>
+    <h2 style="margin:0;font-size:20px;line-height:1.25">Aider chaque famille à trouver la bonne école, en toute confiance</h2>
+  </div>
+  <div class="col" style="padding:14px;gap:10px">
+    <div class="hatch" style="height:130px;border-radius:12px">visuel — équipe / vie d'école</div>
+    <span style="font-size:15px;font-weight:700">Notre histoire</span>
+    <p class="mut" style="margin:0;font-size:11.5px;line-height:1.6">Née d'un constat simple — les parents marocains manquaient d'un endroit fiable pour comparer les écoles privées — écoles360 a vu le jour en 2024.</p>
+    <div class="row" style="background:#2f2f2f;border-radius:12px;padding:14px;gap:8px;text-align:center">
+      <div class="col" style="flex:1;gap:1px"><span style="font-size:17px;font-weight:800;color:#fff">1 250</span><span style="font-size:9.5px;color:#c9c9c9">établissements</span></div>
+      <div class="col" style="flex:1;gap:1px"><span style="font-size:17px;font-weight:800;color:#fff">12</span><span style="font-size:9.5px;color:#c9c9c9">villes</span></div>
+      <div class="col" style="flex:1;gap:1px"><span style="font-size:17px;font-weight:800;color:#fff">3 900</span><span style="font-size:9.5px;color:#c9c9c9">avis vérifiés</span></div>
+    </div>
+    <div class="row" style="gap:8px">
+      <div class="col" style="flex:1;border:1.2px solid #b5b5b5;border-radius:10px;padding:10px;gap:4px;align-items:center;text-align:center"><div class="hatch" style="width:34px;height:34px;border-radius:8px">ic.</div><span style="font-size:11px;font-weight:700">Transparence</span></div>
+      <div class="col" style="flex:1;border:1.2px solid #b5b5b5;border-radius:10px;padding:10px;gap:4px;align-items:center;text-align:center"><div class="hatch" style="width:34px;height:34px;border-radius:8px">ic.</div><span style="font-size:11px;font-weight:700">Proximité</span></div>
+      <div class="col" style="flex:1;border:1.2px solid #b5b5b5;border-radius:10px;padding:10px;gap:4px;align-items:center;text-align:center"><div class="hatch" style="width:34px;height:34px;border-radius:8px">ic.</div><span style="font-size:11px;font-weight:700">Indépendance</span></div>
+    </div>
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:12px;background:#f6f6f6;padding:14px;gap:8px;align-items:center;text-align:center">
+      <span style="font-size:14px;font-weight:800">Vous dirigez un établissement ?</span>
+      <div class="b1" style="height:44px;width:100%">Inscrire mon établissement</div>
+    </div>
+    <div class="col" style="background:#2f2f2f;border-radius:0;margin:0 -14px -20px;padding:14px;gap:7px">
+      <div class="hatch" style="width:74px;height:26px">logo</div>
+      <div class="row" style="flex-wrap:wrap;gap:10px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+      <span style="font-size:9.5px;color:#9a9a9a">© 2026 écoles360 · CGU · Confidentialité — footer commun (détail : accueil 2a)</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Contact — Desktop · 1200</div>
+<div class="fr" data-screen-label="2g Contact — desktop" style="width:1200px">
+  <div class="row" style="padding:12px 28px;border-bottom:1px solid #ddd;gap:14px">
+    <div class="hatch" style="width:96px;height:30px">logo</div>
+    <div class="row" style="gap:18px;font-size:12.5px;font-weight:500"><span>Accueil</span><span>Établissements</span><span>Blog</span><span>À propos</span><span style="font-weight:700;border-bottom:2px solid #2f2f2f;padding-bottom:2px">Contact</span></div>
+    <div style="flex:1"></div>
+    <div class="b1" style="height:40px">Inscrire mon établissement</div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:30px 28px 56px;gap:8px;align-items:center;text-align:center">
+    <span style="font-size:10px;font-weight:700;letter-spacing:1.6px;color:#9a9a9a">CONTACT</span>
+    <h1 style="margin:0;color:#fff;font-size:30px">Une question ? Parlons-en</h1>
+    <p style="margin:0;color:#c9c9c9;font-size:13px;max-width:460px;line-height:1.5">Notre équipe vous répond et vous accompagne gratuitement dans votre recherche d'établissement.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:-34px 28px 0;position:relative">
+    <div class="col" style="background:#fff;border:1.2px solid #b5b5b5;border-radius:12px;padding:16px;gap:5px;box-shadow:0 6px 18px rgba(0,0,0,.08)">
+      <div class="hatch" style="width:40px;height:40px;border-radius:10px">✆</div>
+      <span class="lab" style="margin-top:4px">Téléphone</span>
+      <span style="font-size:14.5px;font-weight:700">05 22 45 00 00</span>
+      <span class="mut" style="font-size:10.5px">Du lundi au samedi, 9h – 18h</span>
+    </div>
+    <div class="col" style="background:#fff;border:1.2px solid #b5b5b5;border-radius:12px;padding:16px;gap:5px;box-shadow:0 6px 18px rgba(0,0,0,.08)">
+      <div class="hatch" style="width:40px;height:40px;border-radius:10px">@</div>
+      <span class="lab" style="margin-top:4px">E-mail</span>
+      <span style="font-size:14.5px;font-weight:700">bonjour@ecoles360.ma</span>
+      <span class="mut" style="font-size:10.5px">Réponse sous 24 h ouvrées</span>
+    </div>
+    <div class="col" style="background:#fff;border:1.2px solid #b5b5b5;border-radius:12px;padding:16px;gap:5px;box-shadow:0 6px 18px rgba(0,0,0,.08)">
+      <div class="hatch" style="width:40px;height:40px;border-radius:10px">⌖</div>
+      <span class="lab" style="margin-top:4px">Adresse</span>
+      <span style="font-size:14.5px;font-weight:700">Casablanca, Maroc</span>
+      <span class="mut" style="font-size:10.5px">Sur rendez-vous uniquement</span>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1.2fr .8fr;gap:18px;padding:22px 28px 26px;align-items:start">
+    <div class="col" style="border:1.2px solid #b5b5b5;border-radius:14px;padding:20px;gap:11px;background:#fff">
+      <div class="row"><div class="col" style="gap:2px;flex:1"><span style="font-size:17px;font-weight:800">Envoyez-nous un message</span><span class="mut" style="font-size:11px">Remplissez le formulaire, nous vous recontactons sous 24 h.</span></div><span class="n">6</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="col" style="gap:5px"><span class="lab">Nom complet</span><div class="inp">Votre nom</div></div>
+        <div class="col" style="gap:5px"><span class="lab">Téléphone</span><div class="inp">+212 6 00 00 00 00</div></div>
+      </div>
+      <div class="col" style="gap:5px"><span class="lab">E-mail</span><div class="inp">vous@email.com</div></div>
+      <div class="col" style="gap:5px"><span class="lab">Sujet</span><div class="inp">Aide à la recherche d'une école ▾</div></div>
+      <div class="col" style="gap:5px"><span class="lab">Message</span><div class="inp" style="min-height:80px;align-items:flex-start;padding-top:10px">Comment pouvons-nous vous aider ?</div></div>
+      <div class="b1" style="height:46px;align-self:flex-start">Envoyer le message</div>
+    </div>
+    <div class="col" style="gap:14px">
+      <div class="col" style="background:#2f2f2f;border-radius:14px;padding:18px;gap:8px;position:relative">
+        <span style="font-size:14.5px;font-weight:700;color:#fff">Contact rapide sur WhatsApp</span>
+        <p style="margin:0;font-size:11.5px;color:#c9c9c9;line-height:1.5">Une réponse en quelques minutes, du lundi au samedi.</p>
+        <div class="b1" style="height:46px;background:#5a5a5a">Écrire sur WhatsApp</div>
+        <span class="n" style="position:absolute;top:12px;right:12px">7</span>
+      </div>
+      <div class="col" style="border:1.2px solid #b5b5b5;border-radius:14px;overflow:hidden;gap:0;background:#fff">
+        <div class="hatch" style="height:120px;border:0;border-bottom:1px solid #c8c8c8;border-radius:0">carte — repère bureau</div>
+        <div class="col" style="padding:14px;gap:8px">
+          <span class="lab">Suivez-nous</span>
+          <div class="row" style="gap:7px">
+            <div class="hatch" style="width:36px;height:36px;border-radius:8px">FB</div>
+            <div class="hatch" style="width:36px;height:36px;border-radius:8px">IG</div>
+            <div class="hatch" style="width:36px;height:36px;border-radius:8px">YT</div>
+            <div class="hatch" style="width:36px;height:36px;border-radius:8px">TK</div>
+            <div class="hatch" style="width:36px;height:36px;border-radius:8px">LI</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:16px 28px 12px;gap:9px">
+    <div class="row" style="gap:20px;align-items:center">
+      <div class="hatch" style="width:84px;height:28px;flex:none">logo</div>
+      <span style="font-size:10.5px;color:#c9c9c9;flex:1">L'annuaire de référence des établissements scolaires privés au Maroc.</span>
+      <div class="row" style="gap:14px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    </div>
+    <div class="row" style="border-top:1px solid #4a4a4a;padding-top:9px;gap:12px">
+      <span style="font-size:9.5px;color:#9a9a9a;flex:1">© 2026 écoles360 — footer commun (version détaillée : accueil 2a)</span>
+      <span style="font-size:9.5px;color:#c9c9c9">CGU</span><span style="font-size:9.5px;color:#c9c9c9">Confidentialité</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="col" style="gap:6px">
+<div class="vp">Contact — Mobile · 390</div>
+<div class="fr" data-screen-label="2g Contact — mobile" style="width:390px">
+  <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd;gap:8px">
+    <div class="hatch" style="width:84px;height:30px">logo</div>
+    <div style="flex:1"></div>
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:1.2px solid #9a9a9a;border-radius:8px;font-size:19px;flex:none">≡</div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:22px 14px 40px;gap:6px;align-items:center;text-align:center">
+    <span style="font-size:9.5px;font-weight:700;letter-spacing:1.6px;color:#9a9a9a">CONTACT</span>
+    <h2 style="margin:0;color:#fff;font-size:21px">Une question ? Parlons-en</h2>
+  </div>
+  <div class="col" style="margin:-26px 14px 0;gap:8px;position:relative">
+    <div class="row" style="background:#fff;border:1.2px solid #b5b5b5;border-radius:12px;padding:12px;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.08);align-items:center">
+      <div class="hatch" style="width:36px;height:36px;border-radius:9px;flex:none">✆</div>
+      <div class="col" style="gap:1px;flex:1"><span style="font-size:12.5px;font-weight:700">05 22 45 00 00</span><span class="mut" style="font-size:10px">Lun – sam, 9h – 18h</span></div>
+    </div>
+    <div class="row" style="background:#fff;border:1.2px solid #b5b5b5;border-radius:12px;padding:12px;gap:10px;align-items:center">
+      <div class="hatch" style="width:36px;height:36px;border-radius:9px;flex:none">@</div>
+      <div class="col" style="gap:1px;flex:1"><span style="font-size:12.5px;font-weight:700">bonjour@ecoles360.ma</span><span class="mut" style="font-size:10px">Réponse sous 24 h ouvrées</span></div>
+    </div>
+    <div class="col" style="background:#2f2f2f;border-radius:12px;padding:14px;gap:7px">
+      <span style="font-size:13px;font-weight:700;color:#fff">Contact rapide sur WhatsApp</span>
+      <div class="b1" style="height:46px;background:#5a5a5a">Écrire sur WhatsApp</div>
+    </div>
+  </div>
+  <div class="col" style="padding:14px 14px 20px;gap:9px">
+    <span style="font-size:14.5px;font-weight:800">Envoyez-nous un message</span>
+    <div class="col" style="gap:5px"><span class="lab">Nom complet</span><div class="inp">Votre nom</div></div>
+    <div class="col" style="gap:5px"><span class="lab">Téléphone</span><div class="inp">+212 6 00 00 00 00</div></div>
+    <div class="col" style="gap:5px"><span class="lab">Sujet</span><div class="inp">Aide à la recherche d'une école ▾</div></div>
+    <div class="col" style="gap:5px"><span class="lab">Message</span><div class="inp" style="min-height:70px;align-items:flex-start;padding-top:10px">Comment pouvons-nous vous aider ?</div></div>
+    <div class="b1" style="height:48px">Envoyer le message</div>
+  </div>
+  <div class="col" style="background:#2f2f2f;padding:14px;gap:7px">
+    <div class="hatch" style="width:74px;height:26px">logo</div>
+    <div class="row" style="flex-wrap:wrap;gap:10px;font-size:11px;color:#e3e3e3"><span>Rechercher</span><span>Blog</span><span>À propos</span><span>Contact</span><span>Espace pro</span></div>
+    <span style="font-size:9.5px;color:#9a9a9a">© 2026 écoles360 · CGU · Confidentialité — footer commun (détail : accueil 2a)</span>
+  </div>
+</div>
+</div>
+<div class="ann">
+<h4>2g · Comportements</h4>
+<ol>
+<li><span class="n">1</span><span>Blog : pilules de catégories = filtres (active en sombre). Contenus et rubriques repris du prototype fourni.</span></li>
+<li><span class="n">2</span><span>Article « À la une » = dernier article épinglé ; clic → gabarit article du prototype (fil d'ariane, chapô, intertitres, citation, partage) — conservé tel quel, non re-maquetté ici.</span></li>
+<li><span class="n">3</span><span>Newsletter : un e-mail par mois. Simple champ e-mail, pas de compte requis.</span></li>
+<li><span class="n">4</span><span>À propos : structure du prototype conservée — mission, histoire, bande de chiffres, valeurs, équipe.</span></li>
+<li><span class="n">5</span><span>Double CTA final : « Inscrire mon établissement » → <a class="dv-oid" href="#2f">2f</a> · « Nous contacter » → page Contact.</span></li>
+<li><span class="n">6</span><span>Contact : 3 canaux en cartes (téléphone, e-mail, adresse) + formulaire avec sujet en liste déroulante. Réponse sous 24 h ouvrées.</span></li>
+<li><span class="n">7</span><span>WhatsApp mis en avant comme canal rapide (lun–sam) ; carte du bureau + réseaux sociaux en colonne droite.</span></li>
+</ol>
+</div>
+</div>
+</div>
+<!--T2-2H-->
+</div>
+</div>
+<!--T2-2B-->
+</div>
+</section>
+
+</x-dc>
+</body>
+</html>

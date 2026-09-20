@@ -1,0 +1,12 @@
+/* écoles360 — Radius tokens.
+   Scale: badge 6 / button-input 9-10 / card 14-16 / pill 20. */
+:root {
+  --radius-badge: 6px;    /* badges, small tags, square status pills */
+  --radius-control: 9px;  /* buttons, inputs, selects */
+  --radius-control-lg: 10px;
+  --radius-field: 12px;   /* large fields, type chips */
+  --radius-card: 14px;    /* list cards */
+  --radius-card-lg: 16px; /* panels, stat / pricing cards */
+  --radius-pill: 20px;    /* filter chips, rounded counters */
+  --radius-round: 50%;    /* avatars, icon circles */
+}

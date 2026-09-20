@@ -1,0 +1,46 @@
+/* écoles360 — Responsive tokens: breakpoints, fluid type, touch.
+   The maquette shipped at fixed desktop widths; these tokens give the system
+   a single source of truth for adapting every surface down to ~360px phones.
+
+   Breakpoint model (mobile-first — design for the small screen, layer up):
+     base   < 600px   one phone, single column, bottom nav, full-bleed cards
+     sm     ≥ 600px   large phone / small tablet, 2-up grids appear
+     md     ≥ 900px   tablet, sidebars + filter rail return, header nav shows
+     lg     ≥ 1200px  desktop, full --container-max, multi-column dashboards
+     xl     ≥ 1440px  wide desktop, extra gutter only
+*/
+:root {
+  /* ---- Breakpoint values (for JS matchMedia + reference) ---- */
+  --bp-sm: 600px;
+  --bp-md: 900px;
+  --bp-lg: 1200px;
+  --bp-xl: 1440px;
+
+  /* ---- Fluid type — clamp(min @360px, preferred, max @desktop) ----
+     Use these on real screens instead of the fixed --fs-* so headings
+     shrink gracefully on phones (the maquette's 46px hero overflowed 360px).
+     The fixed --fs-* tokens stay as the desktop ceiling / spec reference. */
+  --fs-hero-fluid:  clamp(28px, 5vw + 12px, 46px);  /* @kind other */ /* 46 → 28 */
+  --fs-h1-fluid:    clamp(24px, 3vw + 12px, 30px);  /* @kind other */ /* 30 → 24 */
+  --fs-h2-fluid:    clamp(22px, 3vw + 10px, 28px);  /* @kind other */ /* 28 → 22 */
+  --fs-title-fluid: clamp(20px, 2vw + 12px, 24px);  /* @kind other */ /* 24 → 20 */
+  --fs-lead-fluid:  clamp(15px, 1vw + 12px, 18px);  /* @kind other */ /* 18 → 15 */
+
+  /* Tracking eases off as headings shrink (tight tracking hurts small text) */
+  --ls-hero-fluid: clamp(-1px, -0.05vw, -0.4px);  /* @kind other */
+
+  /* ---- Responsive container ----
+     Fluid gutter that tightens on phones, opens up on desktop, capped at max. */
+  --container-pad: clamp(16px, 5vw, 40px);   /* page side padding @kind spacing */
+  --section-y:     clamp(40px, 8vw, 88px);   /* @kind spacing */ /* marketing section vertical rhythm */
+  --gap-grid:      clamp(12px, 2.5vw, 24px); /* gap between grid cards @kind spacing */
+
+  /* ---- Touch ----
+     Minimum hit target on touch surfaces — every tappable control on mobile
+     (nav items, icon buttons, table-row actions) must reach this. */
+  --touch-min: 44px;
+
+  /* ---- Mobile chrome heights ---- */
+  --bottombar-h: 60px;  /* app-style bottom tab bar (pro / admin) */
+  --drawer-w:    300px; /* slide-in nav drawer (public site) */
+}

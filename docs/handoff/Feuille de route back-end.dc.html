@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+    a{color:#E63946;text-decoration:none;}
+    a:hover{color:#1D3557;text-decoration:underline;}
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.8in" hint-size="100%,100%">
+
+  <div slot="footer" style="display:flex;justify-content:space-between;font:400 9.5px/1 'Inter',sans-serif;color:#9AA3AF;padding:0 0 4px;">
+    <span>écoles360 — Feuille de route back-end</span>
+    <span>septembre 2026</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid #1D3557;padding-bottom:14px;margin-bottom:6px;">
+    <span style="font:800 22px/1 'Inter',sans-serif;letter-spacing:-0.5px;color:#1D3557;">écoles<span style="color:#E63946;">360</span></span>
+    <span style="font:600 10.5px/1 'Inter',sans-serif;letter-spacing:1.2px;text-transform:uppercase;color:#9AA3AF;">Plan d'implémentation — hors démarche des 16 livrables</span>
+  </div>
+
+  <h1 style="font:800 28px/1.2 'Inter',sans-serif;letter-spacing:-0.8px;color:#1A1A1A;margin:18px 0 6px;">De la maquette au back-end complet</h1>
+  <p style="font:500 13px/1.6 'Inter',sans-serif;color:#5A6472;margin:0 0 4px;">Plan de construction du back-end <strong>NestJS 10</strong> d'écoles360 : ce qui est déjà acquis, ce qui manque, dans quel ordre le bâtir, et quoi faire dès maintenant. Les seize livrables constituent le cahier des charges ; ce document est le plan de passage à l'exécution.</p>
+  <p style="font:400 11px/1.6 'Inter',sans-serif;color:#9AA3AF;margin:0 0 24px;">Septembre 2026 · Cible v2.5 (NestJS 10 · Prisma · MySQL 8 · Redis 7 · BullMQ · Docker Compose) · Estimation ~12 semaines à temps partiel, ~7 à temps plein</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">1. État des lieux — ce qui est déjà fait compte beaucoup</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Vous n'êtes pas « sans back-end » au sens d'un projet vierge : vous êtes à un point rare où <strong>toute la spécification est figée et validée</strong>. Le travail restant est de la traduction, pas de la conception. C'est ce qui rend un planning tenable.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 14px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:26%;">Acquis</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Ce que cela vous épargne</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">L8 — Merise MCD/MLD/MPD</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Le modèle de données est arrêté : le <span style="font-family:ui-monospace,monospace;font-size:9.5px;">schema.prisma</span> est une transcription, pas une modélisation.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">L10 — 24 migrations + seeders</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Tables, colonnes, index, jeux de démonstration et import open data déjà décrits.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">L11 — contrat d'API</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Endpoints, verbes, codes de retour, messages d'erreur, services et guards nommés. Aucune décision d'API ne reste ouverte.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">RG01–RG27</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Les règles métier — la partie où l'on se trompe d'ordinaire — sont écrites et tracées jusqu'aux tests.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Maquettes cliquables</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Le front existe visuellement, avec des données de démonstration : chaque écran dit déjà quelles données il attend.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Design system + SKILL.md</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Le front réel se code avec des composants existants, pas en repartant du CSS.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">L13 / L14 / L16</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Stratégie de tests, chaîne CI/CD, topologie Docker et runbook déjà rédigés : rien à improviser en fin de parcours.</td></tr>
+    </tbody>
+  </table>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 6px;"><strong style="color:#E63946;">Ce qui manque, très précisément :</strong> le code exécutable. Aucun dépôt Git, aucun projet NestJS initialisé, aucune base MySQL réelle, aucun endpoint qui réponde, et un front qui affiche des tableaux JavaScript figés au lieu d'appeler une API.</p>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">2. L'étape suivante, en une phrase</h2>
+  <div style="border:1px solid #E1E5EA;border-left:4px solid #E63946;border-radius:14px;padding:14px 16px;margin:0 0 14px;background:#FFFFFF;">
+    <p style="font:700 13px/1.55 'Inter',sans-serif;color:#1D3557;margin:0 0 6px;">Ouvrir le dépôt et faire tourner un socle vide mais complet : NestJS + MySQL + Redis qui démarrent ensemble sous Docker, avec un seul endpoint <span style="font-family:ui-monospace,monospace;font-size:11px;">/api/v1/health</span> qui répond.</p>
+    <p style="font:400 12px/1.6 'Inter',sans-serif;color:#5A6472;margin:0;">C'est le lot 1 ci-dessous, environ trois jours. Tant que ce socle ne tourne pas, écrire des modules métier revient à construire sans fondations : chaque bug d'environnement se paiera plus tard, au pire moment. Ne cédez pas à la tentation de commencer par le module « établissements » parce qu'il est plus gratifiant.</p>
+  </div>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">3. Les neuf lots, dans l'ordre</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">L'ordre n'est pas négociable sur les lots 1 à 3 : chacun est un prérequis technique du suivant. À partir du lot 4, l'ordre des modules relève de la valeur métier et peut s'ajuster.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 14px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:5%;">#</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:22%;">Lot</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Contenu</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:11%;">Réf.</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:10%;">Durée</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">1</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Socle</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Dépôt Git, arborescence <span style="font-family:ui-monospace,monospace;font-size:9.5px;">api/</span> + <span style="font-family:ui-monospace,monospace;font-size:9.5px;">web/</span>, NestJS initialisé, <span style="font-family:ui-monospace,monospace;font-size:9.5px;">docker-compose.dev.yml</span>, variables d'environnement, endpoint <em>health</em>, ESLint + TypeScript strict.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">L7, L14</td><td style="border:1px solid #E1E5EA;padding:6px 8px;white-space:nowrap;">3 j</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">2</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Données</td><td style="border:1px solid #E1E5EA;padding:6px 8px;"><span style="font-family:ui-monospace,monospace;font-size:9.5px;">schema.prisma</span> complet, migrations, <em>PrismaService</em>, seeders en commandes NestJS, import open data, jeu de démonstration.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">L8, L10</td><td style="border:1px solid #E1E5EA;padding:6px 8px;white-space:nowrap;">1 sem.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">3</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Authentification</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Passport + sessions Redis, quatre rôles + compte parent léger (RG24), guards <span style="font-family:ui-monospace,monospace;font-size:9.5px;">@Roles()</span> / <span style="font-family:ui-monospace,monospace;font-size:9.5px;">@Scopes()</span>, CSRF, <em>throttler</em>, réinitialisation de mot de passe.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">L11, RG25</td><td style="border:1px solid #E1E5EA;padding:6px 8px;white-space:nowrap;">1 sem.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">4</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Modules métier</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Les huit domaines, un par un, chacun livré avec ses tests (détail §5).</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">L11, L13</td><td style="border:1px solid #E1E5EA;padding:6px 8px;white-space:nowrap;">5 sem.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">5</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Asynchrone</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">BullMQ (envois d'e-mails, notifications), <span style="font-family:ui-monospace,monospace;font-size:9.5px;">@Cron</span> (purges loi 09-08, relances, rotation du sponsoring), conteneurs <em>worker</em> et <em>scheduler</em>.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">L11, L14</td><td style="border:1px solid #E1E5EA;padding:6px 8px;white-space:nowrap;">4 j</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">6</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Médias &amp; cache</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Téléversement contrôlé (MIME, poids, re-encodage <em>sharp</em>) vers le volume <span style="font-family:ui-monospace,monospace;font-size:9.5px;">storage</span>, <em>CacheModule</em> Redis et purges de clés <span style="font-family:ui-monospace,monospace;font-size:9.5px;">fiche:{slug}</span>.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">L11, RG27</td><td style="border:1px solid #E1E5EA;padding:6px 8px;white-space:nowrap;">3 j</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">7</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Front branché</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Projet Vite, routes Vike, client HTTP unique, React Query, substitution des données de démonstration des maquettes par les appels réels, écran par écran.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">L12</td><td style="border:1px solid #E1E5EA;padding:6px 8px;white-space:nowrap;">3 sem.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">8</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Qualité</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Couverture Jest 90 %, Playwright sur les cinq parcours acteur, matrice RG01–RG27 complétée, CI GitHub Actions avec les quatre jobs.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">L13</td><td style="border:1px solid #E1E5EA;padding:6px 8px;white-space:nowrap;">1 sem.</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">9</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Mise en production</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">VPS Hostinger, Compose de production, images <em>ghcr.io</em>, TLS, staging, sauvegardes chiffrées, recette L15 rejouée en réel.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">L14, L15</td><td style="border:1px solid #E1E5EA;padding:6px 8px;white-space:nowrap;">1 sem.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">4. Lot 1 en détail — votre semaine</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Sept tâches, dans cet ordre. Chacune se vérifie par un résultat observable, pas par un sentiment d'avancement.</p>
+  <ol style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>Créer le dépôt GitHub</strong> <span style="font-family:ui-monospace,monospace;font-size:10px;">ecoles360</span>, branches <span style="font-family:ui-monospace,monospace;font-size:10px;">main</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">develop</span>, et y déposer le dossier de handoff (spécifications + maquettes + design system) dans <span style="font-family:ui-monospace,monospace;font-size:10px;">/docs</span>. Le code et sa spécification doivent vivre au même endroit.</li>
+    <li style="margin-bottom:5px;"><strong>Poser l'arborescence</strong> <span style="font-family:ui-monospace,monospace;font-size:10px;">api/</span> et <span style="font-family:ui-monospace,monospace;font-size:10px;">web/</span> à la racine, conformément au livrable 7.</li>
+    <li style="margin-bottom:5px;"><strong>Initialiser NestJS 10</strong> dans <span style="font-family:ui-monospace,monospace;font-size:10px;">api/</span> : TypeScript strict, <em>ValidationPipe</em> global, préfixe <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/v1</span>, Swagger sur <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/docs</span>, filtre d'exception renvoyant le format d'erreur du livrable 11.</li>
+    <li style="margin-bottom:5px;"><strong>Écrire <span style="font-family:ui-monospace,monospace;font-size:10px;">docker-compose.dev.yml</span></strong> : services <em>api</em>, <em>mysql:8</em>, <em>redis:7</em>, volumes nommés, rechargement à chaud. Un seul <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose up</span> doit suffire à un nouveau développeur.</li>
+    <li style="margin-bottom:5px;"><strong>Fichier <span style="font-family:ui-monospace,monospace;font-size:10px;">.env.example</span></strong> exhaustif et commenté, jamais de secret dans Git.</li>
+    <li style="margin-bottom:5px;"><strong>Endpoint <span style="font-family:ui-monospace,monospace;font-size:10px;">GET /api/v1/health</span></strong> vérifiant réellement MySQL et Redis — c'est la même sonde que le <span style="font-family:ui-monospace,monospace;font-size:10px;">HEALTHCHECK</span> de production, autant la poser tout de suite.</li>
+    <li><strong>Premier test Jest + Supertest</strong> sur cet endpoint et premier <em>workflow</em> GitHub Actions qui le joue. La chaîne de tests existe avant le premier module métier, pas après.</li>
+  </ol>
+  <div style="border:1px solid #E1E5EA;border-radius:14px;padding:12px 14px;margin:0 0 14px;background:#F5F6F8;">
+    <p style="font:700 11px/1.4 'Inter',sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#5A6472;margin:0 0 6px;">Critère de sortie du lot 1</p>
+    <p style="font:400 12px/1.6 'Inter',sans-serif;color:#2A313B;margin:0;">Sur une machine vierge : <span style="font-family:ui-monospace,monospace;font-size:10px;">git clone</span> → <span style="font-family:ui-monospace,monospace;font-size:10px;">cp .env.example .env</span> → <span style="font-family:ui-monospace,monospace;font-size:10px;">docker compose up</span> → <span style="font-family:ui-monospace,monospace;font-size:10px;">/api/v1/health</span> répond <span style="font-family:ui-monospace,monospace;font-size:10px;">200</span>, et la CI est verte.</p>
+  </div>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">5. Lot 4 — ordre des huit modules métier</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Principe : construire d'abord ce qui rend le site public consultable, ensuite ce qui fait vivre les établissements, enfin ce qui fait entrer l'argent. Chaque module est terminé — <em>controller</em>, DTO validés, service, guards, tests, documentation Swagger — avant d'attaquer le suivant. Un module à moitié fait est une dette, pas une avance.</p>
+  <table style="width:100%;border-collapse:collapse;font:400 10.5px/1.5 'Inter',sans-serif;color:#2A313B;margin:0 0 14px;">
+    <thead>
+      <tr>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:5%;">#</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:24%;">Module</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;">Cœur du travail</th>
+        <th style="text-align:left;font:700 9.5px/1.3 'Inter',sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#5A6472;background:#F5F6F8;border:1px solid #E1E5EA;padding:6px 8px;width:14%;">Règles</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">1</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Établissements &amp; fiches</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Lecture publique, circuit de proposition et de validation des modifications, visibilité conditionnée à une formule active.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">RG13, RG20</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">2</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Recherche &amp; filtres</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Le morceau technique le plus dense : filtres dynamiques par type, budget, multi-cycles, tris, pagination, index MySQL.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">RG03, RG08</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">3</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Comptes parents &amp; avis</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Inscription légère, dépôt d'avis, modération, recalcul de la note dans la même transaction.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">RG06–RG08, RG24</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">4</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Demandes de contact</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Réception, anti-abus, notification de l'établissement, portées de la secrétaire.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">RG09, RG10</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">5</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Facturation &amp; abonnements</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Le point le plus sensible : numérotation sous verrou <span style="font-family:ui-monospace,monospace;font-size:9.5px;">FOR UPDATE</span>, remise annuelle, paiement à la vue plafonné, validation bloquée si facture impayée.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">RG11–RG14</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">6</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">CRM leads &amp; prospects</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Pipelines, scoring sur 10, suivis et relances, cloisonnement des données par établissement.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">RG17, RG21–RG23</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">7</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">CMS &amp; console admin</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Blog et son circuit de validation, FAQ, à propos, comptes secrétariat, journal d'audit en lecture seule.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">RG25–RG27</td></tr>
+      <tr><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:800;color:#E63946;">8</td><td style="border:1px solid #E1E5EA;padding:6px 8px;font-weight:700;">Statistiques &amp; sponsoring</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">Comptage des vues et des clics, agrégations par période, rotation équitable entre sponsors de même niveau.</td><td style="border:1px solid #E1E5EA;padding:6px 8px;">RG15, RG19</td></tr>
+    </tbody>
+  </table>
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">6. Quand pourra-t-on dire « le back-end est complet » ?</h2>
+  <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0 0 10px;">Définissez le critère maintenant, pas à l'arrivée : c'est ce qui empêche un projet de s'étirer indéfiniment. Le back-end est complet lorsque les six énoncés suivants sont vrais simultanément.</p>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;">Tous les endpoints du livrable 11 répondent, avec les codes et messages d'erreur qui y sont écrits — y compris les cas de refus (409 <em>facture_non_payee</em>, 404 sur écriture du journal d'audit).</li>
+    <li style="margin-bottom:5px;">Les vingt-sept règles de gestion sont couvertes par au moins un test automatisé, et la matrice du livrable 13 ne comporte aucune ligne vide.</li>
+    <li style="margin-bottom:5px;">Les quatre rôles plus le compte parent voient exactement leur périmètre : un secrétaire ne peut ni exporter ni supprimer des leads, et cela est prouvé par un test, non par une intention.</li>
+    <li style="margin-bottom:5px;">Les conteneurs <em>worker</em> et <em>scheduler</em> tournent : les purges loi 09-08 s'exécutent seules et laissent une trace.</li>
+    <li style="margin-bottom:5px;">Les trois back-offices et le site public fonctionnent sans aucune donnée de démonstration codée en dur.</li>
+    <li>Les cinq parcours de recette du livrable 15 se rejouent sur l'environnement de <em>staging</em> réel, pas sur la maquette.</li>
+  </ul>
+
+  <h2 style="font:700 16px/1.3 'Inter',sans-serif;color:#1D3557;margin:26px 0 10px;">7. Trois pièges à éviter</h2>
+  <ul style="font:400 12px/1.62 'Inter',sans-serif;color:#2A313B;margin:0 0 12px;padding-left:20px;">
+    <li style="margin-bottom:5px;"><strong>Rouvrir la conception.</strong> Vos spécifications sont validées. Si une contradiction apparaît en codant, notez-la et traitez-la en lot — ne redessinez pas le modèle au fil de l'eau, c'est ainsi que six semaines deviennent six mois.</li>
+    <li style="margin-bottom:5px;"><strong>Brancher le front trop tôt.</strong> Tant qu'un module n'est pas testé côté API, le connecter à l'écran ne fait que mêler deux sources de bugs.</li>
+    <li><strong>Repousser la facturation.</strong> C'est le module qui contient le plus de règles et le seul où une erreur coûte de l'argent réel. Il est placé au milieu du lot 4 délibérément : ni en premier, ni en dernier.</li>
+  </ul>
+
+  <div style="border:1px solid #E1E5EA;border-left:4px solid #1D3557;border-radius:14px;padding:14px 16px;margin:0 0 6px;background:#FFFFFF;">
+    <p style="font:700 11px/1.4 'Inter',sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#5A6472;margin:0 0 8px;">À faire aujourd'hui</p>
+    <p style="font:400 12.5px/1.65 'Inter',sans-serif;color:#2A313B;margin:0;">Créez le dépôt, déposez-y le dossier de handoff, ouvrez Claude Code à la racine et demandez-lui le lot 1 en lui désignant le livrable 7 pour l'arborescence et le livrable 14 pour la composition Docker. Rien d'autre : un socle qui démarre, un endpoint qui répond, une CI verte.</p>
+  </div>
+</x-import>
+</x-dc>
+</body>
+</html>
