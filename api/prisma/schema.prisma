@@ -1,0 +1,55 @@
+// =============================================================================
+//  écoles360 — schéma Prisma
+//  Livrable 10 §2.0 — bloc d'en-tête : datasource, generator, preview features
+// -----------------------------------------------------------------------------
+//  LOT 1 — SOCLE. Ce fichier se limite à la connexion : aucun modèle n'y figure
+//  encore. La sonde GET /api/v1/health n'interroge aucune table (elle exécute
+//  `SELECT 1`), et le périmètre du lot 1 exclut explicitement le schéma complet.
+//
+//  Le MPD du livrable 8 est traduit ici au LOT 2 (livrable 10 §2.1 à §2.12 :
+//  23 modèles, énumérations, index, FULLTEXT, contraintes CHECK), accompagné de
+//  sa première migration. Tant qu'aucune migration n'existe, `prisma migrate
+//  deploy` n'a rien à appliquer et n'est donc pas appelé au démarrage — il le
+//  sera par la commande du conteneur `api` dès le lot 2 (livrable 14 §2.1).
+// =============================================================================
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex", "fullTextSearch"]
+
+  // Client typé exposé par PrismaService (livrable 10 §2.0).
+  // Le dossier est regénéré par `prisma generate` et n'est pas versionné.
+  output          = "../src/generated/prisma"
+
+  // `native` sert l'exécution locale hors conteneur (livrable 14 §1) ;
+  // `linux-musl-openssl-3.0.x` sert les images node:20-alpine (livrable 14 §2.2).
+  // Déclarer les deux évite un `prisma generate` de rattrapage au démarrage du
+  // conteneur, et un moteur manquant au moment du build de l'image.
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+/// Modèle technique de socle — LOT 1 UNIQUEMENT, À RETIRER AU LOT 2.
+///
+/// Prisma 5 refuse `prisma generate` sur un schéma sans aucun modèle ; sans
+/// client généré, `PrismaService` ne compile pas et la sonde n'a pas de quoi
+/// interroger MySQL. Ce modèle n'existe donc que pour rendre le générateur
+/// opérant — c'est, littéralement, « le strict nécessaire à la sonde ».
+///
+/// Il ne crée AUCUNE table : aucune migration n'est générée au lot 1, et la
+/// sonde exécute `SELECT 1`, qui n'interroge rien. La base reste vide jusqu'à
+/// la première migration du lot 2.
+///
+/// À SUPPRIMER en tête du lot 2, AVANT `prisma migrate dev` — sinon la
+/// première migration créerait `_socle_version` en base, où elle n'a rien à
+/// faire. Voir docs/BACKLOG.md, B-11.
+model SocleVersion {
+  id      Int      @id @default(autoincrement())
+  pose_le DateTime @default(now()) @db.Timestamp(0)
+
+  @@map("_socle_version")
+}
