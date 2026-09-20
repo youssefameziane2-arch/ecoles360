@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "assets": [
+      {
+        "//": "Le client Prisma généré (livrable 10 §2.0 : output = ../src/generated/prisma) est du JavaScript et des déclarations, pas des sources TypeScript : tsc ne le compile pas, et il n'atterrirait donc jamais dans dist/. Sans cette recopie, `node dist/main.js` échoue au démarrage sur « Cannot find module ../generated/prisma » — dans l'image de production, pas en développement.",
+        "include": "generated/**/*",
+        "outDir": "dist"
+      }
+    ],
+    "watchAssets": true
+  }
+}

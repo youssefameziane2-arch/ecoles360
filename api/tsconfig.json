@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "moduleResolution": "node",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* TypeScript strict — imposé par le lot 1 §2. Aucun assouplissement :
+       `strict` implique noImplicitAny, strictNullChecks, strictFunctionTypes,
+       strictBindCallApply, strictPropertyInitialization, noImplicitThis et
+       useUnknownInCatchVariables. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": false,
+
+    /* strictPropertyInitialization est incompatible avec l'injection par
+       décorateur des DTO class-validator (livrable 11 §5) : les propriétés sont
+       affectées par class-transformer, pas par le constructeur. */
+    "strictPropertyInitialization": false,
+
+    /* Alias `@/…` → `src/…` — convention des tests du livrable 13 §2.
+       Le code de `src/` utilise des imports relatifs (livrable 11 §4) pour que
+       `dist/` reste exécutable sans réécriture de chemins. */
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
