@@ -1,16 +1,25 @@
 // =============================================================================
 //  écoles360 — schéma Prisma
-//  Livrable 10 §2.0 — bloc d'en-tête : datasource, generator, preview features
+//  Traduction du MPD du livrable 8 §6, suivant le livrable 10 §2
 // -----------------------------------------------------------------------------
-//  LOT 1 — SOCLE. Ce fichier se limite à la connexion : aucun modèle n'y figure
-//  encore. La sonde GET /api/v1/health n'interroge aucune table (elle exécute
-//  `SELECT 1`), et le périmètre du lot 1 exclut explicitement le schéma complet.
+//  23 relations métier en 3e forme normale, plus `users`, `roles`,
+//  `password_reset_tokens` et `parametres_facturation`. Toutes en InnoDB /
+//  utf8mb4_unicode_ci, clés primaires BIGINT UNSIGNED auto-incrémentées.
 //
-//  Le MPD du livrable 8 est traduit ici au LOT 2 (livrable 10 §2.1 à §2.12 :
-//  23 modèles, énumérations, index, FULLTEXT, contraintes CHECK), accompagné de
-//  sa première migration. Tant qu'aucune migration n'existe, `prisma migrate
-//  deploy` n'a rien à appliquer et n'est donc pas appelé au démarrage — il le
-//  sera par la commande du conteneur `api` dès le lot 2 (livrable 14 §2.1).
+//  Ni les sessions ni les files n'ont de table SQL : les sessions Passport
+//  vivent dans Redis (connect-redis), ce qui les rend révocables (RG25), et les
+//  files BullMQ dans le même Redis.
+//
+//  CONVENTIONS (livrable 10 §1)
+//    · modèles en PascalCase, tables physiques en snake_case pluriel (@@map)
+//    · horodatages aux noms français du MPD (cree_le, recue_le, maj_le…)
+//    · énumérations sans accents ni majuscules, projetées en ENUM MySQL natif
+//    · les modèles en insertion seule (audit, traces) omettent @updatedAt
+//    · les contraintes CHECK, hors DSL Prisma, vivent dans le fichier SQL joint
+//      à la migration — voir prisma/migrations/**/contraintes_check.sql
+//
+//  L'ordre est topologique : référentiels, puis le pivot Etablissement et ses
+//  satellites, puis la chaîne commerciale, le CRM et le CMS.
 // =============================================================================
 
 datasource db {
@@ -23,33 +32,901 @@ generator client {
   previewFeatures = ["fullTextIndex", "fullTextSearch"]
 
   // Client typé exposé par PrismaService (livrable 10 §2.0).
-  // Le dossier est regénéré par `prisma generate` et n'est pas versionné.
+  // Regénéré par `prisma generate`, jamais versionné.
   output          = "../src/generated/prisma"
 
-  // `native` sert l'exécution locale hors conteneur (livrable 14 §1) ;
-  // `linux-musl-openssl-3.0.x` sert les images node:20-alpine (livrable 14 §2.2).
-  // Déclarer les deux évite un `prisma generate` de rattrapage au démarrage du
-  // conteneur, et un moteur manquant au moment du build de l'image.
+  // `native` sert l'exécution locale ; `linux-musl-openssl-3.0.x` sert les
+  // images node:20-alpine (livrable 14 §2.2).
   binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
 }
 
-/// Modèle technique de socle — LOT 1 UNIQUEMENT, À RETIRER AU LOT 2.
-///
-/// Prisma 5 refuse `prisma generate` sur un schéma sans aucun modèle ; sans
-/// client généré, `PrismaService` ne compile pas et la sonde n'a pas de quoi
-/// interroger MySQL. Ce modèle n'existe donc que pour rendre le générateur
-/// opérant — c'est, littéralement, « le strict nécessaire à la sonde ».
-///
-/// Il ne crée AUCUNE table : aucune migration n'est générée au lot 1, et la
-/// sonde exécute `SELECT 1`, qui n'interroge rien. La base reste vide jusqu'à
-/// la première migration du lot 2.
-///
-/// À SUPPRIMER en tête du lot 2, AVANT `prisma migrate dev` — sinon la
-/// première migration créerait `_socle_version` en base, où elle n'a rien à
-/// faire. Voir docs/BACKLOG.md, B-11.
-model SocleVersion {
-  id      Int      @id @default(autoincrement())
-  pose_le DateTime @default(now()) @db.Timestamp(0)
+// =============================================================================
+//  §2.1 — Socle : comptes, rôles et référentiels
+// =============================================================================
 
-  @@map("_socle_version")
+/// 25 — Role (RG25) — le rôle est une entité, porteuse de `perimetre_fixe`.
+/// Seul le secrétariat accepte des permissions unitaires ; les trois autres
+/// rôles ont un périmètre fixe, et toute tentative de permission unitaire sur
+/// eux est refusée par RoleGuard (livrable 11 §2).
+model Role {
+  id             BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  code           RoleCode @unique
+  libelle        String   @db.VarChar(40)
+  perimetre_fixe Boolean  @default(true)
+
+  users User[]
+
+  @@map("roles")
+}
+
+enum RoleCode {
+  superadmin
+  secretariat
+  commercial
+  etablissement
+}
+
+/// 01 — User : compte applicatif (RG04 ; rôle porté par role_id, RG25).
+model User {
+  id                        BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  name                      String     @db.VarChar(120)
+  email                     String     @unique @db.VarChar(160)
+  passwordHash              String     @map("password") @db.VarChar(255) // Argon2id (livrable 7 §6)
+  role_id                   BigInt     @db.UnsignedBigInt
+  etablissement_rattache_id BigInt?    @db.UnsignedBigInt // obligatoire si role = secretariat (RG25)
+  blog_actif                Boolean    @default(false) // RG27 — blog activable par compte
+  statut                    UserStatut @default(actif)
+  derniere_connexion_le     DateTime?  @db.Timestamp(0)
+  cree_le                   DateTime   @default(now()) @db.Timestamp(0)
+
+  role                  Role           @relation(fields: [role_id], references: [id], onDelete: Restrict)
+  etablissementRattache Etablissement? @relation("SecretariatRattachement", fields: [etablissement_rattache_id], references: [id], onDelete: SetNull)
+
+  // Aucune relation de session : les sessions Passport vivent dans Redis.
+  jetonsReinitialisation PasswordResetToken[]
+  etablissementsPossedes Etablissement[]        @relation("Proprietaire")
+  avisModeres            Avis[]                 @relation("AvisModerateur")
+  demandesTraitees       DemandeContact[]       @relation("DemandeTraitee")
+  prospectsAffectes      Prospect[]             @relation("ProspectCommercial")
+  relances               Relance[]              @relation("RelanceCommercial")
+  commissions            Commission[]           @relation("CommissionCommercial")
+  commissionsValidees    Commission[]           @relation("CommissionValideur")
+  propositionsDeposees   PropositionFiche[]     @relation("PropositionAuteur")
+  propositionsValidees   PropositionFiche[]     @relation("PropositionValideur")
+  permissions            Permission[]           @relation("PermissionUser")
+  permissionsAccordees   Permission[]           @relation("PermissionAccordeur")
+  notifications          Notification[]         @relation("NotificationUser")
+  entreesAudit           JournalAudit[]         @relation("AuditUser")
+  leadsCrees             Lead[]                 @relation("LeadCreateur")
+  suivisLeads            LeadSuivi[]            @relation("LeadSuiviAuteur")
+  articlesRediges        Article[]              @relation("ArticleAuteur")
+  articlesValides        Article[]              @relation("ArticleValideur")
+  faqModifiees           FaqItem[]              @relation("FaqModificateur")
+  pagesModifiees         PageCms[]              @relation("PageCmsModificateur")
+  parametresModifies     ParametreFacturation[] @relation("ParamModificateur")
+
+  @@index([role_id, statut], map: "idx_user_role")
+  @@map("users")
+}
+
+enum UserStatut {
+  actif
+  suspendu
+}
+
+/// Jeton de réinitialisation de mot de passe — usage unique, TTL 1 h
+/// (livrable 7 §6). La consommation révoque les sessions Redis du compte (RG25).
+model PasswordResetToken {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  token_hash String    @unique @db.VarChar(255) // jamais le jeton en clair
+  expire_le  DateTime  @db.Timestamp(0)
+  utilise_le DateTime? @db.Timestamp(0)
+  cree_le    DateTime  @default(now()) @db.Timestamp(0)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, expire_le], map: "idx_reset_user")
+  @@map("password_reset_tokens")
+}
+
+/// 02 — Ville (RG01) : un établissement est dans une et une seule ville.
+model Ville {
+  id     BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  nom    String  @db.VarChar(100)
+  slug   String  @unique @db.VarChar(120)
+  region String? @db.VarChar(100)
+
+  etablissements Etablissement[]
+  sponsorings    Sponsoring[]
+
+  @@map("villes")
+}
+
+/// 03 — NiveauFiliere (RG02) — distinct des six types d'établissement.
+model NiveauFiliere {
+  id        BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  libelle   String           @unique @db.VarChar(80)
+  categorie NiveauFiliereCat
+
+  etablissements EtablissementNiveau[]
+
+  @@map("niveau_filieres")
+}
+
+enum NiveauFiliereCat {
+  niveau
+  filiere
+}
+
+// =============================================================================
+//  §2.2 — Etablissement, pivot du modèle
+// =============================================================================
+
+/// 04 — Etablissement (RG01–RG04, RG08).
+/// Les blocs profil éditables de l'avenant 3 (RG27) sont regroupés ici plutôt
+/// que dispersés : ils décrivent la même ressource et sont publiés ensemble.
+model Etablissement {
+  id                   BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  ville_id             BigInt              @db.UnsignedBigInt // RG01
+  proprietaire_user_id BigInt?             @db.UnsignedBigInt // RG04 — NULL tant que non revendiquée
+  slug                 String              @unique @db.VarChar(160)
+  nom                  String              @db.VarChar(180)
+  type                 EtablissementType // RG02 — 6 types
+  statut               EtablissementStatut @default(en_attente) // RG03
+  description          String?             @db.Text
+  adresse              String?             @db.VarChar(255)
+  quartier             String?             @db.VarChar(100)
+  lat                  Decimal?            @db.Decimal(10, 7)
+  lng                  Decimal?            @db.Decimal(10, 7) // Leaflet / OSM
+  tel                  String?             @db.VarChar(30)
+  whatsapp             String?             @db.VarChar(30)
+  email                String?             @db.VarChar(160)
+  budget_min           Int?                @db.UnsignedInt // MAD / an
+  budget_max           Int?                @db.UnsignedInt
+  note_moy             Decimal             @default(0) @db.Decimal(2, 1) // RG08 — dénormalisé
+  nb_avis              Int                 @default(0) @db.UnsignedInt
+  source               EtablissementSource @default(direct)
+  sponsorise           Boolean             @default(false)
+  valide_le            DateTime?           @db.Timestamp(0)
+  cree_le              DateTime            @default(now()) @db.Timestamp(0)
+
+  // Blocs profil éditables — avenant 3, RG27. Non modifiables par le client
+  // pour `verifie` et `premium` : ce sont des attributs de plateforme.
+  verifie        Boolean @default(false)
+  premium        Boolean @default(false)
+  chiffres       Json? // [{label, valeur}]
+  faq            Json? // [{q, r}] ordonnable
+  horaires       Json? // {jour: plage}
+  socials        Json?
+  autres_projets Json?
+  facilites      Json?
+  video_url      String? @db.VarChar(200)
+  video_poster   String? @db.VarChar(200)
+  gamme_label    String? @db.VarChar(80)
+  devis_label    String? @db.VarChar(120)
+
+  ville             Ville                 @relation(fields: [ville_id], references: [id], onDelete: Restrict)
+  proprietaire      User?                 @relation("Proprietaire", fields: [proprietaire_user_id], references: [id], onDelete: SetNull)
+  secretariat       User[]                @relation("SecretariatRattachement")
+  niveaux           EtablissementNiveau[]
+  photos            Photo[]
+  avis              Avis[]
+  demandes          DemandeContact[]
+  traces            EvenementTrace[]
+  abonnements       Abonnement[]
+  paiementsVue      PaiementVue[]
+  factures          Facture[]
+  sponsorings       Sponsoring[]
+  prospect          Prospect? // 0..1
+  propositionsFiche PropositionFiche[]
+  leads             Lead[]
+  articles          Article[]
+
+  @@index([ville_id, type, statut], map: "idx_eta_recherche") // résultats filtrés
+  @@index([statut, note_moy(sort: Desc)], map: "idx_eta_tri") // tri par note
+  @@fulltext([nom, description], map: "ft_eta_nom_desc") // recherche texte
+  @@map("etablissements")
+}
+
+enum EtablissementType {
+  creche
+  primaire
+  college
+  lycee
+  universite
+  formation
+}
+
+enum EtablissementStatut {
+  en_attente
+  validee
+  masquee
+  suspendue
+}
+
+enum EtablissementSource {
+  open_data
+  direct
+}
+
+// =============================================================================
+//  §2.3 — Association (n,n) et médias
+// =============================================================================
+
+/// 05 — EtablissementNiveau : PROPOSER, clé primaire composite, CASCADE des deux côtés.
+model EtablissementNiveau {
+  etablissement_id BigInt @db.UnsignedBigInt
+  niveau_id        BigInt @db.UnsignedBigInt
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  niveau        NiveauFiliere @relation(fields: [niveau_id], references: [id], onDelete: Cascade)
+
+  @@id([etablissement_id, niveau_id])
+  @@map("etablissement_niveau")
+}
+
+/// 06 — Photo (RG16). Le quota (1 photo en fiche gratuite) est une règle de
+/// service, pas de schéma — contrôlée dans le module fiches (livrable 11).
+model Photo {
+  id               BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt  @db.UnsignedBigInt
+  chemin           String  @db.VarChar(255) // seul le chemin est persisté, le fichier vit dans le volume `storage`
+  ordre            Int     @default(0) @db.UnsignedTinyInt
+  poids            Int?    @db.UnsignedInt // octets
+  alt              String? @db.VarChar(160)
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+
+  @@index([etablissement_id, ordre], map: "idx_photo_galerie")
+  @@map("photos")
+}
+
+// =============================================================================
+//  §2.4 — Confiance : avis et signalements
+// =============================================================================
+
+/// 07 — Avis (RG06, RG07). L'association MODÉRER est absorbée par les colonnes
+/// modere_par / decision_motif / modere_le ; `en_avant` vient de l'avenant 3.
+model Avis {
+  id               BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt     @db.UnsignedBigInt
+  auteur_nom       String     @db.VarChar(120)
+  auteur_contact   String     @db.VarChar(160) // e-mail ou téléphone vérifié — jamais exposé au public
+  note             Int        @db.UnsignedTinyInt // CHECK 1..5 — fichier SQL joint
+  commentaire      String     @db.Text
+  statut           AvisStatut @default(en_attente) // RG06 — jamais publié directement
+  verifie          Boolean    @default(false) // badge « Parent vérifié »
+  en_avant         Boolean    @default(false) // avenant 3 — RG27
+  modere_par       BigInt?    @db.UnsignedBigInt
+  decision_motif   String?    @db.VarChar(255)
+  modere_le        DateTime?  @db.Timestamp(0)
+  reponse          String?    @db.Text // RG07 — au plus une réponse
+  reponse_le       DateTime?  @db.Timestamp(0)
+  depose_le        DateTime   @default(now()) @db.Timestamp(0)
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  moderateur    User?         @relation("AvisModerateur", fields: [modere_par], references: [id], onDelete: SetNull)
+  signalements  Signalement[]
+
+  @@index([etablissement_id, statut, depose_le(sort: Desc)], map: "idx_avis_fiche")
+  @@map("avis")
+}
+
+enum AvisStatut {
+  en_attente
+  publie
+  rejete
+}
+
+/// 08 — Signalement (RG07) : tout signalement replace l'avis en file de modération.
+model Signalement {
+  id         BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  avis_id    BigInt             @db.UnsignedBigInt
+  motif      String             @db.VarChar(255)
+  contact    String?            @db.VarChar(160)
+  statut     SignalementStatut  @default(nouveau)
+  signale_le DateTime           @default(now()) @db.Timestamp(0)
+
+  avis Avis @relation(fields: [avis_id], references: [id], onDelete: Cascade)
+
+  @@index([avis_id, statut], map: "idx_sig_file")
+  @@map("signalements")
+}
+
+enum SignalementStatut {
+  nouveau
+  traite
+}
+
+// =============================================================================
+//  §2.5 — Mise en relation et traçage
+// =============================================================================
+
+/// 09 — DemandeContact (RG09). Minimisation loi 09-08 : nom et téléphone
+/// uniquement, et `consentement` est obligatoire côté DTO.
+model DemandeContact {
+  id               BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt         @db.UnsignedBigInt
+  parent_nom       String         @db.VarChar(120)
+  parent_tel       String         @db.VarChar(30)
+  message          String?        @db.Text
+  canal            DemandeCanal
+  statut           DemandeStatut  @default(nouvelle)
+  consentement     Boolean // case obligatoire côté formulaire (RG09)
+  traitee_par      BigInt?        @db.UnsignedBigInt
+  recue_le         DateTime       @default(now()) @db.Timestamp(0)
+  traitee_le       DateTime?      @db.Timestamp(0)
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  secretaire    User?         @relation("DemandeTraitee", fields: [traitee_par], references: [id], onDelete: SetNull)
+  leads         Lead[] // 0..N — le lead peut naître d'une demande (RG21)
+
+  @@index([etablissement_id, statut, recue_le(sort: Desc)], map: "idx_dem_inbox")
+  @@map("demande_contacts")
+}
+
+enum DemandeCanal {
+  formulaire
+  appel
+  whatsapp
+}
+
+enum DemandeStatut {
+  nouvelle
+  en_cours
+  traitee
+}
+
+/// 10 — EvenementTrace (RG10). Fort volume : agrégée puis purgée à 12 mois
+/// (livrable 10 §6.3). Seule la vue de page profil est facturable (RG12).
+model EvenementTrace {
+  id               BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt        @db.UnsignedBigInt
+  type             EvenementType
+  source           String?       @db.VarChar(40) // resultats / fiche / une
+  survenu_le       DateTime      @default(now()) @db.Timestamp(0)
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+
+  @@index([etablissement_id, type, survenu_le], map: "idx_evt_stats")
+  @@map("evenement_traces")
+}
+
+enum EvenementType {
+  appel
+  whatsapp
+  vue
+  vue_sponsorisee
+}
+
+// =============================================================================
+//  §2.6 — Abonnement et paiement à la vue
+// =============================================================================
+
+/// 11 — Abonnement (RG11, RG13, RG14). Le tarif est propre à chaque client et
+/// n'est jamais public ; l'essai gratuit est sans tarif (CHECK joint).
+/// L'unicité « un seul abonnement actif » est une garantie de service
+/// (SubscriptionService), pas un index — plusieurs lignes expirées coexistent.
+model Abonnement {
+  id               BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt             @db.UnsignedBigInt
+  formule          AbonnementFormule
+  tarif_mad        Decimal?           @db.Decimal(10, 2) // NULL si essai_gratuit — CHECK joint
+  remise_pct       Decimal?           @db.Decimal(4, 1) // 10 % si annuel réglé en une fois
+  debut            DateTime           @db.Date
+  echeance         DateTime           @db.Date
+  statut           AbonnementStatut   @default(actif)
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  factures      Facture[]
+
+  @@index([etablissement_id, statut], map: "idx_abo_actif")
+  @@map("abonnements")
+}
+
+enum AbonnementFormule {
+  essai_gratuit
+  mensuel
+  annuel
+}
+
+enum AbonnementStatut {
+  essai
+  actif
+  expire
+  resilie
+}
+
+/// 12 — PaiementVue (RG12). Prix par vue et plafond mensuel définis par client.
+/// Le compteur est incrémenté par ViewBillingService sous verrou de ligne
+/// (`$queryRaw SELECT … FOR UPDATE`) — livrable 11 §4.
+model PaiementVue {
+  id                    BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id      BigInt            @db.UnsignedBigInt
+  prix_unitaire_mad     Decimal           @db.Decimal(6, 2)
+  plafond_mensuel       Int               @db.UnsignedInt
+  periode               String            @db.Char(7) // 'AAAA-MM'
+  compteur_mois_courant Int               @default(0) @db.UnsignedInt
+  statut                PaiementVueStatut @default(actif)
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  factures      Facture[]
+
+  @@unique([etablissement_id, periode], map: "uq_pv_periode")
+  @@map("paiements_vue")
+}
+
+enum PaiementVueStatut {
+  actif
+  suspendu
+}
+
+// =============================================================================
+//  §2.7 — Facturation et sponsoring
+// =============================================================================
+
+/// 13 — Facture (RG14, RG18). Numérotation séquentielle légale F2026-NNNNNN
+/// produite sous verrou par FacturationService ; origine exclusive garantie par
+/// le CHECK joint — une facture vient d'un abonnement, OU d'un paiement à la
+/// vue, OU d'un sponsoring, jamais de deux.
+model Facture {
+  id               BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt        @db.UnsignedBigInt
+  numero           String        @unique @db.VarChar(20) // ex. F2026-000641
+  objet            String        @db.VarChar(160)
+  abonnement_id    BigInt?       @db.UnsignedBigInt
+  paiement_vue_id  BigInt?       @db.UnsignedBigInt
+  sponsoring_id    BigInt?       @db.UnsignedBigInt
+  montant_ht       Decimal       @db.Decimal(10, 2)
+  tva              Decimal       @db.Decimal(10, 2) // TVA 20 % (paramètre global)
+  total_ttc        Decimal       @db.Decimal(10, 2)
+  statut_paiement  FactureStatut @default(non_payee)
+  pdf_chemin       String?       @db.VarChar(255)
+  emise_le         DateTime      @default(now()) @db.Timestamp(0)
+  payee_le         DateTime?     @db.Timestamp(0)
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  abonnement    Abonnement?   @relation(fields: [abonnement_id], references: [id], onDelete: SetNull)
+  paiementVue   PaiementVue?  @relation(fields: [paiement_vue_id], references: [id], onDelete: SetNull)
+  sponsoring    Sponsoring?   @relation(fields: [sponsoring_id], references: [id], onDelete: SetNull)
+  commissions   Commission[]
+
+  @@index([etablissement_id, statut_paiement, emise_le(sort: Desc)], map: "idx_fac_historique")
+  @@map("factures")
+}
+
+enum FactureStatut {
+  non_payee
+  payee
+}
+
+/// 14 — Sponsoring (RG19). Vendu par campagne à un niveau, sur un périmètre
+/// ville / catégorie / mot-clé et une période ; la rotation équitable à niveau
+/// égal est une règle de service (livrable 11 §3.1).
+model Sponsoring {
+  id               BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt           @db.UnsignedBigInt
+  niveau           SponsoringNiveau
+  ville_id         BigInt?          @db.UnsignedBigInt
+  categorie        String?          @db.VarChar(60)
+  mot_cle          String?          @db.VarChar(80)
+  debut            DateTime         @db.Date
+  fin              DateTime         @db.Date
+  tarif_mad        Decimal          @db.Decimal(10, 2)
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  ville         Ville?        @relation(fields: [ville_id], references: [id], onDelete: SetNull)
+  factures      Facture[]
+
+  @@index([niveau, ville_id, debut, fin], map: "idx_spo_rotation")
+  @@map("sponsorings")
+}
+
+enum SponsoringNiveau {
+  premium
+  gold
+  silver
+}
+
+// =============================================================================
+//  §2.8 — Gestion commerciale : prospects, relances, commissions
+// =============================================================================
+
+/// 15 — Prospect (RG17). `etablissement_id` est renseigné à la transformation
+/// et unique : un établissement provient d'au plus un prospect.
+model Prospect {
+  id               BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt?        @unique @db.UnsignedBigInt
+  commercial_id    BigInt?        @db.UnsignedBigInt
+  etablissement_nom String        @db.VarChar(180)
+  ville            String?        @db.VarChar(100)
+  type_vise        String?        @db.VarChar(40)
+  contact_nom      String         @db.VarChar(120)
+  contact_fonction String?        @db.VarChar(100)
+  telephone        String         @db.VarChar(30)
+  email            String?        @db.VarChar(160)
+  formule_visee    String?        @db.VarChar(40)
+  message          String?        @db.Text
+  source           ProspectSource @default(formulaire)
+  statut_pipeline  ProspectStatut @default(nouveau)
+  cree_le          DateTime       @default(now()) @db.Timestamp(0)
+
+  etablissement Etablissement? @relation(fields: [etablissement_id], references: [id], onDelete: SetNull)
+  commercial    User?          @relation("ProspectCommercial", fields: [commercial_id], references: [id], onDelete: SetNull)
+  relances      Relance[]
+
+  @@index([statut_pipeline, commercial_id], map: "idx_pros_pipeline")
+  @@map("prospects")
+}
+
+enum ProspectSource {
+  formulaire
+  telephone
+  manuel
+}
+
+enum ProspectStatut {
+  nouveau
+  a_contacter
+  chaud
+  relance
+  transforme
+  perdu
+}
+
+/// 16 — Relance (RG17) : historisation des relances commerciales.
+model Relance {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  prospect_id   BigInt    @db.UnsignedBigInt
+  commercial_id BigInt    @db.UnsignedBigInt
+  note          String?   @db.Text
+  prevue_le     DateTime? @db.Timestamp(0)
+  effectuee_le  DateTime? @db.Timestamp(0)
+
+  prospect   Prospect @relation(fields: [prospect_id], references: [id], onDelete: Cascade)
+  commercial User     @relation("RelanceCommercial", fields: [commercial_id], references: [id], onDelete: Restrict)
+
+  @@index([prospect_id, prevue_le], map: "idx_rel_prospect")
+  @@map("relances")
+}
+
+/// 17 — Commission (RG18) : calculée à la génération de facture en statut
+/// `a_valider`, réglée seulement après validation de la Direction.
+model Commission {
+  id            BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  facture_id    BigInt            @db.UnsignedBigInt
+  commercial_id BigInt            @db.UnsignedBigInt
+  taux_pct      Decimal           @db.Decimal(4, 1)
+  montant_mad   Decimal           @db.Decimal(10, 2)
+  statut        CommissionStatut  @default(a_valider)
+  validee_par   BigInt?           @db.UnsignedBigInt
+  validee_le    DateTime?         @db.Timestamp(0)
+
+  facture    Facture @relation(fields: [facture_id], references: [id], onDelete: Cascade)
+  commercial User    @relation("CommissionCommercial", fields: [commercial_id], references: [id], onDelete: Restrict)
+  valideur   User?   @relation("CommissionValideur", fields: [validee_par], references: [id], onDelete: SetNull)
+
+  @@index([commercial_id, statut], map: "idx_com_commercial")
+  @@map("commissions")
+}
+
+enum CommissionStatut {
+  a_valider
+  validee
+  reglee
+}
+
+// =============================================================================
+//  §2.9 — Validation des modifications de fiche
+// =============================================================================
+
+/// 18 — PropositionFiche (RG20, RG27). Publication différée à la validation
+/// d'un Super Admin. L'unicité « une seule proposition en attente par
+/// établissement » n'est PAS une contrainte de schéma — l'index unique partiel
+/// n'existe pas en MySQL 8 — mais une garantie posée sous verrou de ligne dans
+/// FicheProposalService (livrable 10 §2.12, livrable 11 §4).
+model PropositionFiche {
+  id               BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt             @db.UnsignedBigInt
+  proposee_par     BigInt             @db.UnsignedBigInt
+  champs_modifies  Json // liste des champs concernés — comparatif avant / après
+  payload          Json? // version proposée complète (avenant 3)
+  statut           PropositionStatut  @default(en_attente)
+  decision_motif   String?            @db.VarChar(200)
+  validee_par      BigInt?            @db.UnsignedBigInt
+  proposee_le      DateTime           @default(now()) @db.Timestamp(0)
+  traitee_le       DateTime?          @db.Timestamp(0)
+  annulee_le       DateTime?          @db.Timestamp(0) // annulation par l'auteur (avenant 3)
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  auteur        User          @relation("PropositionAuteur", fields: [proposee_par], references: [id], onDelete: Restrict)
+  valideur      User?         @relation("PropositionValideur", fields: [validee_par], references: [id], onDelete: SetNull)
+
+  @@index([etablissement_id, statut], map: "idx_prop_fiche")
+  @@map("propositions_fiche")
+}
+
+enum PropositionStatut {
+  en_attente
+  validee
+  rejetee
+}
+
+// =============================================================================
+//  §2.10 — Gouvernance : permissions, notifications, audit
+// =============================================================================
+
+/// 19 — Permission (RG05) : portées déléguées du secrétariat. La révocation est
+/// horodatée, la ligne n'est jamais supprimée — on doit pouvoir dire qui avait
+/// quel droit et quand.
+model Permission {
+  id           BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id      BigInt            @db.UnsignedBigInt
+  portee       PermissionPortee
+  accordee_par BigInt            @db.UnsignedBigInt
+  accordee_le  DateTime          @default(now()) @db.Timestamp(0)
+  revoquee_le  DateTime?         @db.Timestamp(0)
+
+  user      User @relation("PermissionUser", fields: [user_id], references: [id], onDelete: Cascade)
+  accordeur User @relation("PermissionAccordeur", fields: [accordee_par], references: [id], onDelete: Restrict)
+
+  @@unique([user_id, portee], map: "uq_perm_user_portee")
+  @@map("permissions")
+}
+
+enum PermissionPortee {
+  fiches
+  contacts
+  avis
+}
+
+/// 20 — Notification : plafond de vues (RG12), échéance (RG14), demandes,
+/// modération, propositions (RG20).
+model Notification {
+  id          BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id     BigInt             @db.UnsignedBigInt
+  type        NotificationType
+  contenu     String             @db.VarChar(255)
+  canal       NotificationCanal
+  envoyee_le  DateTime?          @db.Timestamp(0)
+  lue_le      DateTime?          @db.Timestamp(0)
+
+  user User @relation("NotificationUser", fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, lue_le], map: "idx_notif_centre")
+  @@map("notifications")
+}
+
+enum NotificationType {
+  echeance_abonnement
+  plafond_vue_atteint
+  demande
+  moderation
+  proposition_fiche
+}
+
+enum NotificationCanal {
+  in_app
+  email
+}
+
+/// 21 — JournalAudit (RG15, RG26). INSERTION SEULE, immuable, purgé à trois ans.
+/// L'immuabilité est portée par AuditService — seule voie d'écriture — et par
+/// l'absence de toute route de modification (livrable 11 §3.6). `role_acteur`
+/// est figé à l'écriture : un changement de rôle ultérieur ne réécrit jamais
+/// l'entrée.
+model JournalAudit {
+  id          BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id     BigInt?        @db.UnsignedBigInt // nullable — acteur système (avenant 3)
+  role_acteur String         @db.VarChar(20)
+  action      String         @db.VarChar(60) // etablissement.valide, avis.rejete…
+  cible_type  String         @db.VarChar(60)
+  cible_id    BigInt         @db.UnsignedBigInt
+  severite    AuditSeverite  @default(info)
+  details     Json?
+  adresse_ip  String?        @db.VarChar(45)
+  cree_le     DateTime       @default(now()) @db.Timestamp(0)
+
+  user User? @relation("AuditUser", fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([cible_type, cible_id], map: "idx_audit_cible")
+  @@index([user_id, cree_le(sort: Desc)], map: "idx_audit_user")
+  @@index([role_acteur, cree_le(sort: Desc)], map: "idx_audit_role")
+  @@map("journal_audits")
+}
+
+enum AuditSeverite {
+  info
+  avertissement
+  erreur
+}
+
+/// 22 — ParametreFacturation (livrable 10 §5) : constantes globales seulement —
+/// TVA, durée d'essai, remise annuelle, délai de rappel. AUCUN tarif
+/// d'établissement n'y figure : ceux-là vivent sur Abonnement et PaiementVue,
+/// propres à chaque client (RG14).
+model ParametreFacturation {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  cle         String    @unique @db.VarChar(60) // tva_pct, duree_essai_gratuit_jours…
+  valeur      String    @db.VarChar(40)
+  libelle     String    @db.VarChar(160)
+  modifie_par BigInt?   @db.UnsignedBigInt
+  maj_le      DateTime? @db.Timestamp(0)
+
+  modificateur User? @relation("ParamModificateur", fields: [modifie_par], references: [id], onDelete: SetNull)
+
+  @@map("parametres_facturation")
+}
+
+// =============================================================================
+//  §2.11 — CRM leads établissement (avenant n° 1)
+// =============================================================================
+
+/// 23 — Lead (RG21 fiche de besoin et pipeline, RG22 scoring, RG23 propriété).
+/// Les données appartiennent à l'établissement et relèvent de la loi 09-08 :
+/// suppression et export sont réservés à l'Admin Client (LeadGuard), le Super
+/// Admin n'accède qu'aux agrégats.
+model Lead {
+  id                 BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id   BigInt      @db.UnsignedBigInt // RG23
+  demande_contact_id BigInt?     @db.UnsignedBigInt // RG21 — origine site
+  cree_par           BigInt?     @db.UnsignedBigInt // NULL si saisie manuelle
+  candidat_nom       String      @db.VarChar(120) // FC-1
+  pour_qui           LeadPourQui @default(enfant) // FC-2
+  tel                String      @db.VarChar(30)
+  whatsapp           Boolean     @default(false)
+  email              String?     @db.VarChar(160)
+  ville              String?     @db.VarChar(100) // FC-3
+  cycle              String?     @db.VarChar(60) // FC-4
+  niveau             String?     @db.VarChar(80)
+  budget_min         Int?        @db.UnsignedInt // FC-6 — MAD
+  budget_max         Int?        @db.UnsignedInt
+  urgence            LeadUrgence @default(flexible) // FC-5
+  source             LeadSource // FC-8
+  fiche_besoin       Json? // blocs FC-1 → FC-11
+  score              Int         @default(0) @db.UnsignedTinyInt // RG22 — /10, CHECK joint
+  statut_pipeline    LeadStatut  @default(nouveau)
+  raison_perte       String?     @db.VarChar(120) // exigée si perdu — règle de service
+  acompte_mad        Decimal?    @db.Decimal(10, 2) // FC-11
+  converti_le        DateTime?   @db.Timestamp(0) // temps de conversion mesuré
+  cree_le            DateTime    @default(now()) @db.Timestamp(0)
+
+  etablissement  Etablissement   @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  demandeContact DemandeContact? @relation(fields: [demande_contact_id], references: [id], onDelete: SetNull)
+  createur       User?           @relation("LeadCreateur", fields: [cree_par], references: [id], onDelete: SetNull)
+  suivis         LeadSuivi[]
+
+  @@index([etablissement_id, statut_pipeline], map: "idx_lead_kanban")
+  @@index([etablissement_id, score(sort: Desc)], map: "idx_lead_chauds") // chauds ≥ 7
+  @@map("leads")
+}
+
+enum LeadPourQui {
+  soi
+  enfant
+}
+
+enum LeadUrgence {
+  imminente
+  semaine
+  mois
+  rentree
+  flexible
+}
+
+enum LeadSource {
+  ecoles360
+  whatsapp
+  appel
+  reseaux
+  google
+  recommandation
+  salon
+  autre
+}
+
+enum LeadStatut {
+  nouveau
+  contacte
+  qualifie
+  proposition_envoyee
+  inscrit
+  perdu
+}
+
+/// 24 — LeadSuivi (RG21) : commentaires horodatés et relances programmables.
+model LeadSuivi {
+  id           BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  lead_id      BigInt        @db.UnsignedBigInt
+  auteur_id    BigInt?       @db.UnsignedBigInt
+  type         LeadSuiviType
+  note         String?       @db.Text
+  prevue_le    DateTime?     @db.Timestamp(0) // relance programmée
+  effectuee_le DateTime?     @db.Timestamp(0)
+  cree_le      DateTime      @default(now()) @db.Timestamp(0)
+
+  lead   Lead  @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  auteur User? @relation("LeadSuiviAuteur", fields: [auteur_id], references: [id], onDelete: SetNull)
+
+  @@index([lead_id, cree_le(sort: Desc)], map: "idx_suivi_timeline")
+  @@index([prevue_le], map: "idx_suivi_relances") // « relances du jour »
+  @@map("lead_suivis")
+}
+
+enum LeadSuiviType {
+  commentaire
+  relance
+}
+
+// =============================================================================
+//  §2.12 — CMS : blog, FAQ, pages éditoriales (avenant n° 3)
+// =============================================================================
+
+/// 28 — Article (RG27) : circuit éditorial brouillon → en_attente → approuvé /
+/// refusé. Un compte non Super Admin ne peut atteindre `approuve` par aucun
+/// chemin ; `a_la_une` reste sans effet public hors statut approuvé.
+model Article {
+  id               BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  auteur_id        BigInt?       @db.UnsignedBigInt
+  etablissement_id BigInt?       @db.UnsignedBigInt // NULL = article plateforme
+  validee_par      BigInt?       @db.UnsignedBigInt
+  titre            String        @db.VarChar(180)
+  slug             String        @unique @db.VarChar(200)
+  categorie        String        @db.VarChar(60)
+  chapeau          String?       @db.VarChar(300)
+  contenu          String?       @db.MediumText
+  image_chemin     String?       @db.VarChar(200) // image facultative
+  statut           ArticleStatut @default(brouillon)
+  a_la_une         Boolean       @default(false)
+  soumis_le        DateTime?     @db.Timestamp(0)
+  publie_le        DateTime?     @db.Timestamp(0)
+  cree_le          DateTime      @default(now()) @db.Timestamp(0)
+
+  auteur        User?          @relation("ArticleAuteur", fields: [auteur_id], references: [id], onDelete: SetNull)
+  etablissement Etablissement? @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+  valideur      User?          @relation("ArticleValideur", fields: [validee_par], references: [id], onDelete: SetNull)
+
+  @@index([statut, publie_le(sort: Desc)], map: "idx_art_public")
+  @@index([etablissement_id, statut], map: "idx_art_scope")
+  @@map("articles")
+}
+
+enum ArticleStatut {
+  brouillon
+  en_attente
+  approuve
+  refuse
+}
+
+/// 29 — FaqItem (RG27) : FAQ réordonnable, l'ordre étant recalculé de façon
+/// contiguë par CmsService à chaque réordonnancement.
+model FaqItem {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  question     String    @db.VarChar(200)
+  reponse      String    @db.Text
+  ordre        Int       @default(0) @db.UnsignedSmallInt
+  publiee      Boolean   @default(true)
+  modifiee_par BigInt?   @db.UnsignedBigInt
+  modifiee_le  DateTime? @db.Timestamp(0)
+
+  modificateur User? @relation("FaqModificateur", fields: [modifiee_par], references: [id], onDelete: SetNull)
+
+  @@index([publiee, ordre], map: "idx_faq_ordre")
+  @@map("faq_items")
+}
+
+/// 30 — PageCms (RG27) : pages éditoriales à blocs typés (« à propos » :
+/// histoire, mission, trois valeurs, coordonnées).
+model PageCms {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  cle          String    @unique @db.VarChar(60) // 'a-propos'
+  titre        String    @db.VarChar(160)
+  blocs        Json // histoire, mission, valeurs[], coordonnees
+  modifiee_par BigInt?   @db.UnsignedBigInt
+  modifiee_le  DateTime? @db.Timestamp(0)
+
+  modificateur User? @relation("PageCmsModificateur", fields: [modifiee_par], references: [id], onDelete: SetNull)
+
+  @@map("pages_cms")
 }
