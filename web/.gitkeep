@@ -1,0 +1,11 @@
+Front-end React 18 + Vite — livrable 12.
+
+Volontairement vide au lot 1 : le prompt de démarrage réserve l'initialisation
+du front au lot 7. Le dossier existe dès maintenant parce que l'arborescence du
+livrable 7 §3 le déclare à la racine, aux côtés de api/, et que l'espace de
+travail pnpm (pnpm-workspace.yaml) le référence.
+
+Contenu attendu au lot 7 :
+  web/src/pages/{public,espace,admin}/   public = SSR ciblé (Vike), le reste en SPA
+  web/src/components/ · web/src/api/ · web/src/hooks/ · web/src/ds/
+  web/Dockerfile                          multi-étages → serveur SSR + assets
