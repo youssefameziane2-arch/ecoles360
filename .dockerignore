@@ -1,0 +1,20 @@
+# Contexte de build : la racine du dépôt (voir api/Dockerfile).
+# Tout ce qui est exclu ici n'est jamais envoyé au démon Docker.
+
+.git
+.github
+docs
+web
+
+**/node_modules
+**/dist
+**/coverage
+api/src/generated
+
+.env
+.env.*
+!.env.example
+
+**/*.log
+.vscode
+.idea

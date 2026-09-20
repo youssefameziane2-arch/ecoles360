@@ -1,0 +1,137 @@
+# =============================================================================
+#  écoles360 — environnement de développement
+#  Lot 1 §3 · livrables 7 §7 et 14 §1
+# -----------------------------------------------------------------------------
+#  Critère de sortie du lot 1 : sur une machine vierge,
+#
+#      git clone …
+#      cp .env.example .env
+#      docker compose -f docker-compose.dev.yml up
+#
+#  suffit — GET http://localhost:3000/api/v1/health répond 200 et
+#  http://localhost:3000/api/docs s'affiche. Rien d'autre à installer que Docker.
+#
+#  ARBITRAGE — le livrable 14 §1 fait tourner l'API HORS conteneur en
+#  développement, pour le rechargement à chaud. Le lot 1 §3 impose au contraire
+#  un service `api` et « un seul docker compose up ». Les deux cohabitent ici :
+#  le service `api` monte les sources et recharge à chaud (chemin par défaut),
+#  et la voie du livrable 14 reste jouable à tout moment —
+#
+#      docker compose -f docker-compose.dev.yml up mysql redis
+#      pnpm --filter api start:dev
+#
+#  `.env` sert alors tel quel : ses DATABASE_URL et REDIS_URL pointent 127.0.0.1,
+#  que la section `environment:` du service `api` surcharge par les noms de
+#  services du réseau interne. Voir docs/BACKLOG.md, B-02.
+# =============================================================================
+
+name: ecoles360-dev
+
+services:
+  # ---------------------------------------------------------------------------
+  #  API NestJS 10 — /api/v1
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+      target: development
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      # Surcharge des valeurs « hôte » du .env : dans le réseau interne, MySQL et
+      # Redis se joignent par leur nom de service, jamais par 127.0.0.1.
+      DATABASE_URL: mysql://${MYSQL_USER:-ecoles360}:${MYSQL_PASSWORD:-motdepasse_dev}@mysql:3306/${MYSQL_DATABASE:-ecoles360_dev}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      # Lié à la boucle locale : rien n'est joignable depuis le réseau du poste.
+      - '127.0.0.1:3000:3000'
+    volumes:
+      # Les sources viennent du poste — `nest start --watch` recompile à
+      # l'enregistrement.
+      - ./api:/app/api
+      # …mais pas les dépendances : `api/node_modules` est un volume nommé, sinon
+      # le montage ci-dessus masquerait les liens pnpm posés dans l'image (et,
+      # sous Windows ou macOS, y déverserait des binaires de la mauvaise plateforme).
+      # Après modification de api/package.json :
+      #     docker compose -f docker-compose.dev.yml down -v && … up --build
+      - api_node_modules:/app/api/node_modules
+      # Médias des fiches et des articles (RG16, RG27) — livrable 7 §1.
+      - storage:/app/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ecoles360_net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  #  MySQL 8 — InnoDB, utf8mb4_unicode_ci (livrable 10 §2.0)
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ecoles360_dev}
+      MYSQL_USER: ${MYSQL_USER:-ecoles360}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-motdepasse_dev}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev}
+    ports:
+      # Publié pour les clients du poste (DBeaver, prisma studio), jamais au-delà.
+      - '127.0.0.1:${MYSQL_PORT:-3306}:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ecoles360_net
+    restart: unless-stopped
+    healthcheck:
+      # C'est ce contrôle qui retient le démarrage de l'API : sans lui, `api`
+      # démarrerait pendant l'initialisation du serveur et échouerait à se
+      # connecter (livrable 14 §2.1).
+      test:
+        ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD:-root_dev}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  #  Redis 7 — sessions, files BullMQ, cache, limitation de débit
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecoles360_net
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+# -----------------------------------------------------------------------------
+#  Volumes nommés — l'état survit à tout remplacement d'image (livrable 14 §2)
+# -----------------------------------------------------------------------------
+volumes:
+  mysql_data:
+  redis_data:
+  storage:
+  api_node_modules:
+
+# -----------------------------------------------------------------------------
+#  Réseau interne — seul le port 3000 de l'API est publié, et sur 127.0.0.1
+# -----------------------------------------------------------------------------
+networks:
+  ecoles360_net:
+    driver: bridge
