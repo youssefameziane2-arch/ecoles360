@@ -150,6 +150,21 @@ describe('HealthService', () => {
     expect(erreur.endsWith('…')).toBe(true);
   });
 
+  it('nomme toujours la panne, même si l’erreur commence par des lignes vides', async () => {
+    // Les erreurs Prisma commencent par un saut de ligne : prendre la première
+    // ligne sans plus de précaution produisait `erreur: ""` — une sonde qui
+    // signale une panne sans la nommer.
+    const message = '\n\nInvalid `prisma.$queryRaw()` invocation:\nDetails: libssl.so.1.1 absente';
+    const service = await creerService({
+      prisma: { verifierConnexion: jest.fn().mockRejectedValue(new Error(message)) },
+      redis: { verifierConnexion: repond() },
+    });
+
+    const rapport = await service.verifier();
+
+    expect(rapport.dependances.mysql.erreur).toBe('Invalid `prisma.$queryRaw()` invocation:');
+  });
+
   it('accepte une valeur rejetée qui n’est pas une Error', async () => {
     const service = await creerService({
       prisma: { verifierConnexion: jest.fn().mockRejectedValue('panne brute') },

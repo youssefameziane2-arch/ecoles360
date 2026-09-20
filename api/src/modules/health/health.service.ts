@@ -131,7 +131,13 @@ export class HealthService {
    */
   private resumerErreur(erreur: unknown): string {
     const message = erreur instanceof Error ? erreur.message : String(erreur);
-    const premiereLigne = message.split('\n')[0]?.trim() ?? 'Erreur inconnue.';
+
+    // Première ligne NON VIDE, et non première ligne tout court : les erreurs
+    // Prisma commencent par un saut de ligne, ce qui produisait un `erreur: ""`
+    // dans le rapport. Une sonde qui signale une panne sans la nommer ne sert
+    // à rien — c'est précisément le diagnostic qu'on vient chercher à 3 h du matin.
+    const lignes = message.split('\n').map((ligne) => ligne.trim());
+    const premiereLigne = lignes.find((ligne) => ligne.length > 0) ?? 'Erreur inconnue.';
 
     return premiereLigne.length > LONGUEUR_MAX_ERREUR
       ? `${premiereLigne.slice(0, LONGUEUR_MAX_ERREUR)}…`
