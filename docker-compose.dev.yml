@@ -58,6 +58,13 @@ services:
       # Après modification de api/package.json :
       #     docker compose -f docker-compose.dev.yml down -v && … up --build
       - api_node_modules:/app/api/node_modules
+      # Artefacts de build : volumes anonymes, donc PROPRES AU CONTENEUR.
+      # L hôte est sous Windows, le conteneur sous Linux, et les deux écrivent
+      # dans ces dossiers : le client Prisma embarque un moteur de requête
+      # compilé par plateforme, et chaque `prisma generate` efface celui de
+      # l'autre. Les isoler supprime ce va-et-vient — chacun garde le sien.
+      - /app/api/src/generated
+      - /app/api/dist
       # Médias des fiches et des articles (RG16, RG27) — livrable 7 §1.
       - storage:/app/storage
     depends_on:
