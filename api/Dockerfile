@@ -17,6 +17,13 @@
 
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS deps
+
+# Prisma sonde la version d OpenSSL pour choisir son moteur de requete. Alpine
+# embarque OpenSSL 3 mais pas le paquet que cette detection interroge : faute
+# de reponse, Prisma retombe sur le moteur openssl-1.1.x et echoue a l execution
+# sur « Error loading shared library libssl.so.1.1 ». Une ligne ici epargne une
+# panne qui ne se manifeste qu au premier acces a la base.
+RUN apk add --no-cache openssl
 # -----------------------------------------------------------------------------
 WORKDIR /app
 
@@ -35,6 +42,13 @@ RUN pnpm install --frozen-lockfile --filter @ecoles360/api...
 
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS development
+
+# Prisma sonde la version d OpenSSL pour choisir son moteur de requete. Alpine
+# embarque OpenSSL 3 mais pas le paquet que cette detection interroge : faute
+# de reponse, Prisma retombe sur le moteur openssl-1.1.x et echoue a l execution
+# sur « Error loading shared library libssl.so.1.1 ». Une ligne ici epargne une
+# panne qui ne se manifeste qu au premier acces a la base.
+RUN apk add --no-cache openssl
 # -----------------------------------------------------------------------------
 # Cible de docker-compose.dev.yml. Les sources arrivent par montage, pas par
 # COPY : le conteneur voit le poste du développeur, et `nest start --watch`
@@ -59,6 +73,13 @@ CMD ["sh", "-c", "pnpm exec prisma generate && pnpm start:dev"]
 
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS build
+
+# Prisma sonde la version d OpenSSL pour choisir son moteur de requete. Alpine
+# embarque OpenSSL 3 mais pas le paquet que cette detection interroge : faute
+# de reponse, Prisma retombe sur le moteur openssl-1.1.x et echoue a l execution
+# sur « Error loading shared library libssl.so.1.1 ». Une ligne ici epargne une
+# panne qui ne se manifeste qu au premier acces a la base.
+RUN apk add --no-cache openssl
 # -----------------------------------------------------------------------------
 WORKDIR /app
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
@@ -78,6 +99,13 @@ RUN pnpm prune --prod
 
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runtime
+
+# Prisma sonde la version d OpenSSL pour choisir son moteur de requete. Alpine
+# embarque OpenSSL 3 mais pas le paquet que cette detection interroge : faute
+# de reponse, Prisma retombe sur le moteur openssl-1.1.x et echoue a l execution
+# sur « Error loading shared library libssl.so.1.1 ». Une ligne ici epargne une
+# panne qui ne se manifeste qu au premier acces a la base.
+RUN apk add --no-cache openssl
 # -----------------------------------------------------------------------------
 WORKDIR /app
 ENV NODE_ENV=production
