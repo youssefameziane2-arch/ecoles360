@@ -1,0 +1,104 @@
+# =============================================================================
+#  écoles360 — intégration continue
+#  Lot 1 §7 · livrable 14 §3
+# -----------------------------------------------------------------------------
+#  « Installe, lint, build et joue les tests avec des services mysql et redis. »
+#
+#  Les tests s'exécutent contre une MySQL 8 et une Redis 7 RÉELLES, jamais
+#  SQLite (livrable 13 §1) : les comportements qui portent le risque du produit
+#  — verrous $queryRaw FOR UPDATE, ENUM natif, contraintes CHECK, FULLTEXT,
+#  collation utf8mb4 — n'existent que sur le moteur de production.
+#
+#  PÉRIMÈTRE DU LOT 1. Le livrable 14 §3 décrit quatre jobs : api · web ·
+#  images · e2e. Seul `api` a un objet ici — `web/` est vide jusqu'au lot 7, et
+#  la publication d'images sur ghcr.io comme les parcours Playwright arrivent
+#  avec leurs lots (docs/BACKLOG.md, B-10).
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+# Une nouvelle poussée sur une branche annule l'exécution précédente : inutile
+# de faire la queue derrière un état déjà périmé.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API — lint, build, tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: ecoles360_test
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/ecoles360_test
+      # Base 15, réservée aux tests — jamais la base 0 (livrable 13 §2.2).
+      REDIS_URL: redis://127.0.0.1:6379/15
+      APP_VERSION: ${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+
+      - name: Installer les dépendances
+        run: pnpm install --frozen-lockfile
+
+      - name: Générer le client Prisma
+        run: pnpm --filter api exec prisma generate
+
+      # LOT 2 — `prisma migrate deploy` puis la commande de seed entreront ici,
+      # dès que api/prisma/migrations/ existera (livrable 10 §3, livrable 14 §3).
+
+      - name: Lint (ESLint + Prettier)
+        run: pnpm --filter api lint
+
+      - name: Build (nest build — échoue si un type est cassé)
+        run: pnpm --filter api build
+
+      - name: Tests (Jest + Supertest, couverture)
+        run: pnpm --filter api test:cov
+
+      - name: Publier le rapport de couverture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: couverture-api
+          path: api/coverage/
+          retention-days: 7
+          if-no-files-found: ignore
