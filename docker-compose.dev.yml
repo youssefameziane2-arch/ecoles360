@@ -94,6 +94,10 @@ services:
       - '127.0.0.1:${MYSQL_PORT:-3306}:3306'
     volumes:
       - mysql_data:/var/lib/mysql
+      # Joué une seule fois, à la création du volume : crée la base de test et
+      # accorde à l'utilisateur applicatif le droit de créer les bases fantômes
+      # de Prisma Migrate. Sans lui, `prisma migrate dev` échoue en P3014.
+      - ./infra/mysql/init:/docker-entrypoint-initdb.d:ro
     networks:
       - ecoles360_net
     restart: unless-stopped
