@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { REDIS_CLIENT } from './redis/redis.constants';
 import type Redis from 'ioredis';
 import { validateEnv } from './config/env.validation';
+import { EnveloppeInterceptor } from './common/interceptors';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AuthModule } from './modules/auth/auth.module';
+import { EtablissementsModule } from './modules/etablissements/etablissements.module';
 import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
@@ -62,12 +64,18 @@ import { RedisModule } from './redis/redis.module';
     RedisModule,
     AuthModule,
     HealthModule,
+    EtablissementsModule,
   ],
   providers: [
     // Le throttler s'exécute AVANT les guards d authentification : une attaque
     // par force brute ne doit pas pouvoir consommer une vérification Argon2 —
     // coûteuse par construction — à chaque tentative.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Enveloppe {data, meta, links} du livrable 11 §1 — c'est une INTERFACE :
+    // le client HTTP du front et les fixtures MSW sont écrits contre cette
+    // forme exacte. Les sorties qui ne sont pas des ressources métier (sonde,
+    // reçus HTML, exports CSV) s'en échappent par @SansEnveloppe().
+    { provide: APP_INTERCEPTOR, useClass: EnveloppeInterceptor },
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
