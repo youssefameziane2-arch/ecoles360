@@ -157,21 +157,25 @@ describe('Authentification (intégration)', () => {
     it('ouvre une session et retourne rôle, portées et jeton CSRF', async () => {
       const reponse = await connexion('direction@ecoles360.com').expect(200);
 
-      expect(reponse.body.utilisateur.role).toBe('superadmin');
-      expect(typeof reponse.body.csrf).toBe('string');
+      expect(reponse.body.data.utilisateur.role).toBe('superadmin');
+      expect(typeof reponse.body.data.csrf).toBe('string');
       const cookies = reponse.headers['set-cookie'] as unknown as string[] | undefined;
       expect((cookies ?? []).join(';')).toContain('ecoles360_csrf');
       // Les identifiants sortent en CHAÎNE, jamais en nombre (livrable 11 §1) :
       // au-delà de 2^53 un entier JavaScript perd en précision, et une valeur
       // tronquée désignerait silencieusement une autre ligne.
-      expect(typeof reponse.body.utilisateur.userId).toBe('string');
+      expect(typeof reponse.body.data.utilisateur.userId).toBe('string');
     });
 
     it('expose les portées déléguées du secrétariat (RG05)', async () => {
       const reponse = await connexion('sara.s@ecoles360.com').expect(200);
 
-      expect(reponse.body.utilisateur.role).toBe('secretariat');
-      expect(reponse.body.utilisateur.permissions.sort()).toEqual(['avis', 'contacts', 'fiches']);
+      expect(reponse.body.data.utilisateur.role).toBe('secretariat');
+      expect(reponse.body.data.utilisateur.permissions.sort()).toEqual([
+        'avis',
+        'contacts',
+        'fiches',
+      ]);
     });
 
     it('rend le profil courant sur /auth/me', async () => {
@@ -182,7 +186,7 @@ describe('Authentification (intégration)', () => {
         .expect(200);
 
       const moi = await agent.get('/api/v1/auth/me').expect(200);
-      expect(moi.body.email).toBe('direction@ecoles360.com');
+      expect(moi.body.data.email).toBe('direction@ecoles360.com');
     });
   });
 
