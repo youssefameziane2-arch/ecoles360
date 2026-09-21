@@ -1,6 +1,6 @@
 import { Controller, Get, Header, HttpStatus } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Public } from '../../common/decorators';
+import { Public, SansEnveloppe } from '../../common/decorators';
 import { AppException, ERROR_CODES } from '../../common/errors';
 import { HealthResponseDto, StatutSante } from './dto/health-response.dto';
 import { HealthService } from './health.service';
@@ -23,6 +23,9 @@ import { HealthService } from './health.service';
 // Docker ne peut pas ouvrir de session, et une sonde qui exigerait un compte
 // ne pourrait plus dire si le service est debout (livrable 14 §2.2).
 @Public()
+// Hors enveloppe : le HEALTHCHECK Docker et la sonde UptimeRobot lisent une
+// charge plate, et les envelopper casserait leur configuration (livrable 14 §5).
+@SansEnveloppe()
 @Controller('health')
 export class HealthController {
   constructor(private readonly health: HealthService) {}
