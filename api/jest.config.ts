@@ -65,9 +65,24 @@ const config: Config = {
       statements: 85,
     },
   },
-  // Les suites de concurrence du livrable 13 §2.3 exigeront --runInBand ;
-  // par défaut on garde le parallélisme, chaque suite écrivant dans son propre
-  // sous-arbre de données (§1).
+  /**
+   * UN SEUL worker — livrable 13 §1.
+   *
+   * Les suites partagent UNE MySQL et UNE Redis. En parallèle, la suite des
+   * seeders tronque les tables pendant que celle d'authentification les
+   * utilise, et cette dernière vide Redis sous les pieds des autres : les 54
+   * tests passent en série et échouent en parallèle. La CI, qui lance
+   * `jest --coverage` sans --runInBand, l'a découvert avant nous.
+   *
+   * Le livrable 13 §2.3 réclame de toute façon --runInBand pour les suites de
+   * concurrence à venir, qui ouvrent deux connexions MySQL distinctes pour
+   * éprouver les verrous FOR UPDATE.
+   *
+   * Le coût est une exécution séquentielle d'une petite minute. L'alternative
+   * — une base par worker — se paierait en complexité d'orchestration pour un
+   * gain qui n'existe pas à cette échelle.
+   */
+  maxWorkers: 1,
   testTimeout: 30_000,
   clearMocks: true,
   restoreMocks: true,
