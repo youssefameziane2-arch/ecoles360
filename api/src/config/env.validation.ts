@@ -8,6 +8,7 @@ import {
   IsString,
   Max,
   Min,
+  MinLength,
   validateSync,
 } from 'class-validator';
 
@@ -50,6 +51,22 @@ export class EnvironmentVariables {
   @IsString({ message: 'DATABASE_URL doit être une chaîne de connexion Prisma.' })
   @IsNotEmpty({ message: 'DATABASE_URL est obligatoire (connexion MySQL 8).' })
   DATABASE_URL!: string;
+
+  /**
+   * Secret de signature des cookies de session (livrable 14 §6).
+   *
+   * Au moins 32 caractères : ce secret protège l'identifiant de session. Le
+   * rendre obligatoire dès le démarrage évite le pire scénario — une mise en
+   * production avec une valeur par défaut connue, qui laisserait forger des
+   * sessions valides pour n'importe quel compte.
+   */
+  @IsString({ message: 'SESSION_SECRET est obligatoire.' })
+  @MinLength(32, { message: 'SESSION_SECRET doit faire au moins 32 caractères.' })
+  SESSION_SECRET!: string;
+
+  @IsString()
+  @IsOptional()
+  SESSION_PREFIX = 'ecoles360:sess:';
 
   @IsString({ message: 'REDIS_URL doit être une URL redis://…' })
   @IsNotEmpty({ message: 'REDIS_URL est obligatoire (sessions, files, cache).' })

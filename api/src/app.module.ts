@@ -1,8 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { REDIS_CLIENT } from './redis/redis.constants';
+import type Redis from 'ioredis';
 import { validateEnv } from './config/env.validation';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
@@ -34,11 +39,35 @@ import { RedisModule } from './redis/redis.module';
       envFilePath: ['../.env', '.env'],
       validate: validateEnv,
     }),
+    /**
+     * Limitation de débit — livrable 11 §5.
+     *
+     * Le compteur vit dans REDIS, pas en mémoire. La nuance est décisive dès
+     * qu'un second conteneur `api` est lancé (livrable 14 §4.1) : avec un
+     * compteur local, cinq tentatives par conteneur deviendraient dix, puis
+     * quinze — la protection se diluerait à mesure que l'on met à l échelle.
+     *
+     * Plafond global de 60 requêtes par minute (lecture publique). Les routes
+     * sensibles le resserrent par `@Throttle()` : connexion et
+     * réinitialisation à 5/min, dépôt d'avis et demandes à 5/h.
+     */
+    ThrottlerModule.forRootAsync({
+      inject: [REDIS_CLIENT],
+      useFactory: (redis: Redis) => ({
+        throttlers: [{ name: 'default', limit: 60, ttl: 60_000 }],
+        storage: new ThrottlerStorageRedisService(redis),
+      }),
+    }),
     PrismaModule,
     RedisModule,
+    AuthModule,
     HealthModule,
   ],
   providers: [
+    // Le throttler s'exécute AVANT les guards d authentification : une attaque
+    // par force brute ne doit pas pouvoir consommer une vérification Argon2 —
+    // coûteuse par construction — à chaque tentative.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
