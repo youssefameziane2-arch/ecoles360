@@ -51,6 +51,9 @@ export default tseslint.config(
       // par Supertest : c'est la nature même d'un test de contrat HTTP.
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
+      // `reponse.body` de Supertest est `any` : appeler `.sort()` ou `.map()`
+      // dessus est le geste normal d'un test de contrat HTTP, pas un défaut.
+      '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
 );

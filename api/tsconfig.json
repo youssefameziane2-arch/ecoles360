@@ -42,6 +42,25 @@
       "@/*": ["src/*"]
     }
   },
+  /**
+   * Surveillance des fichiers par SONDAGE, et non par événements système.
+   *
+   * Sous Docker Desktop pour Windows, les modifications faites sur l'hôte ne
+   * remontent PAS en événements inotify dans le conteneur Linux : le montage
+   * passe par une passerelle qui ne les propage pas. Sans sondage,
+   * `nest start --watch` ne recompile jamais, et le rechargement à chaud
+   * annoncé par docker-compose.dev.yml est une promesse vide — il faut
+   * redémarrer le conteneur à chaque modification.
+   *
+   * Le coût est un réveil périodique du processus ; le bénéfice est que le
+   * développement fonctionne réellement sur les trois systèmes.
+   */
+  "watchOptions": {
+    "watchFile": "priorityPollingInterval",
+    "watchDirectory": "dynamicPriorityPolling",
+    "fallbackPolling": "dynamicPriority"
+  },
+
   "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as argon2 from 'argon2';
+import { Algorithm, hash } from '@node-rs/argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   AuditSeverite,
@@ -610,7 +610,10 @@ export class DemoSeeder {
       // développeur qui a changé le sien ne doit pas le voir réinitialisé à
       // chaque `db:seed`.
       update: {},
-      create: { ...champs, passwordHash: await argon2.hash(motDePasse, { type: argon2.argon2id }) },
+      create: {
+        ...champs,
+        passwordHash: await hash(motDePasse, { algorithm: Algorithm.Argon2id }),
+      },
     });
   }
 
