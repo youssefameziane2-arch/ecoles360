@@ -201,3 +201,14 @@ insertion), mode `--dry-run`.
 qui n'est pas fourni dans le handoff, et un accès réseau à Nominatim.
 **Proposition :** lot dédié, avec le CSV réel en entrée.
 **Statut :** à arbitrer — fournir le CSV.
+
+### B-19 · `pnpm/action-setup` : version déclarée deux fois
+**Source :** L14 §3 — `uses: pnpm/action-setup@v4` `with: { version: 9 }`.
+**Constat :** la racine déclare `packageManager: pnpm@9.15.4`. L'action v4
+**refuse de démarrer** quand la version est donnée aux deux endroits
+(« Multiple versions of pnpm specified »). Première CI rouge en 49 s.
+**Tranché :** la clé `version` est retirée du workflow ; `packageManager` fait
+foi. Il fige la version exacte, sert déjà au `corepack enable` du Dockerfile,
+et garantit que le poste, l'image et le coureur installent à l'identique.
+L'extrait du livrable 14 est antérieur à l'ajout de ce champ.
+**Statut :** à confirmer.

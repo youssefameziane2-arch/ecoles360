@@ -67,9 +67,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Aucune clé `version` ici : la racine déclare déjà
+      # `packageManager: pnpm@9.15.4`, et pnpm/action-setup v4 REFUSE de
+      # démarrer si la version est donnée aux deux endroits (« Multiple
+      # versions of pnpm specified »). Le champ packageManager est la bonne
+      # source : il fige la version exacte, sert au corepack du Dockerfile, et
+      # garantit que le poste, l image et la CI installent à l identique.
+      # Le livrable 14 §3 écrit `with: { version: 9 }` : son extrait est
+      # antérieur à l'ajout du champ packageManager (docs/BACKLOG.md, B-19).
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
