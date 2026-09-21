@@ -1,3 +1,6 @@
+// Sérialisation des identifiants BigInt — livrable 11 §1. En TOUT PREMIER :
+// ce module doit être chargé avant qu'un module ne sérialise quoi que ce soit.
+import './common/serialisation/bigint';
 import { Logger } from '@nestjs/common';
 import { CommandFactory } from 'nest-commander';
 import { CliModule } from './cli.module';

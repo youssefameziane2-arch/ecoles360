@@ -1,13 +1,31 @@
+// Sérialisation des identifiants BigInt — livrable 11 §1. En TOUT PREMIER :
+// ce module doit être chargé avant qu'un module ne sérialise quoi que ce soit.
+import './common/serialisation/bigint';
 import { HttpStatus, Logger, type LogLevel, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import session from 'express-session';
+import { RedisStore } from 'connect-redis';
+import passport from 'passport';
 import { AppModule } from './app.module';
 import { ValidationException } from './common/errors';
+import { RedisService } from './redis/redis.service';
+import { prefixeSession } from './modules/auth/session.constants';
 
 /** Préfixe global de l'API — livrable 11 §1, `app.setGlobalPrefix("api/v1")`. */
 const PREFIXE_API = 'api/v1';
+
+/**
+ * Durée de vie d'une session, en secondes.
+ *
+ * Douze heures : au-delà, un poste partagé laissé ouvert devient un accès
+ * permanent ; en deçà, un secrétariat qui travaille la journée serait
+ * déconnecté en plein traitement. `rolling: true` repousse l'échéance à chaque
+ * requête, si bien que seule l'INACTIVITÉ déconnecte, jamais le travail en cours.
+ */
+const DUREE_SESSION_S = 12 * 60 * 60;
 
 /** Chemin de la documentation OpenAPI — livrable 11 §1, hors préfixe global. */
 const CHEMIN_SWAGGER = 'api/docs';
@@ -24,6 +42,43 @@ async function bootstrap(): Promise<void> {
   // étant servis sous la même origine par nginx, la CSP applicative se limite
   // aux réponses de l'API ; nginx pose la sienne pour le front (livrable 14 §6).
   app.use(helmet());
+
+  // Sessions Passport persistées dans Redis — livrable 11 §2.
+  //
+  // Le choix de Redis plutôt qu'un cookie signé n'est pas une question de
+  // performance : il rend les sessions RÉVOCABLES. La RG25 exige qu'une
+  // suspension de compte ou une réinitialisation de mot de passe coupe l'accès
+  // immédiatement ; un cookie signé, lui, reste valide jusqu'à son expiration,
+  // quoi qu'il arrive côté serveur.
+  const redis = app.get(RedisService);
+
+  app.use(
+    session({
+      store: new RedisStore({
+        client: redis.instance,
+        prefix: prefixeSession(config), // même source que la révocation (RG25)
+        ttl: DUREE_SESSION_S,
+      }),
+      name: 'ecoles360_session',
+      secret: config.getOrThrow<string>('SESSION_SECRET'),
+      resave: false,
+      // Pas de session créée pour un visiteur anonyme : sans cela, chaque
+      // passage d'un moteur d'indexation sur les ~8 000 fiches publiques
+      // écrirait une clé dans Redis.
+      saveUninitialized: false,
+      rolling: true, // une session active ne doit pas expirer sous l'utilisateur
+      cookie: {
+        httpOnly: true, // hors de portée du JavaScript — livrable 7 §6
+        secure: config.get<string>('NODE_ENV') === 'production', // HTTPS obligatoire en production
+        sameSite: 'lax', // front et API sous la même origine via nginx
+        maxAge: DUREE_SESSION_S * 1000,
+        path: '/',
+      },
+    }),
+  );
+
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   // CORS fermé par défaut : même origine en production (livrable 11 §5).
   // Aucune origine n'est autorisée tant qu'aucune n'est nécessaire.
