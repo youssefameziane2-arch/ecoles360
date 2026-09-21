@@ -212,3 +212,65 @@ foi. Il fige la version exacte, sert déjà au `corepack enable` du Dockerfile,
 et garantit que le poste, l'image et le coureur installent à l'identique.
 L'extrait du livrable 14 est antérieur à l'ajout de ce champ.
 **Statut :** à confirmer.
+
+---
+
+## Relevé pendant l'implémentation du lot 3
+
+### B-20 · `argon2` remplacé par `@node-rs/argon2`
+**Source :** L10 §3 — extrait de seeder utilisant `argon2.hash()`.
+**Constat :** le paquet `argon2` ne publie **aucun binaire précompilé pour
+linux-musl**. Dans `node:20-alpine`, il tente de compiler depuis les sources et
+échoue faute de Python et de `g++` — la construction de l'image s'arrête.
+Invisible sur un poste Windows, où un binaire existe.
+**Tranché :** `@node-rs/argon2`, **même algorithme Argon2id**, avec des binaires
+pour treize plateformes dont `linux-x64-musl`. Aucune chaîne de compilation dans
+l'image, build plus rapide. Seul le paquet change, pas l'algorithme.
+**Statut :** à confirmer.
+
+### B-21 · `connect-redis` figé en 8.x pour ioredis
+**Constat :** `connect-redis@9+` exige **node-redis ≥ 5** en dépendance de pair,
+alors que le livrable 11 §6 impose **ioredis** (BullMQ ne fonctionne qu'avec
+lui). Installé en v10, il envoyait des commandes malformées — `ERR syntax error`
+à chaque ouverture de session.
+**Tranché :** `connect-redis@^8.0.0`, dernière version agnostique du client, qui
+détecte ioredis et adapte ses commandes. Un seul client Redis dessert sessions,
+files, cache et limitation de débit.
+**À revoir** si le projet migre vers node-redis.
+**Statut :** contrainte documentée.
+
+### B-22 · `@nestjs/passport` et `@nestjs/throttler` figés pour NestJS 10
+**Constat :** `@nestjs/passport@12` exige NestJS 11. Versions exactes retenues :
+`@nestjs/passport@10.0.3`, `@nestjs/throttler@6.4.0`. Même contrainte que
+`nest-commander` (B-17). À revoir ensemble le jour d'une montée vers NestJS 11.
+**Statut :** contrainte documentée.
+
+### B-23 · Surveillance de fichiers par sondage sous Windows
+**Constat :** Docker Desktop pour Windows ne propage **pas** les événements
+`inotify` depuis l'hôte vers le conteneur. `nest start --watch` ne recompilait
+jamais : le rechargement à chaud annoncé par `docker-compose.dev.yml` était une
+promesse vide, et il fallait redémarrer le conteneur à chaque modification.
+**Tranché :** `watchOptions` en sondage dans `tsconfig.json`. Coût : un réveil
+périodique du processus. Bénéfice : le développement fonctionne réellement sur
+les trois systèmes.
+**Statut :** convention posée.
+
+### B-24 · Jeton de réinitialisation non envoyé par courriel
+**Source :** L11 §6 — file BullMQ `mail`.
+**Constat :** `POST /auth/mot-de-passe-oublie` émet bien un jeton à usage unique
+(TTL 1 h, haché en base), mais **rien ne l'envoie** : BullMQ et SMTP arrivent au
+lot des files. Le jeton n'est ni journalisé ni renvoyé au client — le connaître
+suffirait à changer le mot de passe.
+**En l'état, la réinitialisation n'est donc pas utilisable de bout en bout par
+un utilisateur final.** Le contrat HTTP, lui, est complet et testé.
+**Statut :** planifié — lot BullMQ.
+
+### B-25 · Préfixe de session : source unique
+**Constat :** le préfixe des clés de session était configuré à deux endroits —
+le magasin `connect-redis` qui écrit, et le balayage de révocation qui détruit
+(RG25). Tant que les deux chaînes coïncidaient, tout fonctionnait ; le jour où
+elles divergeaient, la révocation ne trouvait plus rien à supprimer. **Sans
+erreur, sans journal** : les sessions d'un compte suspendu seraient restées
+actives. Découvert parce que le test utilisait un préfixe de test distinct.
+**Tranché :** `prefixeSession(config)` dans `session.constants.ts`, seule source.
+**Statut :** convention posée.
