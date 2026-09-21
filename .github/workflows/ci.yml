@@ -63,6 +63,13 @@ jobs:
       # Base 15, réservée aux tests — jamais la base 0 (livrable 13 §2.2).
       REDIS_URL: redis://127.0.0.1:6379/15
       APP_VERSION: ${{ github.sha }}
+      # Secret de session propre à l'exécution : les tests d'authentification
+      # montent AppModule, dont la validation d'environnement rend cette clé
+      # obligatoire (32 caractères minimum). Sans elle, la suite échouerait au
+      # démarrage et non sur une assertion — un rouge dont la cause serait le
+      # workflow, pas le code. Valeur jetable : elle ne protège aucune session
+      # réelle ; en production le secret vit dans .env.prod (livrable 14 §6).
+      SESSION_SECRET: secret-de-ci-jetable-au-moins-trente-deux-caracteres
 
     steps:
       - uses: actions/checkout@v4
