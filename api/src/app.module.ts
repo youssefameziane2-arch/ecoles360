@@ -9,6 +9,8 @@ import { validateEnv } from './config/env.validation';
 import { EnveloppeInterceptor } from './common/interceptors';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AuthModule } from './modules/auth/auth.module';
+import { AvisModule } from './modules/avis/avis.module';
+import { ContactsModule } from './modules/contacts/contacts.module';
 import { EtablissementsModule } from './modules/etablissements/etablissements.module';
 import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -65,6 +67,8 @@ import { RedisModule } from './redis/redis.module';
     AuthModule,
     HealthModule,
     EtablissementsModule,
+    AvisModule,
+    ContactsModule,
   ],
   providers: [
     // Le throttler s'exécute AVANT les guards d authentification : une attaque

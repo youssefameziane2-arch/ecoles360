@@ -225,7 +225,13 @@ describe('Site public — établissements (intégration)', () => {
 
       // Une note rendue en nombre l'exposerait aux approximations du binaire
       // flottant ; anecdotique pour « ★ 4,8 », pas pour les montants à venir.
-      expect(reponse.body.data.note_moy).toBe('4.8');
+      //
+      // On vérifie le TYPE et la forme, pas la valeur : la note est recalculée
+      // dès qu'un avis est modéré ou signalé (RG08), et une autre suite peut
+      // légitimement l'avoir fait bouger. Figer « 4.8 » testerait la donnée de
+      // démonstration, pas le contrat de sérialisation.
+      expect(typeof reponse.body.data.note_moy).toBe('string');
+      expect(reponse.body.data.note_moy).toMatch(/^\d+(\.\d)?$/);
       expect(typeof reponse.body.data.id).toBe('string');
     });
 
