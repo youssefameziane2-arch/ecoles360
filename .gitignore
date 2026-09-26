@@ -36,4 +36,22 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .DS_Store
+
+# — Claude Code —
+# `settings.local.json` est personnel : permissions accordées sur CE poste,
+# chemins locaux. Le reste de `.claude/` est partagé volontairement —
+# `launch.json` décrit comment lancer le serveur de développement, et une
+# session cloud en a besoin autant que vous.
+.claude/settings.local.json
 Thumbs.db
+
+# — Photos du héros, rapatriées d'Unsplash —
+# Images de remplacement, régénérables par
+#     node web/scripts/telecharger-heros.mjs
+# Elles pèsent 2,7 Mo et ne sont pas notre propriété : le dépôt n'a pas à les
+# porter. À remplacer par les visuels du client, qui seront versionnés.
+web/public/heros/
+
+# Photos de galerie, rapatriées d'Unsplash — régénérables par
+#     node web/scripts/telecharger-galerie.mjs
+web/public/galerie/
