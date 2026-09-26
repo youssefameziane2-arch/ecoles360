@@ -37,16 +37,45 @@ export class RechercheEtablissementsDto {
   @MaxLength(120)
   ville?: string;
 
-  @ApiPropertyOptional({ enum: EtablissementType, description: "Type d'établissement (RG02)." })
-  @IsOptional()
-  @IsEnum(EtablissementType, {
-    message: 'Le type doit être crèche, primaire, collège, lycée, université ou formation.',
+  /**
+   * Types cochés, séparés par des virgules — `?type=creche,primaire`.
+   *
+   * PLUSIEURS TYPES À LA FOIS, ET C'EST LE CAS COURANT. La plupart des
+   * établissements marocains sont des groupes scolaires qui couvrent la crèche,
+   * le primaire, le collège et le lycée. Un parent qui cherche « une école pour
+   * mes deux enfants » coche plusieurs cycles ; l'obliger à choisir un seul
+   * type lui ferait faire quatre recherches.
+   *
+   * Le paramètre garde son nom au singulier : il figure déjà dans des URL
+   * partagées et dans le référencement des pages de type. Un seul type reste
+   * une valeur simple, plusieurs deviennent une liste.
+   */
+  @ApiPropertyOptional({
+    description: "Types d'établissement (RG02), séparés par des virgules.",
+    example: 'creche,primaire,college',
   })
-  type?: EtablissementType;
+  @IsOptional()
+  @Transform(({ value }): unknown =>
+    typeof value === 'string'
+      ? value
+          .split(',')
+          .map((part) => part.trim())
+          .filter(Boolean)
+      : value,
+  )
+  @IsEnum(EtablissementType, {
+    each: true,
+    message:
+      'Le type doit être crèche, primaire, collège, lycée, université, école supérieure ou centre de formation.',
+  })
+  type?: EtablissementType[];
 
   @ApiPropertyOptional({
-    description: 'Identifiants de niveaux ou filières, séparés par des virgules.',
-    example: '1,4',
+    description:
+      'Identifiants de caractéristiques, séparés par des virgules : niveaux, ' +
+      'filières, langues, activités, matières, cursus, domaines, formats. ' +
+      'OU à l’intérieur d’une famille, ET entre familles.',
+    example: '1,4,23',
   })
   @IsOptional()
   @Transform(({ value }): unknown =>

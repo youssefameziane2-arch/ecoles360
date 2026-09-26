@@ -43,10 +43,33 @@ export class EtablissementsController {
     return this.etablissements.parSlug(slug);
   }
 
+  @Get('etablissements/:slug/similaires')
+  @ApiOperation({
+    summary: 'Trois établissements comparables',
+    description:
+      'Même type et même ville d’abord, élargi au reste du pays si nécessaire. ' +
+      'Les cycles frères du même groupe sont exclus — ils ont déjà leur bandeau.',
+  })
+  similaires(@Param('slug') slug: string) {
+    return this.etablissements.similaires(slug);
+  }
+
   @Get('villes')
   @ApiOperation({ summary: 'Référentiel des villes (RG01)' })
   villes() {
     return this.etablissements.villes();
+  }
+
+  @Get('villes/:slug')
+  @ApiOperation({
+    summary: 'Page d’une ville',
+    description:
+      'Compte, note moyenne, répartition par type et quartiers — fiches validées seules (RG03).',
+  })
+  @ApiResponse({ status: 200, description: 'Agrégats de la ville.' })
+  @ApiResponse({ status: 404, description: 'Ville inexistante.' })
+  ville(@Param('slug') slug: string) {
+    return this.etablissements.ville(slug);
   }
 
   @Get('niveau-filieres')
