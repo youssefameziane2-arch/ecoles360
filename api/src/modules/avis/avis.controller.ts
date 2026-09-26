@@ -34,6 +34,15 @@ export class AvisController {
     return this.avis.publies(slug, page);
   }
 
+  @Get('avis/en-avant')
+  @ApiOperation({
+    summary: 'Avis mis en avant sur l’accueil (RG27)',
+    description: 'Sélection éditoriale de l’administrateur, au plus trois.',
+  })
+  enAvant() {
+    return this.avis.enAvant();
+  }
+
   @Post('etablissements/:slug/avis')
   @HttpCode(HttpStatus.CREATED)
   // 5 dépôts par heure et par IP (livrable 11 §5) : assez pour une famille qui

@@ -42,7 +42,14 @@ export class CsrfMiddleware implements NestMiddleware {
     // L'ouverture de session pose le jeton : elle ne peut pas le présenter.
     // Elle est protégée autrement — limitation de débit et, surtout, le fait
     // qu'une connexion forcée depuis un site tiers ne lui donne aucun accès.
-    if (requete.path.endsWith('/auth/login')) {
+    //
+    // `originalUrl` ET NON `path` : ce middleware est monté sur `'*'`, et
+    // Express réécrit alors `req.url` — donc `req.path` — à `/` pour la durée
+    // de l'appel. L'exemption ne se déclenchait jamais, et un visiteur qui
+    // avait perdu son cookie CSRF mais gardé son cookie de session se voyait
+    // refuser la reconnexion, sans moyen de s'en sortir autrement qu'en
+    // vidant ses cookies à la main.
+    if (cheminSansQuery(requete).endsWith('/auth/login')) {
       return suivant();
     }
 
@@ -67,4 +74,9 @@ export class CsrfMiddleware implements NestMiddleware {
 
     return suivant();
   }
+}
+
+/** Chemin complet de la requête, sans la chaîne de requête. */
+function cheminSansQuery(requete: Request): string {
+  return requete.originalUrl.split('?')[0] ?? '';
 }

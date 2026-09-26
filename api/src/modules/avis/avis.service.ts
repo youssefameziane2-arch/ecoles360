@@ -72,6 +72,42 @@ export class AvisService {
    *
    * Créé `en_attente` — aucun chemin ne permet de naître publié.
    */
+  /**
+   * Avis mis en avant sur l'accueil (RG27).
+   *
+   * CHOISIS PAR L'ADMINISTRATEUR, pas par un algorithme : la maquette réserve
+   * trois emplacements sur l'accueil, et c'est une décision éditoriale.
+   * Prendre « les trois meilleures notes » reviendrait à afficher trois fois
+   * cinq étoiles, ce qu'aucun parent ne croit.
+   *
+   * Filtré sur `publie` en plus de `en_avant` : un avis retiré par la
+   * modération ne doit pas survivre sur l'accueil parce qu'il y avait été
+   * épinglé avant (le service de modération l'enlève déjà, ce filtre est la
+   * ceinture qui double la bretelle).
+   */
+  async enAvant() {
+    const avis = await this.db.avis.findMany({
+      where: {
+        en_avant: true,
+        statut: AvisStatut.publie,
+        etablissement: { statut: EtablissementStatut.validee },
+      },
+      orderBy: { depose_le: 'desc' },
+      take: 3,
+      select: {
+        id: true,
+        auteur_nom: true,
+        note: true,
+        commentaire: true,
+        depose_le: true,
+        etablissement: { select: { nom: true, slug: true } },
+      },
+    });
+
+    // Le contact de l'auteur n'est jamais sélectionné ici (loi 09-08).
+    return avis.map((a) => ({ ...a, id: a.id.toString() }));
+  }
+
   async deposer(slug: string, dto: DeposerAvisDto): Promise<{ id: bigint; statut: AvisStatut }> {
     const etablissement = await this.fichePubliee(slug);
 

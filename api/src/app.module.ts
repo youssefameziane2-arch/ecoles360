@@ -8,9 +8,13 @@ import type Redis from 'ioredis';
 import { validateEnv } from './config/env.validation';
 import { EnveloppeInterceptor } from './common/interceptors';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ArticlesModule } from './modules/articles/articles.module';
 import { AvisModule } from './modules/avis/avis.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
+import { ContenuModule } from './modules/contenu/contenu.module';
+import { EspaceModule } from './modules/espace/espace.module';
 import { EtablissementsModule } from './modules/etablissements/etablissements.module';
 import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -68,7 +72,11 @@ import { RedisModule } from './redis/redis.module';
     HealthModule,
     EtablissementsModule,
     AvisModule,
+    ArticlesModule,
     ContactsModule,
+    ContenuModule,
+    EspaceModule,
+    AdminModule,
   ],
   providers: [
     // Le throttler s'exécute AVANT les guards d authentification : une attaque

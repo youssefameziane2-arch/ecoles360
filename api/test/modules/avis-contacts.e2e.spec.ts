@@ -138,6 +138,31 @@ describe('Site public — avis et contacts (intégration)', () => {
     });
   });
 
+  describe('avis mis en avant (RG27)', () => {
+    it('ne rend que des avis publiés, et jamais le contact de l’auteur', async () => {
+      const reponse = await request(app.getHttpServer()).get('/api/v1/avis/en-avant').expect(200);
+
+      const avis = reponse.body.data as Record<string, unknown>[];
+
+      expect(avis.length).toBeGreaterThan(0);
+      expect(avis.length).toBeLessThanOrEqual(3);
+
+      for (const a of avis) {
+        // Loi 09-08 : l'adresse du parent ne sort jamais côté public, pas plus
+        // sur l'accueil que sur une fiche.
+        expect(a).not.toHaveProperty('auteur_contact');
+        expect(a).toHaveProperty('etablissement');
+      }
+
+      // Tous sont bien publiés ET épinglés en base.
+      const ids = avis.map((a) => BigInt(a.id as string));
+      const nonConformes = await db.avis.count({
+        where: { id: { in: ids }, OR: [{ statut: { not: 'publie' } }, { en_avant: false }] },
+      });
+      expect(nonConformes).toBe(0);
+    });
+  });
+
   describe('signalement (RG07, RG08)', () => {
     it('replace l’avis en file de modération et recalcule la note', async () => {
       const publies = await request(app.getHttpServer())

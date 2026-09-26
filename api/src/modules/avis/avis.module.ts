@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AvisController } from './avis.controller';
+import { AuditService } from '../../common/audit/audit.service';
 import { AvisService } from './avis.service';
+import { ModerationAvisService } from './moderation.service';
 
 /**
  * Domaine « avis » — livrable 7 §3.
@@ -11,7 +13,7 @@ import { AvisService } from './avis.service';
  */
 @Module({
   controllers: [AvisController],
-  providers: [AvisService],
-  exports: [AvisService],
+  providers: [AvisService, ModerationAvisService, AuditService],
+  exports: [AvisService, ModerationAvisService],
 })
 export class AvisModule {}
