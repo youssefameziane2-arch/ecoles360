@@ -49,35 +49,31 @@ describe('Seeders (base réelle)', () => {
     }).compile();
   }
 
-  /** Vide les tables touchées par les seeders, dans l'ordre des dépendances. */
+  /**
+   * Vide toute la base de test, sauf l'historique des migrations.
+   *
+   * LA LISTE EST DEMANDÉE À MySQL, PAS ÉCRITE À LA MAIN. Une liste tenue
+   * manuellement dérive silencieusement dès qu'un modèle s'ajoute — `photos`
+   * y manquait, et comme `TRUNCATE etablissements` remet l'auto-incrément à
+   * zéro, les fiches créées ensuite héritaient des photos de fiches
+   * disparues. Une suite d'après s'est mise à compter des images fantômes,
+   * sans que rien ne pointe vers ce fichier.
+   */
   async function viderBase(prisma: PrismaService): Promise<void> {
+    const tables = await prisma.$queryRaw<{ TABLE_NAME: string }[]>`
+      SELECT TABLE_NAME
+        FROM information_schema.TABLES
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_TYPE = 'BASE TABLE'
+         AND TABLE_NAME <> '_prisma_migrations'
+    `;
+
+    // Les contraintes sont coupées le temps du nettoyage : un ordre de
+    // dépendances correct existerait, mais il faudrait le maintenir lui aussi.
     await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
 
-    for (const table of [
-      'lead_suivis',
-      'leads',
-      'journal_audits',
-      'propositions_fiche',
-      'articles',
-      'signalements',
-      'avis',
-      'demande_contacts',
-      'factures',
-      'abonnements',
-      'relances',
-      'prospects',
-      'permissions',
-      'etablissement_niveau',
-      'etablissements',
-      'users',
-      'faq_items',
-      'pages_cms',
-      'parametres_facturation',
-      'niveau_filieres',
-      'villes',
-      'roles',
-    ]) {
-      await prisma.$executeRawUnsafe(`TRUNCATE TABLE \`${table}\``);
+    for (const { TABLE_NAME } of tables) {
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE \`${TABLE_NAME}\``);
     }
 
     await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
@@ -109,13 +105,32 @@ describe('Seeders (base réelle)', () => {
       expect(await db.etablissement.count()).toBeGreaterThan(0);
       expect(await db.lead.count()).toBe(8); // le kanban des maquettes
 
-      // La fiche vitrine porte bien les valeurs conçues.
       const almassira = await db.etablissement.findUniqueOrThrow({
         where: { slug: 'lycee-al-massira-casablanca' },
       });
-      expect(almassira.note_moy.toString()).toBe('4.8');
-      expect(almassira.nb_avis).toBe(142);
       expect(almassira.statut).toBe('validee');
+
+      // LA FICHE NE MENT PAS SUR SES AVIS (RG08).
+      //
+      // Ce test vérifiait auparavant des valeurs d'affichage — 4,8 de moyenne
+      // pour 142 avis — alors que trois avis existaient en base. Il verrouillait
+      // donc l'incohérence au lieu de la détecter : à la première décision de
+      // modération, `recalculerNote` aurait ramené la fiche à la réalité et
+      // fait chuter le compteur sous les yeux de l'administrateur.
+      //
+      // On éprouve désormais l'invariant, pas le chiffre : ce qui est affiché
+      // correspond exactement aux avis publiés.
+      const reel = await db.avis.aggregate({
+        where: { etablissement_id: almassira.id, statut: 'publie' },
+        _avg: { note: true },
+        _count: { _all: true },
+      });
+
+      expect(almassira.nb_avis).toBe(reel._count._all);
+      expect(Number(almassira.note_moy)).toBeCloseTo(
+        reel._avg.note ? Math.round(reel._avg.note * 10) / 10 : 0,
+        1,
+      );
     });
 
     it('est idempotent : un second passage ne duplique rien', async () => {
