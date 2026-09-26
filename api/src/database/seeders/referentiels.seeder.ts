@@ -78,56 +78,93 @@ export class ReferentielsSeeder {
   }
 
   /**
-   * Niveaux et filières (RG02) — aligné sur les filtres des maquettes.
+   * Référentiel des caractéristiques d'établissement — RG02, maquette du site
+   * public (`FILTER_DEFS`).
    *
-   * À ne pas confondre avec les six TYPES d'établissement, qui sont une
-   * énumération du schéma : ici ce sont les cycles et spécialités qu'un
-   * établissement propose, en relation (n,n).
+   * UNE SEULE TABLE POUR HUIT FAMILLES. `niveau_filieres` n'est pas une liste
+   * de niveaux : c'est le référentiel générique des caractéristiques qu'un
+   * établissement peut porter. Les filtres dynamiques de la recherche s'en
+   * déduisent, et ouvrir une activité nouvelle ne demande aucune livraison
+   * logicielle.
+   *
+   * LES MÊMES MOTS REVIENNENT D'UNE FAMILLE À L'AUTRE — « Sport » est une
+   * filière et une activité, « Informatique » une filière et un domaine,
+   * « Français » une langue et une matière. Ce sont des caractéristiques
+   * distinctes, d'où la clé composite (libellé, catégorie).
    */
   async niveauxFilieres(): Promise<void> {
-    const niveaux = [
-      'Éveil',
-      'Maternelle',
-      'Primaire',
-      'Collège',
-      'Lycée',
-      'Classes préparatoires',
-      'Licence',
-      'Master',
-      'BTS',
-    ];
+    const parCategorie: Record<NiveauFiliereCat, string[]> = {
+      [NiveauFiliereCat.niveau]: [
+        'Éveil',
+        'Maternelle',
+        'Primaire',
+        'Collège',
+        'Lycée',
+        'Classes préparatoires',
+        'Licence',
+        'Master',
+        'BTS',
+      ],
+      [NiveauFiliereCat.filiere]: [
+        // Lycée
+        'Sciences Math',
+        'Sciences PC',
+        'SVT',
+        'Lettres',
+        'Économie',
+        // Supérieur
+        'Ingénierie',
+        'Commerce & Gestion',
+        'Médecine',
+        'Droit',
+        'Informatique',
+        // Transverses, déjà en place
+        'Sciences',
+        'Langues',
+        'Bilingue',
+        'Mission française',
+        'Montessori',
+        'Sport',
+        'Gestion',
+      ],
+      [NiveauFiliereCat.langue]: ['Arabe', 'Français', 'Anglais', 'Espagnol'],
+      [NiveauFiliereCat.activite]: [
+        'Dessin',
+        'Musique',
+        'Cinéma',
+        'Théâtre',
+        'Sport',
+        'Parascolaire',
+      ],
+      [NiveauFiliereCat.matiere]: ['Arabe', 'Français', 'Anglais', 'Espagnol', 'Sport'],
+      [NiveauFiliereCat.cursus]: ['LMD', 'Cycle ingénieur'],
+      [NiveauFiliereCat.domaine]: [
+        'Informatique',
+        'Langues',
+        'Comptabilité',
+        'Marketing',
+        'Design',
+      ],
+      [NiveauFiliereCat.format]: ['Continue', 'À distance', 'Présentiel', 'Certifiée'],
+    };
 
-    const filieres = [
-      'Sciences',
-      'Économie',
-      'Lettres',
-      'Langues',
-      'Bilingue',
-      'Mission française',
-      'Montessori',
-      'Sport',
-      'Informatique',
-      'Droit',
-      'Gestion',
-    ];
+    let total = 0;
 
-    for (const libelle of niveaux) {
-      await this.db.niveauFiliere.upsert({
-        where: { libelle },
-        update: { categorie: NiveauFiliereCat.niveau },
-        create: { libelle, categorie: NiveauFiliereCat.niveau },
-      });
+    for (const [categorie, libelles] of Object.entries(parCategorie)) {
+      for (const libelle of libelles) {
+        await this.db.niveauFiliere.upsert({
+          where: {
+            libelle_categorie: { libelle, categorie: categorie as NiveauFiliereCat },
+          },
+          update: {},
+          create: { libelle, categorie: categorie as NiveauFiliereCat },
+        });
+        total += 1;
+      }
     }
 
-    for (const libelle of filieres) {
-      await this.db.niveauFiliere.upsert({
-        where: { libelle },
-        update: { categorie: NiveauFiliereCat.filiere },
-        create: { libelle, categorie: NiveauFiliereCat.filiere },
-      });
-    }
-
-    this.logger.log(`${niveaux.length} niveaux et ${filieres.length} filières`);
+    const familles = Object.keys(parCategorie).length;
+    this.logger.log(`${total} caractéristiques réparties en ${familles} familles`);
   }
 
   /**
@@ -225,53 +262,107 @@ export class ReferentielsSeeder {
       },
     });
 
+    /**
+     * FAQ DE RÉFÉRENCE — reprise mot pour mot de la maquette « Centre d'aide ».
+     *
+     * C'est le texte que le client a validé : il fixe les engagements affichés
+     * publiquement (gratuité pour les parents, publication sous 48 h, remise de
+     * 10 % en paiement annuel). Le réécrire ici serait le renégocier en douce.
+     */
     const faq = [
       {
-        question: 'Le service est-il gratuit pour les parents ?',
+        groupe: 'Pour les parents',
+        question: 'écoles360, c’est gratuit pour les parents ?',
         reponse:
-          'Oui, entièrement. La recherche, la consultation des fiches, la lecture des avis et la prise ' +
-          'de contact avec un établissement sont gratuites et sans création de compte.',
-        ordre: 1,
+          'Oui, totalement. La recherche, la comparaison et la prise de contact avec les ' +
+          'établissements sont entièrement gratuites pour les familles.',
       },
       {
-        question: 'Comment les établissements sont-ils vérifiés ?',
+        groupe: 'Pour les parents',
+        question: 'Dois-je créer un compte pour laisser un avis ?',
         reponse:
-          'Chaque fiche est contrôlée par notre équipe avant publication. Les établissements portant le ' +
-          "badge « Vérifié » ont fourni les justificatifs de leur autorisation d'exercer.",
-        ordre: 2,
+          'Non. Vous pouvez soumettre un avis sans aucun compte. Il est publié après validation par ' +
+          'notre équipe (modération) et nous ne conservons pas vos données personnelles.',
       },
       {
-        question: 'Que signifie la mention « Sponsorisé » ?',
+        groupe: 'Pour les parents',
+        question: 'Comment sont sélectionnés les établissements ?',
         reponse:
-          "L'établissement a souscrit une campagne de mise en avant. Sa fiche apparaît en tête des " +
-          'résultats correspondant à votre recherche, mais ne remplace jamais les autres résultats.',
-        ordre: 3,
+          'Chaque fiche est contrôlée par nos équipes : existence réelle, coordonnées et ' +
+          'autorisations, pour des informations fiables.',
       },
       {
-        question: 'Comment déposer un avis ?',
+        groupe: 'Pour les parents',
+        question: 'Les tarifs affichés sont-ils exacts ?',
         reponse:
-          "Depuis la fiche de l'établissement, bouton « Laisser un avis ». Votre avis est relu par notre " +
-          "équipe avant publication, et l'établissement peut y répondre une fois.",
-        ordre: 4,
+          'Nous affichons une gamme indicative (économique, intermédiaire, premium) pour situer un ' +
+          'établissement. Le détail des frais est communiqué par l’école que vous contactez.',
       },
       {
-        question: 'Comment inscrire mon établissement ?',
+        groupe: 'Pour les parents',
+        question: 'Comment contacter un établissement ?',
         reponse:
-          'Remplissez le formulaire « Inscrivez-vous » : un conseiller vous recontacte pour définir la ' +
-          'formule adaptée à votre établissement et créer votre espace.',
-        ordre: 5,
+          'Depuis chaque fiche, le numéro de téléphone est affiché en clair et vous pouvez écrire ' +
+          'sur WhatsApp en un clic.',
+      },
+      {
+        groupe: 'Pour les établissements',
+        question: 'Comment référencer mon établissement ?',
+        reponse:
+          'Rendez-vous sur la page « Inscrivez-vous » : appelez-nous ou remplissez le formulaire, ' +
+          'notre équipe crée votre fiche avec vous.',
+      },
+      {
+        groupe: 'Pour les établissements',
+        question: 'Combien coûte le référencement ?',
+        reponse:
+          'Trois formules : un mois d’essai gratuit avec toutes les options, un abonnement mensuel ' +
+          'ou annuel (−10 % en paiement annuel), ou un paiement à la vue de votre page profil. Les ' +
+          'tarifs sont définis avec votre conseiller.',
+      },
+      {
+        groupe: 'Pour les établissements',
+        question: 'Combien de temps pour publier ma fiche ?',
+        reponse: 'Nos équipes valident et publient votre fiche sous 48 h ouvrées.',
+      },
+      {
+        groupe: 'Pour les établissements',
+        question: 'Puis-je gérer mes avis et mes statistiques ?',
+        reponse:
+          'Oui, votre espace établissement vous donne accès aux demandes de contact, aux avis et ' +
+          'aux statistiques de votre fiche.',
       },
     ];
 
-    for (const item of faq) {
-      const existante = await this.db.faqItem.findFirst({ where: { question: item.question } });
+    for (const [rang, item] of faq.entries()) {
+      const existante = await this.db.faqItem.findFirst({
+        where: { question: item.question },
+        select: { id: true, modifiee_par: true },
+      });
 
-      if (existante) {
+      if (!existante) {
+        await this.db.faqItem.create({ data: { ...item, ordre: rang + 1 } });
         continue;
       }
 
-      await this.db.faqItem.create({ data: item });
+      // UNE QUESTION RETOUCHÉE DEPUIS LE BACK-OFFICE N'EST PLUS DU RÉFÉRENTIEL.
+      // Le semeur réaligne le texte livré tant que personne n'y a touché ;
+      // dès qu'un administrateur l'a modifiée, sa version l'emporte — sinon
+      // un `seed` de routine effacerait sans prévenir une correction voulue.
+      if (existante.modifiee_par === null) {
+        await this.db.faqItem.update({
+          where: { id: existante.id },
+          data: { ...item, ordre: rang + 1 },
+        });
+      }
     }
+
+    // Les questions d'une livraison précédente, jamais retouchées, sont
+    // retirées : elles ne font partie ni de la maquette ni d'une décision
+    // éditoriale, et les laisser doublonnerait la FAQ publique.
+    await this.db.faqItem.deleteMany({
+      where: { modifiee_par: null, question: { notIn: faq.map((item) => item.question) } },
+    });
 
     this.logger.log(`Page « À propos » et ${faq.length} questions de FAQ`);
   }

@@ -188,6 +188,42 @@ describe('Authentification (intégration)', () => {
       const moi = await agent.get('/api/v1/auth/me').expect(200);
       expect(moi.body.data.email).toBe('direction@ecoles360.com');
     });
+
+    it('accepte une reconnexion SANS jeton CSRF, session déjà ouverte (livrable 11 §5)', async () => {
+      // Le cas réel : le visiteur a gardé son cookie de session mais perdu le
+      // cookie CSRF — vidé par le navigateur, expiré, ou simplement absent
+      // d'un autre onglet. Sans l'exemption sur `/auth/login`, il reçoit 403 à
+      // chaque tentative et n'a aucun moyen de s'en sortir depuis l'interface.
+      const agent = request.agent(app.getHttpServer());
+
+      await agent
+        .post('/api/v1/auth/login')
+        .send({ email: 'sara.s@ecoles360.com', mot_de_passe: MOT_DE_PASSE_DEMO })
+        .expect(200);
+
+      // Deuxième connexion, aucun en-tête `x-csrf-token` : elle doit passer.
+      const reconnexion = await agent
+        .post('/api/v1/auth/login')
+        .send({ email: 'direction@ecoles360.com', mot_de_passe: MOT_DE_PASSE_DEMO })
+        .expect(200);
+
+      expect(reconnexion.body.data.utilisateur.role).toBe('superadmin');
+    });
+
+    it('refuse en revanche une AUTRE mutation sans jeton CSRF', async () => {
+      // Le pendant du test précédent : l'exemption vaut pour l'ouverture de
+      // session, et pour elle seule.
+      const agent = request.agent(app.getHttpServer());
+
+      await agent
+        .post('/api/v1/auth/login')
+        .send({ email: 'direction@ecoles360.com', mot_de_passe: MOT_DE_PASSE_DEMO })
+        .expect(200);
+
+      const refus = await agent.post('/api/v1/auth/logout').expect(403);
+
+      expect(refus.body.code).toBe(ERROR_CODES.ACCES_REFUSE);
+    });
   });
 
   // ---------------------------------------------------------------------------
