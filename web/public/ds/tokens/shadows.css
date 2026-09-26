@@ -1,0 +1,13 @@
+/* écoles360 — Shadow & overlay tokens.
+   Flat, low-spread shadows. Cards rest on a hairline with NO shadow. */
+:root {
+  --shadow-none: none;                            /* card at rest = hairline only */
+  --shadow-card: 0 8px 30px rgba(26,26,26,.10);   /* floating search card */
+  --shadow-pop: 0 14px 40px rgba(26,26,26,.16);   /* hero search / popovers */
+  --shadow-device: 0 8px 28px rgba(26,26,26,.12); /* device frame in specimens */
+
+  /* Overlays / scrims over imagery */
+  --scrim-navy: linear-gradient(to top, rgba(21,35,58,.80), rgba(21,35,58,.12)); /* @kind other */
+  --scrim-navy-strong: linear-gradient(to top, rgba(21,35,58,.82), rgba(21,35,58,0)); /* @kind other */
+  --scrim-card: linear-gradient(to top, rgba(21,35,58,.78), rgba(21,35,58,.05)); /* @kind other */
+}

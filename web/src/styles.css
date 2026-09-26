@@ -1,0 +1,367 @@
+/* Socle de page — le design system fournit le reste (livrable 12 §1).
+   Les grilles et leurs points de rupture sont ceux de la maquette
+   « Site public écoles360 » : 1040, 980, 820, 720, 640 px. */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Fond applicatif du design system : blanc dominant, gris sur les pages
+     de liste pour détacher les cartes (readme.md du DS). */
+  background: var(--surface-page, #f5f6f8);
+  color: var(--text-primary, #1a1a1a);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Conteneur de la maquette : 1180 px de contenu, gouttière de 32 px. */
+.conteneur {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.section {
+  padding: 40px 0;
+}
+
+.titre-section {
+  font: 800 32px/1.2 'Inter', sans-serif;
+  letter-spacing: -0.8px;
+  color: var(--text-primary, #1a1a1a);
+  margin: 0 0 6px;
+}
+
+.sous-titre-section {
+  font: 400 14px/1.6 'Inter', sans-serif;
+  color: var(--text-secondary, #5a6472);
+  margin: 0 0 24px;
+}
+
+/* ---- Grilles de la maquette ---------------------------------------- */
+
+/* Tuiles de type d'établissement — six types (RG02). */
+/* Sept types d'établissement depuis l'ajout de « École supérieure » (RG02). */
+.e3-typegrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+/* Établissements à la une — quatre colonnes. */
+.e3-featgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+
+/* Résultats de recherche — trois colonnes. */
+.e3-resultgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.e3-citygrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* Bas de page d'une ville — cinq vignettes « explorez d'autres villes ». */
+.e3-villegrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 980px) {
+  .e3-villegrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .e3-villegrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.e3-trigrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* Blog — grille d'articles et bandeau de l'article à la une. */
+.e3-blog-grille {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.e3-blog-une {
+  grid-template-columns: 1.15fr 1fr;
+}
+
+/* Journal d'audit — activité par profil à gauche, tableau à droite. */
+.e3-journal-tete {
+  grid-template-columns: 1fr 1.4fr;
+}
+
+/* Éditeur d'article — formulaire à gauche, aperçu de la carte à droite. */
+.e3-blog-editeur {
+  grid-template-columns: 1.5fr 1fr;
+}
+
+/* Pied de page — marque large, puis trois colonnes de liens (maquette). */
+.e3-footer-grille {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: 40px;
+}
+
+.e3-truststats {
+  background: var(--e360-navy, #1d3557);
+  border-radius: 20px;
+  padding: 38px 48px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+/* Connexion — écran plein, panneau de marque à gauche (maquette « Espace »). */
+.e-login {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .e-login {
+    grid-template-columns: 1fr;
+  }
+  /* Sur mobile, le panneau de marque passe sous le formulaire : c'est le
+     formulaire qu'on vient remplir, pas l'argumentaire qu'on vient lire. */
+  .e-login > :first-child {
+    order: 2;
+    padding: 32px 24px;
+  }
+}
+
+/* Aperçu de la page profil — colonne principale et colonne d'informations. */
+.e-apercu {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 26px;
+  padding: 20px 26px 26px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .e-apercu {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Espace connecté — bandeau d'indicateurs et tuiles d'accès (maquette). */
+.e-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.e-tuiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .e-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .e-kpis,
+  .e-tuiles {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Espace connecté — deux colonnes, la principale plus large (maquette). */
+.e-2col {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .e-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Fiche : contenu principal et colonne de contact collante. */
+.e3-fiche {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.e3-fiche-aside {
+  position: sticky;
+  top: 88px;
+}
+
+@media (max-width: 1040px) {
+  .e3-featgrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .e3-resultgrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .e3-typegrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .e3-fiche {
+    grid-template-columns: 1fr;
+  }
+  .e3-fiche-aside {
+    position: static;
+  }
+}
+
+@media (max-width: 820px) {
+  .e3-trigrid,
+  .e3-citygrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .e3-footer-grille {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .e3-blog-grille {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .e3-blog-une,
+  .e3-blog-editeur,
+  .e3-journal-tete {
+    grid-template-columns: 1fr;
+  }
+  .e3-truststats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px 18px;
+    padding: 26px 22px;
+    border-radius: 16px;
+  }
+  .e3-searchrow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .e3-hero-contenu {
+    padding: 72px 18px 58px;
+  }
+  .e3-hero-titre {
+    font-size: 34px;
+    letter-spacing: -1px;
+  }
+}
+
+@media (max-width: 720px) {
+  .conteneur {
+    padding: 0 18px;
+  }
+  .e3-featgrid,
+  .e3-resultgrid,
+  .e3-trigrid,
+  .e3-citygrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .e3-sechead {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-bottom: 18px;
+  }
+  .e3-footer-grille {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .e3-blog-grille {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .e3-typegrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .titre-section {
+    font-size: 26px;
+  }
+}
+
+/* Formulaires admin — deux colonnes, une seule sur écran étroit. */
+.e-form-grille {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 16px;
+}
+
+@media (max-width: 760px) {
+  .e-form-grille {
+    grid-template-columns: 1fr;
+  }
+}
+
+/*
+ * Ken Burns du héros — lent rapprochement pendant qu'une diapositive est
+ * visible. Repris tel quel de la maquette.
+ *
+ * Le composant ne le pose PAS quand le système demande des animations réduites :
+ * un mouvement de fond permanent déclenche des nausées chez une partie des
+ * visiteurs, et le héros reste parfaitement lisible immobile.
+ */
+@keyframes e3kenburns {
+  from {
+    transform: scale(1.04);
+  }
+  to {
+    transform: scale(1.14);
+  }
+}
+
+/*
+ * Texte réservé aux lecteurs d'écran.
+ *
+ * Ni `display:none` ni `visibility:hidden` : les deux retirent l'élément de
+ * l'arbre d'accessibilité, donc le masquent aussi à qui en a besoin. Le
+ * découpage à un pixel le sort de l'écran sans le sortir du document.
+ */
+.visuellement-cache {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

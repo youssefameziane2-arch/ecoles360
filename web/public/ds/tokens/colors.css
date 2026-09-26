@@ -1,0 +1,68 @@
+/* écoles360 — Color tokens
+   Rule 60-30-10: white dominant (60), navy structure (30), red accent (10).
+   Red is reserved for action / active / key link only. */
+:root {
+  /* ---- Base palette ---- */
+  --e360-white: #FFFFFF;
+
+  /* Red — accent (CTA, active, key link) */
+  --e360-red: #E63946;
+  --e360-red-700: #C0303C;   /* pressed / dark red text on tint */
+  --e360-red-tint: #FDE8EA;  /* soft badge background */
+
+  /* Navy — structure, dark panels */
+  --e360-navy: #1D3557;
+  --e360-navy-sidebar: #15233A; /* sidebar / darkest surface */
+  --e360-navy-tint: #E7EDF5;    /* soft badge background */
+  --e360-navy-soft: #AFC0D6;    /* muted text on navy */
+  --e360-navy-faint: #7E8DA3;   /* faint label on navy */
+
+  /* Green — WhatsApp / success */
+  --e360-green: #2E9E5B;
+  --e360-green-tint: #E6F4EC;
+
+  /* Amber — stars / alerts */
+  --e360-amber: #E9A23B;
+  --e360-amber-700: #C2841F; /* amber text on tint (contrast) */
+  --e360-amber-900: #9A6A12;
+  --e360-amber-tint: #FCF1DE;
+
+  /* ---- Greys: text ---- */
+  --e360-ink: #1A1A1A;       /* primary text */
+  --e360-ink-2: #3A424E;     /* body strong */
+  --e360-grey: #5A6472;      /* secondary text */
+  --e360-grey-2: #9AA3AF;    /* muted / meta */
+  --e360-grey-3: #AEB6C2;    /* placeholder glyphs */
+
+  /* ---- Greys: surfaces & lines ---- */
+  --e360-bg: #F5F6F8;        /* app background */
+  --e360-bg-2: #F1F3F6;      /* track / chrome bar / chip rest */
+  --e360-placeholder: #E3E7EC; /* image placeholder block */
+  --e360-line: #ECEEF1;      /* hairline (cards, dividers) */
+  --e360-line-2: #E1E5EA;    /* input / control border */
+  --e360-line-3: #D4DAE2;    /* stronger border (device frame) */
+
+  /* ---- Semantic aliases ---- */
+  --text-primary: var(--e360-ink);
+  --text-body: var(--e360-ink-2);
+  --text-secondary: var(--e360-grey);
+  --text-muted: var(--e360-grey-2);
+  --text-on-dark: var(--e360-white);
+  --text-on-dark-muted: var(--e360-navy-soft);
+
+  --surface-page: var(--e360-bg);
+  --surface-card: var(--e360-white);
+  --surface-sunken: var(--e360-bg-2);
+  --surface-dark: var(--e360-navy-sidebar);
+  --surface-image: var(--e360-placeholder);
+
+  --border-hairline: var(--e360-line);
+  --border-control: var(--e360-line-2);
+  --border-strong: var(--e360-line-3);
+
+  --action: var(--e360-red);
+  --action-pressed: var(--e360-red-700);
+  --action-secondary: var(--e360-navy);
+  --action-success: var(--e360-green);
+  --rating: var(--e360-amber);
+}
