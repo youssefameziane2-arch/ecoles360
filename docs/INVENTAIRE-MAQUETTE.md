@@ -1,0 +1,237 @@
+# Inventaire de la maquette — état d'avancement
+
+Relevé **automatiquement** depuis les deux fichiers de maquette livrés
+(`écoles360.dc.html` pour le site public, `Espace écoles360.dc.html` pour les
+espaces connectés), puis rapproché à la main du code existant.
+
+Ce document existe parce que le périmètre a été sous-estimé deux fois. Il est la
+référence : **aucun écran ne doit être considéré comme fait s'il n'est pas coché
+ici.**
+
+Légende : ✅ fait · 🟡 partiel · ❌ à faire · ⛔ hors périmètre (décision client)
+
+---
+
+## Site public — 10 écrans présents, 6 incomplets
+
+**Un écran présent n'est pas un écran fait.** Le détail bloc par bloc est en fin
+de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
+
+| Écran | Route | État |
+|---|---|---|
+| Accueil | `/` | 🟡 4 sections manquantes + recherche avancée + carrousel |
+| Résultats de recherche | `/etablissements` | 🟡 filtres dynamiques et vue carte manquants |
+| Fiche établissement | `/etablissements/:slug` | 🟡 équipe, articles liés, similaires manquants |
+| Page ville | `/villes/:slug` | 🟡 quartiers populaires manquants |
+| À propos | `/a-propos` | 🟡 équipe et bloc contact manquants |
+| FAQ | `/faq` | ✅ |
+| Blog | `/blog` | ✅ |
+| Article | `/blog/:slug` | ✅ |
+| Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité manquantes |
+| Connexion | `/connexion` | ✅ écart assumé : formulaire unique au lieu des 2 étapes |
+
+**Absents de la maquette elle-même** : l'écran de contact (`goContact` est
+appelé mais jamais dessiné) et les pages légales (mentions, confidentialité,
+cookies, CGU — liens présents, contenu absent). Le texte légal relève du client.
+
+---
+
+## Administration — 6 / 14
+
+| Écran | Clé maquette | Route | État |
+|---|---|---|---|
+| Établissements | `isAdminEtab` | `/admin/etablissements` | ✅ création de fiche et galerie photo comprises |
+| Page profil (relecture) | `isAdminPend` | `/admin/propositions` | ✅ |
+| Avis — modération | `isAdminAvisAll` | `/admin/avis` | ✅ |
+| Blog | `isBlogList` | `/admin/blog` | ✅ |
+| Article (éditeur) | `isBlogDetail` | `/admin/blog` | ✅ |
+| Journal d'audit | `isAdminJournal` | `/admin/journal` | ✅ |
+| Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ seule — manquent les catégories d'articles et la page « À propos » |
+| Tableau de bord | `isAdminDash` | — | ❌ activité, rappels, top établissements, pipeline, factures |
+| CRM Clients | `isAdminCrm` | `/admin/crm` | ❌ KPI, prospects, dossiers, étapes |
+| Statistiques | `isAdminStats` | `/admin/statistiques` | ❌ périodes, filtres ville/type, KPI, courbe, top |
+| Abonnement & facturation | `isAdminFact` | `/admin/facturation` | ❌ KPI, tarifs, historique, encaissement |
+| Facture (détail) | `isAdminFactDetail` | — | ❌ formules, essai, remise, reçu |
+| Secrétariat | `isAdminUsers` | `/admin/secretariat` | ❌ comptes, portées déléguées, réinit. mot de passe |
+| Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | ❌ |
+| Base de données | `isAdminDb` | — | ❌ explorateur lecture seule (pas dans la navigation actuelle) |
+
+**Hors maquette, construits en plus** : Sponsoring (`/admin/sponsorings`) et
+Paramètres de facturation (`/admin/parametres`) — écrans dessinés sans
+référence, à la demande du client.
+
+---
+
+## Espace établissement — 5 / 7
+
+| Écran | Clé maquette | Route | État |
+|---|---|---|---|
+| Tableau de bord | `isEtabDash` | `/espace` | ✅ |
+| Ma fiche | `isEtabFiche` | `/espace/fiche` | ✅ galerie photo comprise — hors circuit de validation |
+| Avis reçus | `isEtabAvis` | `/espace/avis` | ✅ |
+| Blog | `isBlogList` | `/espace/blog` | ✅ |
+| Article (éditeur) | `isBlogDetail` | `/espace/blog` | ✅ |
+| Statistiques | `isEtabStats` | `/espace/statistiques` | ❌ |
+| Abonnement & facturation | `isEtabCredits` | `/espace/facturation` | ❌ formules, factures, conseiller |
+| CRM Leads | `isCrm` | — | ⛔ hors périmètre |
+
+**Hors maquette, construit en plus** : Demandes de contact (`/espace/demandes`).
+La navigation de la maquette ne le donne qu'au secrétariat, mais un
+établissement doit accéder à ses propres demandes — le retirer serait une
+régression.
+
+---
+
+## Espace secrétariat — 5 / 5 ✅
+
+Servi par **les mêmes écrans que l'établissement**, filtrés par portée déléguée
+(RG05) — pas de duplication de code.
+
+| Écran | État |
+|---|---|
+| Tableau de bord | ✅ |
+| Fiches | ✅ |
+| Page profil | ✅ |
+| Demandes de contact | ✅ |
+| Modération des avis | ✅ |
+| CRM Leads | ⛔ hors périmètre |
+
+---
+
+## Espace commercial — 0 / 6
+
+**Le rôle entier reste à construire** : aucune navigation, aucun écran.
+
+| Écran | Clé maquette | État |
+|---|---|---|
+| Tableau de bord | `isCommercialDash` | ❌ tâches du jour, intérêts, transferts |
+| Agenda & tâches | `isAgenda` | ❌ calendrier, tâches, retards, Google Agenda |
+| Mes leads | `isCrm` | ❌ |
+| Transferts & commissions | `isTransferts` | ❌ |
+| Statistiques | `isStats` | ❌ |
+| Blog | `isBlogList` | ❌ l'écran existe, la navigation commerciale non |
+
+---
+
+## Récapitulatif
+
+| Périmètre | Fait | Reste |
+|---|---|---|
+| Site public | 10 écrans, 4 complets | 6 écrans à compléter |
+| Administration | 6 | 8 + 1 partiel |
+| Établissement | 5 | 2 |
+| Secrétariat | 5 | 0 |
+| Commercial | 0 | 6 |
+| **Total** | **26** | **16 + 1 partiel** |
+
+---
+
+## Comment ce relevé a été produit
+
+```bash
+node inventaire.mjs "Espace écoles360.dc.html"
+```
+
+Le script suit les blocs `<sc-if value="{{ isXxx }}">` en tenant compte de leur
+imbrication, puis extrait pour chacun : composants du design system utilisés,
+listes répétées (`sc-for`), champs de saisie, libellés de boutons et états
+internes. À relancer après toute nouvelle livraison de maquette.
+
+---
+
+# Détail par écran — site public
+
+Relevé section par section avec `docs/sections.mjs`, qui sort le plan d'un écran
+dans l'ordre : titres, surtitres, listes répétées et boutons.
+
+```bash
+node docs/sections.mjs "écoles360.dc.html" isHome
+```
+
+## Accueil (`isHome`) — 9 / 13 blocs
+
+| # | Bloc de la maquette | État |
+|---|---|---|
+| 1 | Héros + `heroSlides` (carrousel de photos) | 🟡 le héros est là, **le carrousel non** |
+| 2 | Carte de recherche : `typeCards`, `villeSuggest`, « Rechercher » | ✅ |
+| 3 | **« Recherche avancée »** : `noteOptions`, `sortOptions`, `homeDynGroups` | ❌ |
+| 4 | `trustStats` — bandeau navy de chiffres | ✅ |
+| 5 | « Notre sélection / Établissements à la une » + `featured` | ✅ |
+| 6 | « Ce que nous faisons / Choisir une école, enfin simple » + `whatWeDo` | ✅ |
+| 7 | « Explorez / Les établissements par ville » + `cityGrid` | ✅ |
+| 8 | **« Témoignages / Ils nous font confiance »** + `reviewDots` | ❌ |
+| 9 | « Simple et rapide / Comment ça marche » + `howSteps` | ✅ |
+| 10 | **« Ils nous font confiance / Ce que disent les parents »** + `homeReviews` | ❌ |
+| 11 | **« Le blog / Conseils pour les parents »** + `homeBlog` | ❌ |
+| 12 | « Questions fréquentes / Vous vous demandez peut-être… » | ✅ |
+| 13 | **« Besoin d'aide pour choisir ? »** — téléphone + « Nous écrire » | ❌ |
+| 14 | **« Vous dirigez un établissement ? »** + « Inscrire mon établissement » | ❌ |
+
+## Résultats (`isResults`)
+
+| Bloc | État |
+|---|---|
+| Barre de filtres `typeFilters`, `villeOptions2`, `sortOptions` | ✅ |
+| **`dynGroups` / `g.chips` — filtres dynamiques par type** | ❌ |
+| Compteur « N établissements » | ✅ |
+| `skeletons` pendant le chargement | ✅ |
+| `results` — cartes du design system | ✅ |
+| **Bascule « Carte »** — vue cartographique | ❌ |
+| Pagination `pages` | ✅ |
+| `emptyState` + « Réinitialiser les filtres » | ✅ |
+
+## Fiche établissement (`isDetail`)
+
+L'écran le plus dense de la maquette : **22 listes**. Onglets À propos ·
+Filières · Équipements · Tarifs · Équipe · Avis.
+
+| Bloc | État |
+|---|---|
+| Galerie `gallery`, badges, spécifications | ✅ |
+| Onglets `Tabs`, `detCycles`, `detChiffres`, `det_filieres` | ✅ |
+| `equipementsFiche`, `detTarifs`, `detFacilites` | ✅ |
+| **`detTeam` — onglet Équipe** | ❌ |
+| Avis : `avisDist`, `avisStarChips`, `avisSortOptions`, `avisList` | ✅ |
+| Dépôt d'avis : formulaire étoiles + « Soumettre mon avis » | ✅ |
+| **« Utile (n) » — vote d'utilité sur un avis** | ❌ |
+| `detFaq`, `horaires`, `socialsDark`, `autresProjets` | ✅ |
+| **`ficheEtabArticles` / `ficheSiteArticles` — articles liés** | ❌ |
+| **`similar` — établissements similaires** | ❌ |
+| **`detUnavailable` — fiche indisponible (crédits épuisés)** | ❌ |
+
+## Page ville (`isVille`)
+
+| Bloc | État |
+|---|---|
+| H1 « Écoles privées à … » | ✅ |
+| « Par type d'établissement » + `vTypeCounts` | ✅ |
+| « Tous les établissements à … » + `vEstabs` | ✅ |
+| **« Quartiers populaires » + `vQuartiers`** | ❌ |
+| « Explorez d'autres villes » + `otherCities` | ✅ |
+
+## À propos (`isAbout`)
+
+| Bloc | État |
+|---|---|
+| « Notre mission » + H1 | ✅ |
+| « Notre histoire » + `trustStats` | ✅ |
+| « Ce qui nous guide / Nos valeurs » + `aboutValues` | ✅ |
+| **« Les visages / L'équipe écoles360 » + `teamAv`** | ❌ |
+| **« Parlons-en / Nous contacter » + `contactCards`, WhatsApp, `contactSocials`** | ❌ |
+| « Vous dirigez un établissement ? » | ✅ |
+
+## Inscription établissement (`isInscription`)
+
+| Bloc | État |
+|---|---|
+| H1 + « Commencer l'inscription » | ✅ |
+| `benefits` | ✅ |
+| **« Formules de visibilité » + `plans`, bascule Mensuel / Annuel −10 %** | ❌ |
+| `insSteps3` — les trois étapes | ✅ |
+| « On s'occupe de tout par téléphone » / « Vous préférez écrire ? » | 🟡 |
+| Formulaire en 2 étapes + « Demande envoyée ! » | ✅ |
+
+---
+
+**Le contenu prime sur le compte d'écrans.** Un écran présent mais amputé de la
+moitié de ses blocs compte comme partiel, pas comme fait.

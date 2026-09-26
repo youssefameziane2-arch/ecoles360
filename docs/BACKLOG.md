@@ -274,3 +274,50 @@ erreur, sans journal** : les sessions d'un compte suspendu seraient restées
 actives. Découvert parce que le test utilisait un préfixe de test distinct.
 **Tranché :** `prefixeSession(config)` dans `session.constants.ts`, seule source.
 **Statut :** convention posée.
+
+## B-31 — `CityCard` du design system : pluriel non géré
+
+`CityCard` rend `count + " établissements"` sans distinguer le singulier : une
+ville qui compte une seule fiche affiche « 1 établissements ».
+
+Le composant est livré compilé (`web/public/ds/bundle.js`, aucun `export`), donc
+non corrigeable depuis le projet. Deux issues :
+
+1. demander une version corrigée à l'auteur du design system — le bon chemin ;
+2. accepter un `label` en propriété, ce qui rendrait le composant réutilisable
+   hors du contexte « ville ».
+
+En attendant, l'accueil masque les villes sans fiche, ce qui réduit l'occurrence
+sans la supprimer.
+
+## B-32 — `viderBase()` listait les tables à la main
+
+**Constat :** le nettoyage de la base de test énumérait ses tables dans un
+tableau écrit à la main. `photos` n'y figurait pas. Or `TRUNCATE etablissements`
+remet l'auto-incrément à zéro : les fiches créées par la suite suivante
+héritaient des lignes `photos` de fiches disparues.
+
+Le symptôme était **intermittent et trompeur** — une galerie de trois photos en
+comptait cinq, mais seulement quand l'ordre d'exécution des suites plaçait
+`seed.spec.ts` en premier, ce que Jest décide d'après les durées mesurées au
+tour précédent. Rien ne pointait vers le fichier fautif.
+
+**Tranché :** la liste est demandée à `information_schema`, `_prisma_migrations`
+exceptée. Une liste manuelle dérive au premier modèle ajouté ; celle-ci ne peut
+pas.
+**Statut :** corrigé.
+
+## B-33 — Médias servis par Node en développement
+
+`monterMedias()` déclare le volume `storage` en service statique dans l'API.
+C'est ce qu'il faut en développement, et c'est un pis-aller en production :
+faire transiter une photo de 400 Ko par la boucle d'événements de Node occupe
+le processus qui doit répondre aux requêtes métier.
+
+Le livrable 14 §2 prévoit que nginx serve `/media/` directement depuis le
+volume. Tant que ce bloc n'est pas écrit, l'API assure le service — des fiches
+complètes valent mieux qu'un dossier inaccessible.
+
+**À faire :** bloc `location /media/` dans la configuration nginx, avec
+`expires 1y` (le nom de fichier est un aléa, son contenu ne change jamais).
+**Statut :** planifié — lot mise en ligne.
