@@ -74,6 +74,13 @@ model User {
   passwordHash              String     @map("password") @db.VarChar(255) // Argon2id (livrable 7 §6)
   role_id                   BigInt     @db.UnsignedBigInt
   etablissement_rattache_id BigInt?    @db.UnsignedBigInt // obligatoire si role = secretariat (RG25)
+  /// Ligne directe, affichée au public pour les COMMERCIAUX uniquement.
+  ///
+  /// La bannière d'aide du site public annonce « un conseiller vous rappelle »
+  /// avec un nom et un numéro : ils viennent d'ici. Nul pour les autres rôles —
+  /// le téléphone d'un administrateur ou d'un secrétariat n'a rien à faire en
+  /// façade.
+  telephone                 String?    @db.VarChar(30)
   blog_actif                Boolean    @default(false) // RG27 — blog activable par compte
   statut                    UserStatut @default(actif)
   derniere_connexion_le     DateTime?  @db.Timestamp(0)
@@ -146,17 +153,37 @@ model Ville {
 /// 03 — NiveauFiliere (RG02) — distinct des six types d'établissement.
 model NiveauFiliere {
   id        BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
-  libelle   String           @unique @db.VarChar(80)
+  libelle   String           @db.VarChar(80)
   categorie NiveauFiliereCat
 
   etablissements EtablissementNiveau[]
 
+  /// UNICITÉ SUR LE COUPLE, pas sur le libellé seul : « Sport » est à la fois
+  /// une filière et une activité parascolaire, « Informatique » une filière et
+  /// un domaine de formation, « Français » une langue et une matière. Ce sont
+  /// des caractéristiques distinctes qui partagent un mot.
+  @@unique([libelle, categorie], map: "uk_caracteristique")
+  @@index([categorie], map: "idx_caracteristique_cat")
   @@map("niveau_filieres")
 }
 
+/// Familles de caractéristiques d'un établissement.
+///
+/// LA TABLE EST UN RÉFÉRENTIEL GÉNÉRIQUE, pas une liste de niveaux. Elle
+/// portait « niveau » et « filière » ; la maquette du site public filtre aussi
+/// par langue, activité, matière, cursus, domaine et format de formation.
+/// Ajouter une catégorie plutôt qu'une table par concept garde UNE seule
+/// jointure (`etablissement_niveaux`) et rend les filtres pilotables par la
+/// donnée : ouvrir « Robotique » ne demande aucune livraison logicielle.
 enum NiveauFiliereCat {
   niveau
   filiere
+  langue
+  activite
+  matiere
+  cursus
+  domaine
+  format
 }
 
 // =============================================================================
@@ -166,13 +193,38 @@ enum NiveauFiliereCat {
 /// 04 — Etablissement (RG01–RG04, RG08).
 /// Les blocs profil éditables de l'avenant 3 (RG27) sont regroupés ici plutôt
 /// que dispersés : ils décrivent la même ressource et sont publiés ensemble.
+/// Groupe scolaire — plusieurs cycles sous une même enseigne.
+///
+/// AU MAROC, LA PLUPART DES ÉTABLISSEMENTS PRIVÉS SONT DES GROUPES : la même
+/// enseigne accueille l'enfant de la crèche au lycée, sur un ou plusieurs
+/// sites. La maquette le montre par un bandeau « Établissement multi-cycles »
+/// et des puces qui ouvrent la fiche de chaque cycle.
+///
+/// CHAQUE CYCLE RESTE UNE FICHE À PART, et c'est voulu : les filières, les
+/// tarifs, les horaires et les avis d'une crèche n'ont rien à voir avec ceux
+/// d'un lycée. Les fondre en une fiche unique obligerait à tout dupliquer à
+/// l'intérieur, et le parent ne saurait plus ce qui s'applique à son enfant.
+model GroupeScolaire {
+  id       BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  nom      String @db.VarChar(180)
+  slug     String @unique @db.VarChar(200)
+  cree_le  DateTime @default(now()) @db.Timestamp(0)
+
+  etablissements Etablissement[]
+
+  @@map("groupes_scolaires")
+}
+
 model Etablissement {
   id                   BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
   ville_id             BigInt              @db.UnsignedBigInt // RG01
   proprietaire_user_id BigInt?             @db.UnsignedBigInt // RG04 — NULL tant que non revendiquée
   slug                 String              @unique @db.VarChar(160)
   nom                  String              @db.VarChar(180)
-  type                 EtablissementType // RG02 — 6 types
+  /// Groupe scolaire auquel la fiche appartient — NULL si l'établissement est
+  /// seul de son espèce. Voir `GroupeScolaire`.
+  groupe_id            BigInt?             @db.UnsignedBigInt
+  type                 EtablissementType // RG02 — 7 types
   statut               EtablissementStatut @default(en_attente) // RG03
   description          String?             @db.Text
   adresse              String?             @db.VarChar(255)
@@ -198,14 +250,21 @@ model Etablissement {
   chiffres       Json? // [{label, valeur}]
   faq            Json? // [{q, r}] ordonnable
   horaires       Json? // {jour: plage}
-  socials        Json?
-  autres_projets Json?
+  socials        Json? // {facebook, instagram, …}
+  autres_projets Json? // [{type, nom, ville, description}] — autres enseignes du propriétaire
   facilites      Json?
   video_url      String? @db.VarChar(200)
   video_poster   String? @db.VarChar(200)
   gamme_label    String? @db.VarChar(80)
   devis_label    String? @db.VarChar(120)
+  // Champs de la page profil des maquettes que le modèle initial n'avait pas :
+  // le bloc « Langues », le lien vers le site de l'établissement, et le second
+  // texte de présentation (`description` porte « Notre histoire »).
+  langues              String? @db.VarChar(160)
+  site_web             String? @db.VarChar(200)
+  projet_pedagogique   String? @db.Text
 
+  groupe            GroupeScolaire?       @relation(fields: [groupe_id], references: [id], onDelete: SetNull)
   ville             Ville                 @relation(fields: [ville_id], references: [id], onDelete: Restrict)
   proprietaire      User?                 @relation("Proprietaire", fields: [proprietaire_user_id], references: [id], onDelete: SetNull)
   secretariat       User[]                @relation("SecretariatRattachement")
@@ -224,17 +283,26 @@ model Etablissement {
   articles          Article[]
 
   @@index([ville_id, type, statut], map: "idx_eta_recherche") // résultats filtrés
+  @@index([groupe_id], map: "idx_eta_groupe") // cycles frères d'un groupe
   @@index([statut, note_moy(sort: Desc)], map: "idx_eta_tri") // tri par note
   @@fulltext([nom, description], map: "ft_eta_nom_desc") // recherche texte
   @@map("etablissements")
 }
 
+/// Types d'établissement (RG02).
+///
+/// SEPT, ET NON SIX. La règle RG02 en énumérait six ; la maquette du site
+/// public en propose sept, « École supérieure » distinguant les grandes écoles
+/// (ingénierie, commerce, santé) de l'université. La distinction compte pour un
+/// parent marocain — ce ne sont ni les mêmes cursus, ni les mêmes concours, ni
+/// les mêmes tarifs. La maquette fait foi.
 enum EtablissementType {
   creche
   primaire
   college
   lycee
   universite
+  superieur
   formation
 }
 
@@ -878,6 +946,10 @@ model Article {
   contenu          String?       @db.MediumText
   image_chemin     String?       @db.VarChar(200) // image facultative
   statut           ArticleStatut @default(brouillon)
+  /// Motif du refus, exigé par le livrable 11 §3.5 (« motif requis au refus »).
+  /// Il est RENDU À L'AUTEUR : un article retoqué sans explication se
+  /// resoumettrait à l'identique, et l'administrateur le refuserait deux fois.
+  motif_refus      String?       @db.VarChar(300)
   a_la_une         Boolean       @default(false)
   soumis_le        DateTime?     @db.Timestamp(0)
   publie_le        DateTime?     @db.Timestamp(0)
@@ -902,11 +974,20 @@ enum ArticleStatut {
 /// 29 — FaqItem (RG27) : FAQ réordonnable, l'ordre étant recalculé de façon
 /// contiguë par CmsService à chaque réordonnancement.
 model FaqItem {
-  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  question     String    @db.VarChar(200)
-  reponse      String    @db.Text
-  ordre        Int       @default(0) @db.UnsignedSmallInt
-  publiee      Boolean   @default(true)
+  id       BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  question String  @db.VarChar(200)
+  reponse  String  @db.Text
+  /// Intitulé de la rubrique affichée sur /faq — « Pour les parents »,
+  /// « Pour les établissements ». Porté par la donnée et non par une
+  /// énumération : la maquette en montre deux, l'administrateur doit pouvoir
+  /// en ouvrir une troisième sans livraison logicielle.
+  groupe   String  @default("Pour les parents") @db.VarChar(80)
+  /// Rang GLOBAL, pas rang dans le groupe : l'ordre des rubriques se déduit du
+  /// plus petit rang qu'elles contiennent, ce qui évite un second compteur à
+  /// tenir cohérent.
+  ordre    Int     @default(0) @db.UnsignedSmallInt
+  publiee  Boolean @default(true)
+
   modifiee_par BigInt?   @db.UnsignedBigInt
   modifiee_le  DateTime? @db.Timestamp(0)
 
