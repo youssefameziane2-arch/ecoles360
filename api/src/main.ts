@@ -4,6 +4,7 @@ import './common/serialisation/bigint';
 import { HttpStatus, Logger, type LogLevel, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import session from 'express-session';
@@ -12,6 +13,7 @@ import passport from 'passport';
 import { AppModule } from './app.module';
 import { ValidationException } from './common/errors';
 import { RedisService } from './redis/redis.service';
+import { monterMedias } from './common/stockage/monter-medias';
 import { prefixeSession } from './modules/auth/session.constants';
 
 /** Préfixe global de l'API — livrable 11 §1, `app.setGlobalPrefix("api/v1")`. */
@@ -31,7 +33,7 @@ const DUREE_SESSION_S = 12 * 60 * 60;
 const CHEMIN_SWAGGER = 'api/docs';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: niveauxDeJournal(process.env.LOG_LEVEL),
   });
 
@@ -79,6 +81,11 @@ async function bootstrap(): Promise<void> {
 
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Photos téléversées, servies depuis le volume `storage` — livrable 7 §1.
+  // La déclaration vit dans `monter-medias.ts` pour que les suites de tests
+  // montent EXACTEMENT le même service statique.
+  monterMedias(app);
 
   // CORS fermé par défaut : même origine en production (livrable 11 §5).
   // Aucune origine n'est autorisée tant qu'aucune n'est nécessaire.

@@ -103,6 +103,17 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   LOG_LEVEL = 'log';
+
+  /**
+   * Racine du volume de médias téléversés — livrable 7 §1.
+   *
+   * Laissée vide, elle vaut `storage/` à la racine du dépôt, qui est le point
+   * de montage du volume Docker du même nom. Les tests la détournent vers un
+   * dossier temporaire pour ne rien laisser derrière eux.
+   */
+  @IsString()
+  @IsOptional()
+  STOCKAGE_RACINE?: string;
 }
 
 /**
