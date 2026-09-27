@@ -45,6 +45,7 @@ const NAV_ETABLISSEMENT: EntreeNav[] = [
 
 /** Navigation du back-office — ordre et libellés de la maquette. */
 const NAV_ADMIN: EntreeNav[] = [
+  { key: '/admin', label: 'Tableau de bord', icone: 'layout-grid' },
   { key: '/admin/etablissements', label: 'Établissements', icone: 'building' },
   { key: '/admin/propositions', label: 'Modifications de fiche', icone: 'pencil', compteur: 'propositions' },
   { key: '/admin/secretariat', label: 'Secrétariat', icone: 'users' },

@@ -18,6 +18,7 @@ import { FicheEditeur } from './pages/espace/FicheEditeur';
 import { AvisEspacePage } from './pages/espace/AvisEspace';
 import { DemandesEspacePage } from './pages/espace/DemandesEspace';
 import { EtablissementsAdmin } from './pages/admin/EtablissementsAdmin';
+import { TableauDeBordAdmin } from './pages/admin/TableauDeBordAdmin';
 import { PropositionsAdmin } from './pages/admin/PropositionsAdmin';
 import { ParametresFacturation } from './pages/admin/ParametresFacturation';
 import { SponsoringsAdmin } from './pages/admin/SponsoringsAdmin';
@@ -76,7 +77,7 @@ export function App() {
         <Route path="/espace/blog" element={<BlogEspace />} />
         <Route path="/espace/facturation" element={<FacturationEspace />} />
 
-        <Route path="/admin" element={<EtablissementsAdmin />} />
+        <Route path="/admin" element={<TableauDeBordAdmin />} />
         <Route path="/admin/etablissements" element={<EtablissementsAdmin />} />
         <Route path="/admin/propositions" element={<PropositionsAdmin />} />
         <Route path="/admin/secretariat" element={<SecretariatAdmin />} />
