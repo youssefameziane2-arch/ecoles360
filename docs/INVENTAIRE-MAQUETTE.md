@@ -1,5 +1,12 @@
 # Inventaire de la maquette — état d'avancement
 
+> **Ce relevé se périme.** Trois lignes marquées ❌ décrivaient des sections
+> construites depuis. Une session cloud est partie les écrire, a vérifié le
+> code avant d'attaquer, et ne les a pas trouvées manquantes — le temps perdu
+> est celui de la vérification. **Mettre ce fichier à jour fait partie du
+> travail qu'il décrit**, et en cas de doute c'est le code qui fait foi, pas
+> ce tableau.
+
 Relevé **automatiquement** depuis les deux fichiers de maquette livrés
 (`handoff/écoles360.dc.html` pour le site public, `handoff/Espace écoles360.dc.html` pour les
 espaces connectés), puis rapproché à la main du code existant.
@@ -152,17 +159,17 @@ node docs/sections.mjs "docs/handoff/écoles360.dc.html" isHome
 
 | # | Bloc de la maquette | État |
 |---|---|---|
-| 1 | Héros + `heroSlides` (carrousel de photos) | 🟡 le héros est là, **le carrousel non** |
+| 1 | Héros + `heroSlides` (carrousel de photos) | ✅ 7 diapositives, une par type, défilement 5 s |
 | 2 | Carte de recherche : `typeCards`, `villeSuggest`, « Rechercher » | ✅ |
 | 3 | **« Recherche avancée »** : `noteOptions`, `sortOptions`, `homeDynGroups` | ❌ |
 | 4 | `trustStats` — bandeau navy de chiffres | ✅ |
 | 5 | « Notre sélection / Établissements à la une » + `featured` | ✅ |
 | 6 | « Ce que nous faisons / Choisir une école, enfin simple » + `whatWeDo` | ✅ |
 | 7 | « Explorez / Les établissements par ville » + `cityGrid` | ✅ |
-| 8 | **« Témoignages / Ils nous font confiance »** + `reviewDots` | ❌ |
+| 8 | « Témoignages / Ils nous font confiance » + `reviewDots` | ✅ |
 | 9 | « Simple et rapide / Comment ça marche » + `howSteps` | ✅ |
-| 10 | **« Ils nous font confiance / Ce que disent les parents »** + `homeReviews` | ❌ |
-| 11 | **« Le blog / Conseils pour les parents »** + `homeBlog` | ❌ |
+| 10 | « Ce que disent les parents » + `homeReviews` | ✅ |
+| 11 | « Le blog / Conseils pour les parents » + `homeBlog` | ✅ |
 | 12 | « Questions fréquentes / Vous vous demandez peut-être… » | ✅ |
 | 13 | **« Besoin d'aide pour choisir ? »** — téléphone + « Nous écrire » | ❌ |
 | 14 | **« Vous dirigez un établissement ? »** + « Inscrire mon établissement » | ❌ |

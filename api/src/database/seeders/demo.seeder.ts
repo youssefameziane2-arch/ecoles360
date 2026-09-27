@@ -942,9 +942,16 @@ export class DemoSeeder {
 
   private motDePasse(variable: string): string {
     // Un mot de passe visiblement factice vaut mieux qu'un seeder qui échoue à
-    // froid sur un poste neuf ; les vraies valeurs viennent des secrets GitHub
-    // en CI (livrable 14 §3).
-    return this.config.get<string>(variable) ?? 'motdepasse-de-demonstration';
+    // froid sur un poste neuf.
+    //
+    // `||` ET NON `??`, ET C'EST UNE QUESTION DE SÉCURITÉ. `??` ne se replie
+    // que sur `undefined` : une variable DÉFINIE MAIS VIDE passait au travers
+    // et créait un compte administrateur au mot de passe vide. Or c'est
+    // exactement ce que produit un `SEED_ADMIN_PASSWORD=` oublié dans un
+    // `.env`, ou un `${{ secrets.X }}` qui référence un secret inexistant —
+    // GitHub Actions ne laisse alors pas la variable absente, il la pose à la
+    // chaîne vide.
+    return this.config.get<string>(variable) || 'motdepasse-de-demonstration';
   }
 
   private async creerCompte(compte: {

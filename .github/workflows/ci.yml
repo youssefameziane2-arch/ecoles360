@@ -102,13 +102,21 @@ jobs:
       - name: Build (nest build — échoue si un type est cassé)
         run: pnpm --filter api build
 
+      # AUCUN SECRET ICI, ET C'EST VOULU.
+      #
+      # Les `SEED_*_PASSWORD` y figuraient, repris du livrable 14 §3. Ils
+      # rendaient la suite INFAILLIBLEMENT ROUGE : les tests ouvrent leurs
+      # sessions avec `motdepasse-de-demonstration`, écrit en dur dans six
+      # fichiers de spécification. Quelle que soit la valeur des secrets —
+      # absents donc vides, ou renseignés donc différents — elle ne pouvait
+      # pas coïncider avec cette constante, et chaque test qui se connecte
+      # recevait un 401.
+      #
+      # La base de CI est jetée à la fin de chaque exécution : elle n'a aucun
+      # secret à protéger. Le seeder retombe sur son mot de passe de
+      # démonstration, celui-là même que les tests attendent.
       - name: Seed (référentiels + démonstration)
         run: pnpm --filter api db:seed
-        env:
-          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
-          SEED_SECRETAIRE_PASSWORD: ${{ secrets.SEED_SECRETAIRE_PASSWORD }}
-          SEED_ETABLISSEMENT_PASSWORD: ${{ secrets.SEED_ETABLISSEMENT_PASSWORD }}
-          SEED_COMMERCIAL_PASSWORD: ${{ secrets.SEED_COMMERCIAL_PASSWORD }}
 
       - name: Lint (ESLint + Prettier)
         run: pnpm --filter api lint
