@@ -28,13 +28,13 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 |---|---|---|
 | Accueil | `/` | ✅ |
 | Résultats de recherche | `/etablissements` | 🟡 filtres dynamiques et vue carte manquants |
-| Fiche établissement | `/etablissements/:slug` | 🟡 équipe, articles liés, similaires manquants |
-| Page ville | `/villes/:slug` | 🟡 quartiers populaires manquants |
-| À propos | `/a-propos` | 🟡 équipe et bloc contact manquants |
+| Fiche établissement | `/etablissements/:slug` | 🟡 articles liés et similaires FAITS ; reste l'équipe, qui n'a aucun champ en base |
+| Page ville | `/villes/:slug` | ✅ quartiers populaires compris |
+| À propos | `/a-propos` | 🟡 équipe (aucun champ en base) et bloc contact manquants |
 | FAQ | `/faq` | ✅ |
 | Blog | `/blog` | ✅ |
 | Article | `/blog/:slug` | ✅ |
-| Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité manquantes |
+| Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité — demandent une route publique de tarifs |
 | Connexion | `/connexion` | ✅ écart assumé : formulaire unique au lieu des 2 étapes |
 
 **Absents de la maquette elle-même** : l'écran de contact (`goContact` est
@@ -127,7 +127,7 @@ route à ce rôle.
 
 | Périmètre | Fait | Reste |
 |---|---|---|
-| Site public | 10 écrans, 4 complets | 6 écrans à compléter |
+| Site public | 10 écrans, 6 complets | 4 écrans à compléter, tous demandant une migration ou une route |
 | Administration | 6 | 7 + 2 partiels |
 | Établissement | 5 | 2 |
 | Secrétariat | 5 | 0 |
