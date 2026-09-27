@@ -521,22 +521,43 @@ lui, sort de l'enveloppe (`@SansEnveloppe()`, livrable 11 §3.2).
 « derniers encaissements » dans `/admin/tableau-de-bord`.
 **Statut :** planifié — lot facturation.
 
-## B-40 — « Recherches effectuées » : aucune source
+## B-40 — Recherches et visites du site : aucune source
 
-Le bloc « Visites du site » de la maquette pose trois tuiles : recherches
-effectuées, vues de fiches, demandes envoyées. Les deux dernières sont
-servies. **La première n'a pas de source** : l'enum `EvenementType` ne connaît
-que `appel | whatsapp | vue | vue_sponsorisee`, et aucune recherche n'est
-tracée. La tuile est omise — un zéro affiché ferait croire que personne ne
-cherche.
+Deux écrans d'administration dessinent des chiffres que rien ne compte.
 
-**À faire, dans cet ordre :**
-1. une migration additive — valeur `recherche` dans `EvenementType`, et
-   `etablissement_id` à rendre nullable pour cette valeur (une recherche ne
-   porte sur aucune fiche), ou une table dédiée ;
-2. le traçage côté front, au lancement d'une recherche (au mieux, comme les
-   autres traces : un échec ne doit jamais gêner le parent) ;
-3. la tuile, et sa part dans la courbe.
+**Tableau de bord (`isAdminDash`).** Le bloc « Visites du site » pose trois
+tuiles : recherches effectuées, vues de fiches, demandes envoyées. Les deux
+dernières sont servies ; la tuile « Recherches » est omise.
+
+**Statistiques (`isAdminStats`).** Six indicateurs et cinq blocs. Sont servis,
+et commandés par les filtres période / ville / type : vues de fiches, demandes
+envoyées, nouveaux avis, la courbe, les vues par type d'établissement, le
+classement. Sont omis :
+- les tuiles **« Visites du site »** et **« Recherches effectuées »** ;
+- la tuile **« Taux de transformation »** — la maquette la calcule en
+  demandes ÷ recherches (4 812 / 74 210 = 6,5 %) : sans recherches, pas de
+  dénominateur ;
+- le bloc **« Recherches par ville »** (`statCities`).
+
+La courbe « Visites du site » porte donc les **vues de fiches**, et son
+en-tête le dit.
+
+**Pourquoi rien n'est affiché à zéro :** l'enum `EvenementType` ne connaît que
+`appel | whatsapp | vue | vue_sponsorisee`. Aucune recherche, aucune visite
+de page n'est tracée. Un zéro ferait croire que personne ne cherche.
+
+**Ce qu'il faudrait :**
+1. une migration additive — soit une valeur `recherche` dans `EvenementType`
+   avec `etablissement_id` rendu nullable pour elle (une recherche ne porte sur
+   aucune fiche), soit une table dédiée qui garderait aussi la ville et le
+   type cherchés, dont « Recherches par ville » a besoin ;
+2. le traçage côté front, au lancement d'une recherche — au mieux, comme les
+   autres traces : un échec ne doit jamais gêner le parent ;
+3. les tuiles, le bloc, et la part des recherches dans la courbe.
+
+« Visites du site » demande en plus de trancher ce qu'est une visite (une
+session ? une page vue ?), ce que la maquette ne dit pas.
 
 La migration passe par la relecture locale (SESSIONS-CLOUD.md).
-**Statut :** planifié — demande une migration.
+**Statut :** à trancher — la forme de la trace (valeur d'enum ou table
+dédiée) et la définition d'une visite.

@@ -34,6 +34,8 @@ import { AdminEtablissementsService } from './admin-etablissements.service';
 import { ParametresFacturationService } from './parametres-facturation.service';
 import { AuditLectureService } from './audit-lecture.service';
 import { TableauDeBordAdminService } from './tableau-de-bord-admin.service';
+import { StatistiquesAdminService } from './statistiques-admin.service';
+import { StatistiquesAdminDto } from './dto/statistiques-admin.dto';
 import { SponsoringsService } from '../sponsorings/sponsorings.service';
 import { ArticlesService } from '../articles/articles.service';
 import { DecisionArticleDto } from '../articles/dto/decision-article.dto';
@@ -79,7 +81,20 @@ export class AdminController {
     private readonly photosService: PhotosService,
     private readonly audit: AuditLectureService,
     private readonly tableauDeBordService: TableauDeBordAdminService,
+    private readonly statistiquesService: StatistiquesAdminService,
   ) {}
+
+  @Get('statistiques')
+  @ApiOperation({
+    summary: 'Statistiques de la plateforme — indicateurs, courbe, vues par type, classement',
+    description:
+      'Période (7j, 30j, 90j, 12m), ville et type commandent tous les blocs. Une seule requête ' +
+      'pour tout l’écran.',
+  })
+  @ApiResponse({ status: 422, description: 'Période ou type inconnu.' })
+  statistiques(@Query() filtres: StatistiquesAdminDto) {
+    return this.statistiquesService.lire(filtres);
+  }
 
   @Get('tableau-de-bord')
   @ApiOperation({

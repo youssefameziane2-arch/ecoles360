@@ -10,6 +10,7 @@ import { AdminEtablissementsService } from './admin-etablissements.service';
 import { ParametresFacturationService } from './parametres-facturation.service';
 import { AuditLectureService } from './audit-lecture.service';
 import { TableauDeBordAdminService } from './tableau-de-bord-admin.service';
+import { StatistiquesAdminService } from './statistiques-admin.service';
 
 /**
  * Back-office admin — établissements et validation de fiche.
@@ -33,6 +34,7 @@ import { TableauDeBordAdminService } from './tableau-de-bord-admin.service';
     ParametresFacturationService,
     AuditLectureService,
     TableauDeBordAdminService,
+    StatistiquesAdminService,
   ],
 })
 export class AdminModule {}

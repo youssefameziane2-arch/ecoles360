@@ -1,12 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  ArticleStatut,
-  AvisStatut,
-  EvenementType,
-  PropositionStatut,
-} from '../../generated/prisma';
+import { ArticleStatut, AvisStatut, PropositionStatut } from '../../generated/prisma';
 import { AuditLectureService } from './audit-lecture.service';
+import { joursAvant, serieJournaliere, TYPES_VUE } from './series-temporelles';
 
 /** Même fenêtre que le tableau de bord de l'espace établissement. */
 const FENETRE_JOURS = 30;
@@ -16,14 +12,6 @@ const ACTIVITE_RECENTE = 6;
 
 /** Établissements du classement — quatre dans la maquette, un de marge. */
 const TOP_ETABLISSEMENTS = 5;
-
-/**
- * « Vues » regroupe les vues simples et sponsorisées, comme
- * `AuditLectureService.statistiques()` : la distinction sert à la facturation
- * (RG18), pas à la vue d'ensemble. N'en compter qu'une sous-estimerait
- * l'audience le jour où la seconde sera émise.
- */
-const TYPES_VUE = [EvenementType.vue, EvenementType.vue_sponsorisee];
 
 /**
  * Tableau de bord de l'administration — maquette `isAdminDash`.
@@ -164,41 +152,4 @@ export class TableauDeBordAdminService {
       }),
     };
   }
-}
-
-function joursAvant(reference: Date, jours: number): Date {
-  const date = new Date(reference);
-  date.setDate(date.getDate() - jours);
-  return date;
-}
-
-/**
- * Une entrée par jour de la fenêtre, jours sans vue compris.
- *
- * Les jours à zéro sont écrits ici plutôt que laissés absents : un graphique
- * qui saute les jours creux relie deux points éloignés et efface précisément
- * la chute qu'il devait montrer. Les clés sont en UTC, comme `DATE()` côté
- * MySQL : la somme des barres égale le total affiché au-dessus.
- */
-function serieJournaliere(
-  depuis: Date,
-  jusqua: Date,
-  lignes: { jour: Date; total: bigint }[],
-): { jour: string; vues: number }[] {
-  const parJour = new Map(
-    lignes.map((ligne) => [new Date(ligne.jour).toISOString().slice(0, 10), Number(ligne.total)]),
-  );
-
-  const serie: { jour: string; vues: number }[] = [];
-  const curseur = new Date(
-    Date.UTC(depuis.getUTCFullYear(), depuis.getUTCMonth(), depuis.getUTCDate()),
-  );
-
-  while (curseur <= jusqua) {
-    const cle = curseur.toISOString().slice(0, 10);
-    serie.push({ jour: cle, vues: parJour.get(cle) ?? 0 });
-    curseur.setUTCDate(curseur.getUTCDate() + 1);
-  }
-
-  return serie;
 }

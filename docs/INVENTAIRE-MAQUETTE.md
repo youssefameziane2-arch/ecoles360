@@ -56,7 +56,7 @@ cookies, CGU — liens présents, contenu absent). Le texte légal relève du cl
 | Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ seule — manquent les catégories d'articles et la page « À propos » |
 | Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
 | CRM Clients | `isAdminCrm` | `/admin/crm` | ❌ KPI, prospects, dossiers, étapes |
-| Statistiques | `isAdminStats` | `/admin/statistiques` | ❌ périodes, filtres ville/type, KPI, courbe, top |
+| Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
 | Abonnement & facturation | `isAdminFact` | `/admin/facturation` | ❌ KPI, tarifs, historique, encaissement |
 | Facture (détail) | `isAdminFactDetail` | — | ❌ formules, essai, remise, reçu |
 | Secrétariat | `isAdminUsers` | `/admin/secretariat` | ❌ comptes, portées déléguées, réinit. mot de passe |
@@ -128,11 +128,11 @@ route à ce rôle.
 | Périmètre | Fait | Reste |
 |---|---|---|
 | Site public | 10 écrans, 6 complets | 4 écrans à compléter, tous demandant une migration ou une route |
-| Administration | 6 | 7 + 2 partiels |
+| Administration | 6 | 6 + 3 partiels |
 | Établissement | 5 | 2 |
 | Secrétariat | 5 | 0 |
 | Commercial | 1 (blog ouvert ; coquille et navigation en place) | 5 |
-| **Total** | **27** | **14 + 2 partiels** |
+| **Total** | **27** | **13 + 3 partiels** |
 
 ---
 

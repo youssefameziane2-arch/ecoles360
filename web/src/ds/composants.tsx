@@ -330,7 +330,16 @@ export interface ProprietesToast {
 export const Toast = duDs<ProprietesToast>('Toast');
 
 export interface ProprietesDataTable<L = Record<string, unknown>> {
-  columns?: { key: string; label?: string; render?: (ligne: L) => ReactNode }[];
+  /**
+   * `header` et non `label` : c'est la clé que lit le bundle (`col.header`).
+   * Typée `label`, elle laissait passer des colonnes sans en-tête affiché.
+   */
+  columns?: {
+    key: string;
+    header?: ReactNode;
+    align?: 'left' | 'right' | 'center';
+    render?: (ligne: L) => ReactNode;
+  }[];
   rows?: L[];
   /** Largeur en deçà de laquelle le tableau s'empile en cartes. */
   stackAt?: number;
@@ -339,6 +348,15 @@ export interface ProprietesDataTable<L = Record<string, unknown>> {
 }
 
 export const DataTable = duDs<ProprietesDataTable>('DataTable');
+
+export interface ProprietesSourceBars {
+  /** Les parts sont calculées sur le total des `value`. */
+  data?: { label: string; value: number; tone?: 'green' | 'navy' | 'red' | 'amber' }[];
+  showShare?: boolean;
+  style?: React.CSSProperties;
+}
+
+export const SourceBars = duDs<ProprietesSourceBars>('SourceBars');
 
 export interface ProprietesProgressBar {
   value?: number;
