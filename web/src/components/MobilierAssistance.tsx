@@ -23,7 +23,7 @@ import { lienTelephone, lienWhatsApp } from '@/lib/telephone';
  * Il passera plus tard dans l'écran « Contenu du site », que la maquette
  * prévoit — le jour où ce bloc sera construit, cette constante disparaîtra.
  */
-const TELEPHONE = import.meta.env.VITE_TELEPHONE_CONSEILLER ?? '06 00 00 00 00';
+const TELEPHONE: string | null = import.meta.env.VITE_TELEPHONE_CONSEILLER ?? null;
 
 /**
  * UN CONSEILLER PAR VISITE, TIRÉ AU SORT — et non un défilement.
@@ -45,12 +45,16 @@ const TIRAGE = Math.random();
 /**
  * Le conseiller affiché en ce moment, partagé par tout le site.
  *
- * `conseiller` est nul tant que l'API n'a pas répondu, ou si aucun commercial
- * ne porte de ligne. `numero` retombe alors sur le repli ci-dessus : la
- * bannière flottante ne doit jamais afficher un vide. Qui ne veut pas d'un
- * numéro factice — le bloc de l'accueil, en pleine page — teste `conseiller`.
+ * `numero` PEUT ÊTRE NUL, et tout appelant doit le supporter. C'est ce qui
+ * empêche un numéro inventé d'atteindre une page publique : sans commercial
+ * joignable en base, on n'affiche pas de téléphone du tout. Un bouton absent
+ * se remarque et se corrige ; un `tel:` qui ne sonne nulle part se découvre
+ * par un parent qui n'obtient pas de réponse.
+ *
+ * `VITE_TELEPHONE_CONSEILLER` ne sert qu'à forcer une valeur en développement,
+ * quand la base est vide. Non renseignée, elle ne fabrique rien.
  */
-export function useConseillerAffiche(): { conseiller: Conseiller | null; numero: string } {
+export function useConseillerAffiche(): { conseiller: Conseiller | null; numero: string | null } {
   const conseillers = useQuery({
     queryKey: ['conseillers'],
     queryFn: chargerConseillers,
@@ -82,6 +86,21 @@ export function useConseillerAffiche(): { conseiller: Conseiller | null; numero:
 export function MobilierAssistance() {
   const { conseiller, numero } = useConseillerAffiche();
   const [ouverte, setOuverte] = useState(true);
+
+  /**
+   * SANS NUMÉRO, PAS DE MOBILIER. Les deux éléments n'existent que pour mettre
+   * un visiteur en relation ; aucun des deux n'a de contenu propre. Les
+   * afficher sans ligne joignable, c'est promettre une aide qui ne répondra
+   * pas — et le faire sur toutes les pages du site à la fois.
+   *
+   * Vaut aussi pendant le chargement de la liste, et c'est délibéré : une
+   * bannière qui apparaît une demi-seconde plus tard ne dérange personne,
+   * alors qu'un numéro de repli affiché puis remplacé peut être lu et composé
+   * dans l'intervalle.
+   */
+  if (!numero) {
+    return null;
+  }
 
   return (
     <>

@@ -1100,7 +1100,16 @@ export function Accueil() {
         </section>
       )}
 
-      {/* ---- Besoin d'aide pour choisir ? -------------------------------- */}
+      {/*
+        ---- Besoin d'aide pour choisir ? ---------------------------------
+
+        LA SECTION DISPARAÎT SANS CONSEILLER JOIGNABLE. Ses deux boutons
+        — appeler, écrire — mènent tous deux à une personne ; elle n'a aucun
+        contenu propre à montrer. La laisser sans ligne derrière, c'est
+        promettre une aide qui ne répondra pas, et le promettre sur la page la
+        plus vue du site.
+      */}
+      {numeroAide && (
       <section style={{ maxWidth: 1180, margin: '80px auto 0', padding: '0 32px' }}>
         <div
           style={{
@@ -1180,6 +1189,7 @@ export function Accueil() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ---- Vous dirigez un établissement ? ----------------------------- */}
       <section style={{ maxWidth: 1180, margin: '80px auto 90px', padding: '0 32px' }}>

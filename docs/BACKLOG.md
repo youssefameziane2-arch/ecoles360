@@ -402,3 +402,43 @@ WhatsApp flottant pointent toujours sur le repli factice — le bloc garde ce
 bouton par décision. À régler avec l'écran « Contenu du site », qui doit
 porter un numéro de contact configurable.
 **Statut :** corrigé pour le téléphone ; repli WhatsApp à trancher.
+
+**Complété après vérification à l'écran :** le repli factice ne disparaissait
+qu'à moitié — la bannière flottante le gardait, donc le numéro mort restait
+présent sur TOUTES les pages au lieu de la seule page d'accueil. La constante
+ne fabrique plus rien : sans `VITE_TELEPHONE_CONSEILLER` et sans commercial
+joignable, `numero` vaut `null`, et bannière comme bloc 13 ne s'affichent pas
+du tout. Vérifié dans les deux sens, téléphones vidés puis restaurés en base :
+avec conseillers, les deux blocs montrent le même ; sans, la page ne porte
+plus aucun lien `tel:` ni `wa.me`.
+
+Le bloc 14 « Vous dirigez un établissement ? » reste, lui : il ne dépend
+d'aucun conseiller.
+**Statut :** tranché.
+
+## B-36 — `TIRAGE` au niveau du module ne survivra pas au rendu serveur
+
+`MobilierAssistance.tsx` évalue `const TIRAGE = Math.random()` au chargement du
+module. C'est **juste aujourd'hui** : dans une application servie en statique,
+le module est évalué dans le navigateur, une fois par visite — exactement la
+portée voulue, et la seule façon d'obtenir le même conseiller dans la bannière
+et dans le bloc 13 sans passer par un contexte React.
+
+Ça cessera de l'être à la migration vers Next.js (décidée, front seul, API Nest
+conservée). Le module y sera évalué **aussi côté serveur**, et deux défauts
+apparaîtront ensemble :
+
+- un tirage par processus serveur, pas par visiteur — tous les visiteurs
+  verraient le même conseiller jusqu'au prochain redémarrage, ce qui vide la
+  rotation de son objet ;
+- une divergence d'hydratation — le serveur rend le conseiller A, le navigateur
+  retire et obtient B, et React signale un écart de contenu.
+
+**À faire le jour de la migration :** déplacer le tirage dans un effet client,
+ou le dériver d'une valeur stable partagée (identifiant de session, horodatage
+arrondi). Ne pas le laisser au niveau du module.
+
+**Pourquoi le noter maintenant :** ce genre de bogue ne se voit ni au typage,
+ni au lint, ni aux tests — seulement en production, sous la forme d'un
+avertissement d'hydratation que personne ne relie à un numéro de téléphone.
+**Statut :** planifié — lot Next.js.
