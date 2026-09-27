@@ -2,7 +2,11 @@
 
 Le design system écoles360 est livré **compilé** : `web/public/ds/bundle.js` est
 une IIFE qui accroche ses 44 composants à `window.Coles360DesignSystem_66e6db`.
-Il n'expose **aucun `export`** et les sources `.jsx` ne sont pas fournies.
+Il n'expose **aucun `export`**. Les sources `.jsx`, elles, existent — elles
+dormaient dans une livraison jamais ouverte et vivent désormais dans
+`.claude/skills/ecoles360-design/`. **Elles sont plus anciennes que le
+bundle** : en cas de désaccord, c'est le bundle qui fait foi, puisque c'est
+lui que le navigateur exécute.
 
 Conséquence : un défaut ne peut être corrigé que dans l'artefact lui-même, et
 **toute nouvelle livraison du bundle écrase les corrections**.
@@ -104,6 +108,18 @@ Ces corrections devraient remonter à la source plutôt que vivre ici :
    oubliait `cities`. Et la valeur d'une option est le **nom** de la ville,
    quand l'API filtre par **slug**. Demande : options `{ value, label }`,
    comme `Select`.
+
+   **Les deux listes ont déjà divergé**, mesuré contre la base :
+
+   | | |
+   |---|---|
+   | Proposée par le composant, absente de la base | **El Jadida** |
+   | Présente en base, absente du composant | **Salé** |
+
+   Ce n'est donc pas un risque théorique. En l'état, un parent se voit offrir
+   une ville où aucune école n'est référencée, et ne peut pas choisir celle où
+   il y en a. C'est l'argument à donner à l'auteur : un composant ne peut pas
+   porter une liste que seule la base connaît.
 
 ## Écarts relevés entre les sources du skill et le bundle
 
