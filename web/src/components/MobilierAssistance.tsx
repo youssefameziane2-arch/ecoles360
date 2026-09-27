@@ -25,6 +25,45 @@ import { lienTelephone, lienWhatsApp } from '@/lib/telephone';
  */
 const TELEPHONE = import.meta.env.VITE_TELEPHONE_CONSEILLER ?? '06 00 00 00 00';
 
+/**
+ * UN CONSEILLER PAR VISITE, TIRÉ AU SORT — et non un défilement.
+ *
+ * La demande était « qu'il change toutes les cinq secondes ou à chaque
+ * navigation ». J'ai retenu la seconde : un numéro qui se remplace pendant
+ * qu'on le recopie sur son téléphone est un numéro qu'on compose faux. Le
+ * tirage au hasard à chaque chargement répartit les appels aussi bien, sans
+ * dérober l'information sous le pouce du visiteur.
+ *
+ * TIRÉ AU NIVEAU DU MODULE, PAS DANS UN COMPOSANT. La bannière et le bloc
+ * « Besoin d'aide » de l'accueil affichent la même offre : un tirage par
+ * composant mettrait deux numéros différents sur la même page. Évalué une
+ * fois au chargement du bundle, le tirage vaut pour toute la visite — ce
+ * qu'assurait déjà l'ancien `useState`, la bannière ne se démontant jamais.
+ */
+const TIRAGE = Math.random();
+
+/**
+ * Le conseiller affiché en ce moment, partagé par tout le site.
+ *
+ * `conseiller` est nul tant que l'API n'a pas répondu, ou si aucun commercial
+ * ne porte de ligne. `numero` retombe alors sur le repli ci-dessus : la
+ * bannière flottante ne doit jamais afficher un vide. Qui ne veut pas d'un
+ * numéro factice — le bloc de l'accueil, en pleine page — teste `conseiller`.
+ */
+export function useConseillerAffiche(): { conseiller: Conseiller | null; numero: string } {
+  const conseillers = useQuery({
+    queryKey: ['conseillers'],
+    queryFn: chargerConseillers,
+    // Une heure : la liste des conseillers ne bouge pas dans une session.
+    staleTime: 3_600_000,
+  });
+
+  const liste = conseillers.data ?? [];
+  const conseiller: Conseiller | null =
+    liste.length > 0 ? (liste[Math.floor(TIRAGE * liste.length)] ?? liste[0]!) : null;
+
+  return { conseiller, numero: conseiller?.telephone ?? TELEPHONE };
+}
 
 /**
  * Mobilier d'assistance — bannière d'aide et bouton WhatsApp flottants.
@@ -41,36 +80,8 @@ const TELEPHONE = import.meta.env.VITE_TELEPHONE_CONSEILLER ?? '06 00 00 00 00';
  * des conseillers sans objet — le visiteur n'en verrait plus jamais aucun.
  */
 export function MobilierAssistance() {
-  const conseillers = useQuery({
-    queryKey: ['conseillers'],
-    queryFn: chargerConseillers,
-    // Une heure : la liste des conseillers ne bouge pas dans une session.
-    staleTime: 3_600_000,
-  });
-
-  /**
-   * UN CONSEILLER PAR VISITE, TIRÉ AU SORT — et non un défilement.
-   *
-   * La demande était « qu'il change toutes les cinq secondes ou à chaque
-   * navigation ». J'ai retenu la seconde : un numéro qui se remplace pendant
-   * qu'on le recopie sur son téléphone est un numéro qu'on compose faux. Le
-   * tirage au hasard à chaque chargement répartit les appels aussi bien, sans
-   * dérober l'information sous le pouce du visiteur.
-   *
-   * L'index est figé au montage : la bannière ne doit pas changer de conseiller
-   * parce qu'une autre requête a provoqué un rendu.
-   */
-  const [tirage] = useState(() => Math.random());
-
+  const { conseiller, numero } = useConseillerAffiche();
   const [ouverte, setOuverte] = useState(true);
-
-  const liste = conseillers.data ?? [];
-  const conseiller: Conseiller | null =
-    liste.length > 0 ? (liste[Math.floor(tirage * liste.length)] ?? liste[0]!) : null;
-
-  // Repli sur le numéro configuré tant que l'API n'a pas répondu, ou si aucun
-  // conseiller ne porte de ligne : la bannière ne doit jamais afficher un vide.
-  const numero = conseiller?.telephone ?? TELEPHONE;
 
   return (
     <>
@@ -265,7 +276,3 @@ export function IconeWhatsApp({ taille = 17, couleur = '#fff' }: { taille?: numb
     </svg>
   );
 }
-
-export const TELEPHONE_CONSEILLER = TELEPHONE;
-export const LIEN_TELEPHONE = lienTelephone(TELEPHONE);
-export const LIEN_WHATSAPP = lienWhatsApp(TELEPHONE);

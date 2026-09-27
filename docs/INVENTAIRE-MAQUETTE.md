@@ -26,7 +26,7 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 
 | Écran | Route | État |
 |---|---|---|
-| Accueil | `/` | 🟡 bloc 13 : téléphone à brancher sur les conseillers (B-35) |
+| Accueil | `/` | ✅ |
 | Résultats de recherche | `/etablissements` | 🟡 filtres dynamiques et vue carte manquants |
 | Fiche établissement | `/etablissements/:slug` | 🟡 équipe, articles liés, similaires manquants |
 | Page ville | `/villes/:slug` | 🟡 quartiers populaires manquants |
@@ -155,7 +155,7 @@ dans l'ordre : titres, surtitres, listes répétées et boutons.
 node docs/sections.mjs "docs/handoff/écoles360.dc.html" isHome
 ```
 
-## Accueil (`isHome`) — 13 / 14 blocs
+## Accueil (`isHome`) — 14 / 14 blocs
 
 | # | Bloc de la maquette | État |
 |---|---|---|
@@ -171,7 +171,7 @@ node docs/sections.mjs "docs/handoff/écoles360.dc.html" isHome
 | 10 | « Ce que disent les parents » + `homeReviews` | ✅ |
 | 11 | « Le blog / Conseils pour les parents » + `homeBlog` | ✅ article à la une en tête, puis les plus récents |
 | 12 | « Questions fréquentes / Vous vous demandez peut-être… » | ✅ |
-| 13 | « Besoin d'aide pour choisir ? » — téléphone + « Nous écrire » | 🟡 la section est là, mais le téléphone vient d'une constante et non des conseillers en base (B-35) |
+| 13 | « Besoin d'aide pour choisir ? » — téléphone + « Nous écrire » | ✅ même conseiller que la bannière ; sans conseiller en base, pas de bouton téléphone (B-35) |
 | 14 | « Vous dirigez un établissement ? » + « Inscrire mon établissement » | ✅ |
 
 ## Résultats (`isResults`)
