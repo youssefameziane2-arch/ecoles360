@@ -154,6 +154,35 @@ export interface DemandeEspace {
 
 export const chargerTableauDeBord = () => apiFetch<TableauDeBord>('/mon-espace/dashboard');
 
+/** Mois en cours, et même nombre de jours du mois précédent. */
+export interface ComparaisonMensuelle {
+  courant: number;
+  precedent: number;
+}
+
+/** Page d'où vient une trace — `null` quand l'appelant ne l'a pas dit. */
+export type SourceTrace = 'resultats' | 'fiche' | 'une' | null;
+
+/** `GET /mon-espace/statistiques` — maquette `isEtabStats`. */
+export interface StatistiquesEspace {
+  /** `AAAA-MM`, en UTC. */
+  mois_courant: string;
+  depuis: string;
+  indicateurs: {
+    vues: ComparaisonMensuelle;
+    appels: ComparaisonMensuelle;
+    whatsapp: ComparaisonMensuelle;
+  };
+  /** Six points, le dernier étant le mois en cours. */
+  vues_par_mois: { debut: string; vues: number }[];
+  total_vues: number;
+  origine_contacts: { source: SourceTrace; contacts: number }[];
+  total_contacts: number;
+}
+
+export const chargerStatistiquesEspace = () =>
+  apiFetch<StatistiquesEspace>('/mon-espace/statistiques');
+
 export const chargerFicheEspace = () => apiFetch<FicheEspace>('/mon-espace/fiche');
 
 export const proposerModifications = (modifications: ModificationsFiche) =>

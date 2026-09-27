@@ -71,12 +71,6 @@ function ecranCommercial(titre: string, sousTitre: string, explication: string) 
   };
 }
 
-export const StatistiquesEspace = ecranEspace(
-  'Statistiques',
-  'Performance de votre fiche',
-  "Les séries détaillées (vues par jour, sources, taux de contact) demandent l'agrégation des traces d'événements sur la durée. Le tableau de bord affiche déjà les vues des six derniers mois et la répartition des canaux.",
-);
-
 export const FacturationEspace = ecranEspace(
   'Abonnement & facturation',
   'Votre formule, vos vues et vos factures',

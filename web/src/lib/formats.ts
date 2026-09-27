@@ -117,3 +117,10 @@ export function rangJour(libelle: string): number {
   // Un libellé non reconnu passe en fin de liste plutôt que de remonter en tête.
   return index === -1 ? ORDRE_JOURS.length : index;
 }
+
+/**
+ * Mois abrégés des axes de graphique, comme la maquette (« Juin », « Juil ») :
+ * `toLocaleDateString` rendrait « juin » et « juil. », en minuscules et
+ * ponctués, qui ne sont pas les libellés dessinés.
+ */
+export const MOIS_COURTS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];

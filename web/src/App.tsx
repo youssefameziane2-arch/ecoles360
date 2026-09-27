@@ -27,6 +27,7 @@ import { BlogAdmin, BlogEspace } from './pages/espace/Blog';
 import { AvisAdmin } from './pages/admin/AvisAdmin';
 import { JournalAdmin } from './pages/admin/JournalAdmin';
 import { StatistiquesAdmin } from './pages/admin/StatistiquesAdmin';
+import { StatistiquesEspace } from './pages/espace/StatistiquesEspace';
 import {
   AgendaCommercial,
   CommerciauxAdmin,
@@ -36,7 +37,6 @@ import {
   LeadsCommercial,
   SecretariatAdmin,
   StatistiquesCommercial,
-  StatistiquesEspace,
   TableauDeBordCommercial,
   TransfertsCommercial,
 } from './pages/espace/ModulesAVenir';
