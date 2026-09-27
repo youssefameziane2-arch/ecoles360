@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ArticleStatut, AvisStatut, PropositionStatut } from '../../generated/prisma';
 import { AuditLectureService } from './audit-lecture.service';
-import { joursAvant, serieJournaliere, TYPES_VUE } from './series-temporelles';
+import {
+  joursAvant,
+  serieJournaliere,
+  TYPES_VUE,
+} from '../../common/statistiques/series-temporelles';
 
 /** Même fenêtre que le tableau de bord de l'espace établissement. */
 const FENETRE_JOURS = 30;

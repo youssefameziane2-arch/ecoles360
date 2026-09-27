@@ -8,7 +8,7 @@ import {
   serieJournaliere,
   TYPES_VUE,
   type Granularite,
-} from './series-temporelles';
+} from '../../common/statistiques/series-temporelles';
 
 /** Lignes du classement — six dans la maquette, quatre de marge pour trier. */
 const TOP_ETABLISSEMENTS = 10;

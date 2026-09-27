@@ -3,10 +3,18 @@ import { AppException, ERROR_CODES } from '../../common/errors';
 import { Page } from '../../common/interceptors';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AvisStatut, EvenementType } from '../../generated/prisma';
+import {
+  regrouper,
+  serieJournaliere,
+  TYPES_VUE,
+} from '../../common/statistiques/series-temporelles';
 import type { RepondreAvisDto } from './dto/repondre-avis.dto';
 import type { TransitionDemandeDto } from './dto/transition-demande.dto';
 
 const PAR_PAGE = 20;
+
+/** Les six barres de « Vues mensuelles » (maquette `etabChartData`). */
+const MOIS_DE_STATISTIQUES = 6;
 
 /**
  * Espace connecté établissement — livrable 11 §3.2.
@@ -76,6 +84,102 @@ export class EspaceService {
       canaux: parType.map((ligne) => ({ type: ligne.type, total: ligne._count._all })),
       dernieres_demandes: demandesRecentes,
       derniers_avis: avisRecents,
+    };
+  }
+
+  /**
+   * Statistiques de la fiche — maquette `isEtabStats`.
+   *
+   * LE MOIS EN COURS EST COMPARÉ AU MÊME NOMBRE DE JOURS DU MOIS PRÉCÉDENT,
+   * pas au mois précédent entier : le 3, trois jours de vues face à trente
+   * afficheraient une chute qui n'existe pas.
+   *
+   * Tout est en UTC, comme `DATE()` côté MySQL et `serieJournaliere` : la
+   * dernière barre des vues mensuelles est ainsi exactement la tuile « Vues
+   * ce mois », et la somme des barres le total des six mois.
+   */
+  async statistiques(etablissementId: bigint) {
+    const maintenant = new Date();
+    const annee = maintenant.getUTCFullYear();
+    const mois = maintenant.getUTCMonth();
+
+    const debutMois = new Date(Date.UTC(annee, mois, 1));
+    const debutMoisPrecedent = new Date(Date.UTC(annee, mois - 1, 1));
+    const debutSerie = new Date(Date.UTC(annee, mois - (MOIS_DE_STATISTIQUES - 1), 1));
+
+    // Le 31 mars, « un mois plus tôt » déborderait sur le 3 mars : borné au
+    // premier du mois, le mois précédent ne mord jamais sur le mois en cours.
+    const memeJourPrecedent = new Date(maintenant);
+    memeJourPrecedent.setUTCMonth(mois - 1);
+    const finPrecedent = memeJourPrecedent < debutMois ? memeJourPrecedent : debutMois;
+
+    const compter = (types: EvenementType[], depuis: Date, jusqua?: Date) =>
+      this.db.evenementTrace.count({
+        where: {
+          etablissement_id: etablissementId,
+          type: { in: types },
+          survenu_le: { gte: depuis, ...(jusqua ? { lt: jusqua } : {}) },
+        },
+      });
+
+    const [
+      vues,
+      vuesPrecedent,
+      appels,
+      appelsPrecedent,
+      whatsapp,
+      whatsappPrecedent,
+      totalVues,
+      vuesParJour,
+      origines,
+    ] = await Promise.all([
+      compter(TYPES_VUE, debutMois),
+      compter(TYPES_VUE, debutMoisPrecedent, finPrecedent),
+      compter([EvenementType.appel], debutMois),
+      compter([EvenementType.appel], debutMoisPrecedent, finPrecedent),
+      compter([EvenementType.whatsapp], debutMois),
+      compter([EvenementType.whatsapp], debutMoisPrecedent, finPrecedent),
+      compter(TYPES_VUE, debutSerie),
+
+      this.db.$queryRaw<{ jour: Date; total: bigint }[]>`
+        SELECT DATE(survenu_le) AS jour, COUNT(*) AS total
+          FROM evenement_traces
+         WHERE etablissement_id = ${etablissementId}
+           AND \`type\` IN ('vue', 'vue_sponsorisee')
+           AND survenu_le >= ${debutSerie}
+         GROUP BY DATE(survenu_le)
+      `,
+
+      // Un contact, c'est un clic « Appeler » ou « WhatsApp ». La demande par
+      // formulaire n'en est pas : elle ne porte pas de source, et la ranger
+      // d'office sous « page de l'établissement » gonflerait cette part.
+      this.db.evenementTrace.groupBy({
+        by: ['source'],
+        where: {
+          etablissement_id: etablissementId,
+          type: { in: [EvenementType.appel, EvenementType.whatsapp] },
+          survenu_le: { gte: debutSerie },
+        },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const origineContacts = origines
+      .map((ligne) => ({ source: ligne.source, contacts: ligne._count._all }))
+      .sort((a, b) => b.contacts - a.contacts);
+
+    return {
+      mois_courant: debutMois.toISOString().slice(0, 7),
+      depuis: debutSerie,
+      indicateurs: {
+        vues: { courant: vues, precedent: vuesPrecedent },
+        appels: { courant: appels, precedent: appelsPrecedent },
+        whatsapp: { courant: whatsapp, precedent: whatsappPrecedent },
+      },
+      vues_par_mois: regrouper(serieJournaliere(debutSerie, maintenant, vuesParJour), 'mois'),
+      total_vues: totalVues,
+      origine_contacts: origineContacts,
+      total_contacts: origineContacts.reduce((total, ligne) => total + ligne.contacts, 0),
     };
   }
 
