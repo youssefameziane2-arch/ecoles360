@@ -129,8 +129,21 @@ corepack pnpm --filter @ecoles360/web  exec eslint "src/**/*.{ts,tsx}" --max-war
 
 **Les sources sont dans `.claude/skills/ecoles360-design/`.** Chaque composant
 y a son `.jsx`, son `.d.ts` (les propriétés) et son `.prompt.md` (usage et
-exemple). **Lire le `.prompt.md` avant d'employer un composant** — c'est là
-que se trouvent les noms exacts des propriétés.
+exemple). **Lire le `.prompt.md` avant d'employer un composant.**
+
+⚠️ **CES SOURCES SONT PLUS ANCIENNES QUE LE BUNDLE.** Elles viennent d'une
+livraison antérieure : `SidebarNav.d.ts` n'y déclare que trois thèmes quand le
+bundle en sert quatre, `commercial` compris. **En cas de désaccord, le bundle
+fait foi** — c'est lui que le navigateur exécute. Vérifier dans
+`web/public/ds/bundle.js`, qui n'est pas minifié et se lit :
+
+```bash
+grep -n -A 6 "const themes" web/public/ds/bundle.js
+```
+
+Corollaire : un bundle reconstruit depuis ces sources PERDRAIT des
+fonctionnalités. Elles servent à lire et à préparer une demande à l'auteur du
+design system, pas à régénérer quoi que ce soit.
 
 Ce que l'application CHARGE est le bundle compilé `web/public/ds/bundle.js`,
 un IIFE qui accroche les composants sur `window.Coles360DesignSystem_66e6db` ;
