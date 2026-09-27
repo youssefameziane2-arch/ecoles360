@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { chargerArticles, type CarteArticle } from '@/api/articles';
+import { chargerArticleALaUne, chargerArticles, type CarteArticle } from '@/api/articles';
 import { chargerAvisEnAvant } from '@/api/avis';
 import { chargerFaq } from '@/api/faq';
 import {
@@ -129,6 +129,8 @@ export function Accueil() {
     queryKey: ['articles', 'accueil'],
     queryFn: () => chargerArticles(),
   });
+  // Même clé que le bandeau de la page Blog : l'un réchauffe le cache de l'autre.
+  const articleUne = useQuery({ queryKey: ['articles', 'une'], queryFn: chargerArticleALaUne });
 
   // Le carrousel de témoignages puise dans les MÊMES avis mis en avant que la
   // grille plus bas : l'administrateur n'a qu'une sélection à tenir, et les
@@ -137,8 +139,27 @@ export function Accueil() {
   const [temoin, setTemoin] = useState(0);
   const temoin_actuel = temoignages[temoin % Math.max(1, temoignages.length)];
 
-  // Trois articles sur l'accueil, à la une d'abord — comme la maquette.
-  const apercuBlog: CarteArticle[] = (blog.data?.data ?? []).slice(0, 3);
+  /**
+   * Trois articles sur l'accueil, À LA UNE D'ABORD — comme la maquette.
+   *
+   * `GET /articles` EXCLUT l'article à la une, à raison : la page Blog le montre
+   * déjà dans son bandeau de tête. L'accueil n'a pas de bandeau ; sans cette
+   * seconde requête, l'article que l'administrateur pousse serait le seul à ne
+   * jamais y paraître.
+   *
+   * Le dédoublonnage ne sert que si la règle serveur change un jour : l'article
+   * apparaîtrait alors deux fois dans trois cartes.
+   *
+   * On attend LES DEUX réponses avant d'afficher : sinon la liste arrive, puis
+   * l'article à la une s'insère en tête et décale les cartes sous les yeux du
+   * visiteur. Un échec de l'article à la une n'empêche rien — on retombe sur la
+   * liste seule, comme avant.
+   */
+  const une = articleUne.data ?? null;
+  const blogPret = !blog.isPending && !articleUne.isPending;
+  const apercuBlog: CarteArticle[] = blogPret
+    ? [...(une ? [une] : []), ...(blog.data?.data ?? []).filter((a) => a.id !== une?.id)].slice(0, 3)
+    : [];
 
   // Les rubriques sont aplaties : l'accueil montre les quatre premières
   // questions de la FAQ, toutes rubriques confondues, comme la maquette.
