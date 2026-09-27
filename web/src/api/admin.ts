@@ -244,3 +244,41 @@ export interface TableauDeBordAdmin {
 
 export const chargerTableauDeBordAdmin = () =>
   apiFetch<TableauDeBordAdmin>('/admin/tableau-de-bord');
+
+/** Les quatre périodes de l'écran « Statistiques » — maquette `adStatPeriods`. */
+export type PeriodeStatistiques = '7j' | '30j' | '90j' | '12m';
+
+/** `GET /admin/statistiques` — maquette `isAdminStats`, un seul aller-retour. */
+export interface StatistiquesAdmin {
+  periode: PeriodeStatistiques;
+  granularite: 'jour' | 'semaine' | 'mois';
+  depuis: string;
+  indicateurs: { vues_fiches: number; demandes: number; nouveaux_avis: number };
+  courbe: { debut: string; vues: number }[];
+  vues_par_type: { type: TypeEtablissement; vues: number }[];
+  top_etablissements: {
+    id: string;
+    nom: string;
+    slug: string;
+    type: TypeEtablissement;
+    statut: StatutEtablissement;
+    note_moy: string;
+    nb_avis: number;
+    ville: { nom: string; slug: string };
+    vues: number;
+    contacts: number;
+  }[];
+  options: { villes: { nom: string; slug: string }[] };
+}
+
+export const chargerStatistiquesAdmin = (filtres: {
+  periode: PeriodeStatistiques;
+  ville?: string;
+  type?: TypeEtablissement;
+}) => {
+  const query = new URLSearchParams({ periode: filtres.periode });
+  if (filtres.ville) query.set('ville', filtres.ville);
+  if (filtres.type) query.set('type', filtres.type);
+
+  return apiFetch<StatistiquesAdmin>(`/admin/statistiques?${query.toString()}`);
+};

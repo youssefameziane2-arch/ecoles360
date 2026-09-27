@@ -107,12 +107,6 @@ export const FacturationAdmin = ecranAdmin(
   "Le module complet — tarification par client, génération de facture, encaissement, reçu — reste à construire. En attendant, « Activer l'essai gratuit » sur la liste des établissements débloque une validation sans facture (RG13).",
 );
 
-export const StatistiquesAdmin = ecranAdmin(
-  'Statistiques',
-  'Audience et activité de l’ensemble de la plateforme',
-  "Les agrégats plateforme (visites, recherches, vues, demandes, taux de transformation, classement) demandent le module de statistiques.",
-);
-
 export const JournalAdmin = ecranAdmin(
   'Journal d’audit',
   'Traçabilité des actions et activité par profil',

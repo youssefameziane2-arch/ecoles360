@@ -489,3 +489,75 @@ qui partagent le même `etablissement_id` nul. L'ouverture du blog est
 journalisée sous le rôle réel de l'acteur (elle l'était sous « établissement »
 en dur). Le secrétariat reste fermé.
 **Statut :** corrigé.
+
+## B-38 — Tableau de bord admin : « Pipeline CRM Clients » non construit
+
+La maquette (`isAdminDash`, liste `adminPipe`) pose en bas du tableau de bord
+le pipeline de prospection : une barre par étape, avec son effectif. Le modèle
+`Prospect` (et `Relance`) existe en base, **aucune route ne l'expose** — ni à
+l'admin, ni au commercial. Construire le bloc demanderait d'ouvrir d'abord la
+lecture du CRM, qui est un lot à part entière (avenant n° 1), avec ses propres
+règles de portée (un commercial ne voit que ses prospects).
+
+**À faire :** route de lecture `GET /admin/prospects` (ou un agrégat par étape
+dans `/admin/tableau-de-bord`), puis le bloc. L'écran « CRM Clients » en
+bénéficierait d'abord.
+**Statut :** planifié — lot CRM (avenant n° 1).
+
+## B-39 — Tableau de bord admin : « Derniers encaissements », « Encaisser » et « Reçu »
+
+La maquette (`facturesMini`) liste les dernières factures, avec deux boutons :
+**Encaisser** sur une facture impayée, **Reçu** sur une facture payée. Le
+modèle `Facture` existe, **aucune route ne l'expose**.
+
+Ce n'est pas qu'un bloc de lecture qui manque : « Encaisser » est une
+**écriture**, et c'est elle qui débloque la validation d'une fiche (RG14 — pas
+de validation sans abonnement encaissé). Elle exige sa transaction, sa trace
+au journal (RG15) et ses tests de concurrence ; la poser en passant sur un
+tableau de bord de lecture serait l'exposer sans ces garanties. Le reçu HTML,
+lui, sort de l'enveloppe (`@SansEnveloppe()`, livrable 11 §3.2).
+
+**À faire :** le module de facturation (écran `isAdminFact`), puis un agrégat
+« derniers encaissements » dans `/admin/tableau-de-bord`.
+**Statut :** planifié — lot facturation.
+
+## B-40 — Recherches et visites du site : aucune source
+
+Deux écrans d'administration dessinent des chiffres que rien ne compte.
+
+**Tableau de bord (`isAdminDash`).** Le bloc « Visites du site » pose trois
+tuiles : recherches effectuées, vues de fiches, demandes envoyées. Les deux
+dernières sont servies ; la tuile « Recherches » est omise.
+
+**Statistiques (`isAdminStats`).** Six indicateurs et cinq blocs. Sont servis,
+et commandés par les filtres période / ville / type : vues de fiches, demandes
+envoyées, nouveaux avis, la courbe, les vues par type d'établissement, le
+classement. Sont omis :
+- les tuiles **« Visites du site »** et **« Recherches effectuées »** ;
+- la tuile **« Taux de transformation »** — la maquette la calcule en
+  demandes ÷ recherches (4 812 / 74 210 = 6,5 %) : sans recherches, pas de
+  dénominateur ;
+- le bloc **« Recherches par ville »** (`statCities`).
+
+La courbe « Visites du site » porte donc les **vues de fiches**, et son
+en-tête le dit.
+
+**Pourquoi rien n'est affiché à zéro :** l'enum `EvenementType` ne connaît que
+`appel | whatsapp | vue | vue_sponsorisee`. Aucune recherche, aucune visite
+de page n'est tracée. Un zéro ferait croire que personne ne cherche.
+
+**Ce qu'il faudrait :**
+1. une migration additive — soit une valeur `recherche` dans `EvenementType`
+   avec `etablissement_id` rendu nullable pour elle (une recherche ne porte sur
+   aucune fiche), soit une table dédiée qui garderait aussi la ville et le
+   type cherchés, dont « Recherches par ville » a besoin ;
+2. le traçage côté front, au lancement d'une recherche — au mieux, comme les
+   autres traces : un échec ne doit jamais gêner le parent ;
+3. les tuiles, le bloc, et la part des recherches dans la courbe.
+
+« Visites du site » demande en plus de trancher ce qu'est une visite (une
+session ? une page vue ?), ce que la maquette ne dit pas.
+
+La migration passe par la relecture locale (SESSIONS-CLOUD.md).
+**Statut :** à trancher — la forme de la trace (valeur d'enum ou table
+dédiée) et la définition d'une visite.

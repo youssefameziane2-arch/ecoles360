@@ -203,8 +203,17 @@ a {
   align-items: start;
 }
 
+/* Même grille, colonne large à droite — second rang de « Statistiques ». */
+.e-2col-inverse {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 20px;
+  align-items: start;
+}
+
 @media (max-width: 980px) {
-  .e-2col {
+  .e-2col,
+  .e-2col-inverse {
     grid-template-columns: 1fr;
   }
 }

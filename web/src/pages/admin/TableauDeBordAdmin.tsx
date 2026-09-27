@@ -9,6 +9,7 @@ import {
 import { libelleAction, LIBELLE_ROLE_ACTEUR, type EntreeAudit } from '@/api/audit';
 import { LIBELLE_TYPE } from '@/api/etablissements';
 import { AvecIdentite, CoquilleEspace } from '@/components/CoquilleEspace';
+import { CourbeVues } from '@/components/CourbeVues';
 import { Icon } from '@/ds/composants';
 import { formaterDate, formaterDepuis, formaterNombre, formaterNote } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
@@ -346,7 +347,14 @@ function Visites({ visites, jours }: { visites: Donnees['visites']; jours: numbe
         <span style={{ fontSize: 12, color: '#9AA3AF' }}>vues de fiches · {jours} derniers jours</span>
       </div>
 
-      <Courbe points={visites.vues_par_jour.map((point) => point.vues)} />
+      {visites.vues_fiches.courant === 0 ? (
+        <Vide>Aucune vue de fiche sur la période.</Vide>
+      ) : (
+        <CourbeVues
+          points={visites.vues_par_jour.map((point) => point.vues)}
+          libelle="Vues de fiches par jour"
+        />
+      )}
 
       {/*
         DEUX TUILES, PAS TROIS. La maquette pose « Recherches effectuées » en
@@ -392,52 +400,6 @@ function Tuile({ libelle, comparaison }: { libelle: string; comparaison: Compara
       </div>
       <div style={{ fontSize: 11.5, color: '#9AA3AF', marginTop: 2 }}>{libelle}</div>
     </div>
-  );
-}
-
-/**
- * Courbe des vues par jour — tracé de la maquette (viewBox 600 × 150).
- *
- * PAS LE `BarChart` DU DESIGN SYSTEM : il écrit la valeur au-dessus de chaque
- * barre, avec dix pixels d'écart. Taillé pour six mois, il superposerait ici
- * trente et un nombres illisibles. La maquette dessine d'ailleurs une courbe.
- */
-function Courbe({ points }: { points: number[] }) {
-  const maximum = Math.max(...points, 0);
-
-  if (points.length < 2 || maximum === 0) {
-    return <Vide>Aucune vue de fiche sur la période.</Vide>;
-  }
-
-  const [gauche, droite, bas, haut] = [8, 592, 140, 12];
-  const coordonnees = points.map((valeur, rang) => {
-    const x = gauche + ((droite - gauche) * rang) / (points.length - 1);
-    const y = bas - ((bas - haut) * valeur) / maximum;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const aire = `M${gauche},${bas} L${coordonnees.join(' L')} L${droite},${bas} Z`;
-
-  return (
-    <svg
-      viewBox="0 0 600 150"
-      preserveAspectRatio="none"
-      style={{ display: 'block', width: '100%', height: 120 }}
-      role="img"
-      aria-label={`Vues de fiches par jour, de 0 à ${formaterNombre(maximum)}`}
-    >
-      <line x1="8" y1="49" x2="592" y2="49" stroke="#F1F3F6" strokeWidth="1" />
-      <line x1="8" y1="98" x2="592" y2="98" stroke="#F1F3F6" strokeWidth="1" />
-      <path d={aire} fill="rgba(230,57,70,0.07)" />
-      <polyline
-        points={coordonnees.join(' ')}
-        fill="none"
-        stroke="#E63946"
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
   );
 }
 
