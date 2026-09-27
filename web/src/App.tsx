@@ -26,13 +26,19 @@ import { BlogAdmin, BlogEspace } from './pages/espace/Blog';
 import { AvisAdmin } from './pages/admin/AvisAdmin';
 import { JournalAdmin } from './pages/admin/JournalAdmin';
 import {
+  AgendaCommercial,
+  BlogCommercial,
   CommerciauxAdmin,
   CrmAdmin,
   FacturationAdmin,
   FacturationEspace,
+  LeadsCommercial,
   SecretariatAdmin,
   StatistiquesAdmin,
+  StatistiquesCommercial,
   StatistiquesEspace,
+  TableauDeBordCommercial,
+  TransfertsCommercial,
 } from './pages/espace/ModulesAVenir';
 
 /**
@@ -46,7 +52,12 @@ import {
  */
 export function App() {
   const { pathname } = useLocation();
-  const connecte = pathname.startsWith('/espace') || pathname.startsWith('/admin');
+  // Un espace oublié ici serait rendu DANS le site public — en-tête, pied de
+  // page et bannière d'aide autour d'une coquille qui a déjà sa navigation.
+  const connecte =
+    pathname.startsWith('/espace') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/commercial');
 
   // La connexion occupe l'écran entier, panneau de marque compris : elle ne
   // porte donc ni l'en-tête ni le pied de page du site public.
@@ -79,6 +90,13 @@ export function App() {
         <Route path="/admin/journal" element={<JournalAdmin />} />
         <Route path="/admin/sponsorings" element={<SponsoringsAdmin />} />
         <Route path="/admin/parametres" element={<ParametresFacturation />} />
+
+        <Route path="/commercial" element={<TableauDeBordCommercial />} />
+        <Route path="/commercial/agenda" element={<AgendaCommercial />} />
+        <Route path="/commercial/leads" element={<LeadsCommercial />} />
+        <Route path="/commercial/transferts" element={<TransfertsCommercial />} />
+        <Route path="/commercial/statistiques" element={<StatistiquesCommercial />} />
+        <Route path="/commercial/blog" element={<BlogCommercial />} />
 
         <Route path="*" element={<Introuvable />} />
       </Routes>

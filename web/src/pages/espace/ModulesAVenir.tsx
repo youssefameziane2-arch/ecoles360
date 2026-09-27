@@ -51,6 +51,26 @@ function ecranAdmin(titre: string, sousTitre: string, explication: string) {
   };
 }
 
+function ecranCommercial(titre: string, sousTitre: string, explication: string) {
+  return function Ecran() {
+    useTitrePage(titre);
+
+    return (
+      <AvecIdentite
+        role={['commercial']}
+        rendu={(identite) => (
+          <ModuleAVenir
+            identite={identite}
+            titre={titre}
+            sousTitre={sousTitre}
+            explication={explication}
+          />
+        )}
+      />
+    );
+  };
+}
+
 export const StatistiquesEspace = ecranEspace(
   'Statistiques',
   'Performance de votre fiche',
@@ -97,4 +117,52 @@ export const JournalAdmin = ecranAdmin(
   'Journal d’audit',
   'Traçabilité des actions et activité par profil',
   "Les décisions d'administration sont DÉJÀ journalisées côté serveur — validation d'établissement, bascule de badge, approbation et refus de proposition. Seul l'écran de consultation reste à construire (RG26).",
+);
+
+// ---------------------------------------------------------------------------
+//  Espace commercial — sous-titres repris de la maquette « Espace écoles360 ».
+//  Aucune route de l'API n'est encore ouverte au rôle commercial : les six
+//  entrées attendent le CRM de l'avenant n° 1.
+// ---------------------------------------------------------------------------
+
+export const TableauDeBordCommercial = ecranCommercial(
+  'Tableau de bord',
+  'Votre activité commerciale du jour',
+  "Les tâches et relances du jour, les prospects à fort intérêt, les derniers transferts et la commission du mois agrègent l'agenda, les leads et les transferts — trois modules du CRM (avenant n° 1) qui restent à construire.",
+);
+
+export const AgendaCommercial = ecranCommercial(
+  'Agenda & tâches',
+  'Vos rendez-vous, relances et tâches — jour par jour',
+  "Le calendrier du mois, les tâches du jour, les relances en retard et la synchronisation avec Google Agenda arrivent avec le CRM (avenant n° 1). Les relances de prospects ont déjà leur table en base, mais aucune route ne les sert encore au commercial.",
+);
+
+export const LeadsCommercial = ecranCommercial(
+  'Mes leads',
+  'Vos leads — recherche d’école (parents) et inscription (établissements), par étape et par intérêt',
+  "Le pipeline — étape, température, intérêt, cycle et budget, prochaine relance — relève du CRM (avenant n° 1). Les leads naissent déjà en base avec chaque demande de contact (RG21) ; manquent la route qui vous les attribue et l'écran qui les classe.",
+);
+
+export const TransfertsCommercial = ecranCommercial(
+  'Transferts & commissions',
+  'Vos transferts d’établissements et vos commissions',
+  "Le chiffre d'affaires généré, les ventes d'abonnement, les dossiers transférés et la commission créditée à l'encaissement dépendent de la facturation et du transfert de dossiers, deux modules encore à construire. Les commissions ont déjà leur table en base.",
+);
+
+export const StatistiquesCommercial = ecranCommercial(
+  'Statistiques',
+  'Votre activité — vues, contacts et conversions',
+  "Les vues, contacts et conversions de vos établissements demandent le module de statistiques, le même qui manque encore aux espaces établissement et administration.",
+);
+
+/**
+ * L'éditeur existe — c'est celui de l'espace établissement — mais
+ * `/mon-espace/blog` est gardé `@Roles(etablissement)` côté serveur : le
+ * brancher ici donnerait un écran qui échoue en 403 à la première requête.
+ * Voir B-37.
+ */
+export const BlogCommercial = ecranCommercial(
+  'Blog',
+  'Rédigez vos articles — publiés après validation par l’administrateur',
+  "L'éditeur d'articles est prêt : c'est celui de l'espace établissement. Il n'attend que l'ouverture de son API au rôle commercial : elle n'accepte aujourd'hui que les comptes établissement.",
 );

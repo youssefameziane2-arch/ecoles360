@@ -442,3 +442,22 @@ arrondi). Ne pas le laisser au niveau du module.
 ni au lint, ni aux tests — seulement en production, sous la forme d'un
 avertissement d'hydratation que personne ne relie à un numéro de téléphone.
 **Statut :** planifié — lot Next.js.
+
+## B-37 — Blog de l'espace commercial : l'écran est prêt, la garde serveur non
+
+La maquette donne un blog au commercial (`isBlogList`, entrée « Blog » de sa
+navigation). L'écran existe — `BlogEspace`, celui de l'espace établissement —
+mais `/mon-espace/blog` et ses routes d'écriture sont gardées
+`@Roles(RoleCode.etablissement)` dans
+`api/src/modules/articles/articles-espace.controller.ts`. Branché tel quel sur
+`/commercial/blog`, l'écran échouerait en 403 à la première requête.
+
+`/commercial/blog` affiche donc une page d'attente qui le dit.
+
+**À faire côté API :** ouvrir la garde au rôle commercial, et trancher ce que
+« son » blog veut dire pour lui — un article d'établissement est rattaché à la
+fiche de son auteur, un commercial n'en a pas. La maquette prévoit la bascule
+« blog actif » pour les deux rôles (`blogCanToggle`).
+**Côté web ensuite :** remplacer `BlogCommercial` par `BlogEspace` dans
+`App.tsx` — une ligne.
+**Statut :** à faire — hors du périmètre de la coquille commerciale.

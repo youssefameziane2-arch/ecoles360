@@ -451,11 +451,15 @@ function LogoGoogle() {
  * navigateur le lit comme une URL absolue à protocole implicite.
  *
  * À défaut de destination demandée, chacun atterrit chez lui : un Super Admin
- * dans le back-office, les autres dans l'espace établissement.
+ * dans le back-office, un commercial dans son espace, les autres (établissement
+ * et secrétariat) dans l'espace établissement. Un commercial envoyé sur
+ * `/espace` serait refusé par la garde juste après une connexion réussie.
  */
 function destinationSure(retour: string | null, role: string): string {
   if (!retour || !retour.startsWith('/') || retour.startsWith('//')) {
-    return role === 'superadmin' ? '/admin/etablissements' : '/espace';
+    if (role === 'superadmin') return '/admin/etablissements';
+    if (role === 'commercial') return '/commercial';
+    return '/espace';
   }
 
   return retour;

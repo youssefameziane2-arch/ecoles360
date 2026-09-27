@@ -60,6 +60,35 @@ const NAV_ADMIN: EntreeNav[] = [
   { key: '/admin/parametres', label: 'Paramètres', icone: 'settings' },
 ];
 
+/** Navigation de l'espace commercial — ordre et libellés de la maquette. */
+const NAV_COMMERCIAL: EntreeNav[] = [
+  { key: '/commercial', label: 'Tableau de bord', icone: 'layout-grid' },
+  { key: '/commercial/agenda', label: 'Agenda & tâches', icone: 'calendar' },
+  { key: '/commercial/leads', label: 'Mes leads', icone: 'flag' },
+  { key: '/commercial/transferts', label: 'Transferts & commissions', icone: 'credit-card' },
+  { key: '/commercial/statistiques', label: 'Statistiques', icone: 'bar-chart' },
+  { key: '/commercial/blog', label: 'Blog', icone: 'book-open' },
+];
+
+/**
+ * Les trois espaces connectés. Le secrétariat n'en a pas en propre : il
+ * travaille dans l'espace établissement, filtré par ses portées (RG05).
+ */
+type Espace = 'administration' | 'etablissement' | 'commercial';
+
+const ESPACE_DU_ROLE: Record<Identite['role'], Espace> = {
+  superadmin: 'administration',
+  commercial: 'commercial',
+  etablissement: 'etablissement',
+  secretariat: 'etablissement',
+};
+
+const NAV_DE_L_ESPACE: Record<Espace, EntreeNav[]> = {
+  administration: NAV_ADMIN,
+  etablissement: NAV_ETABLISSEMENT,
+  commercial: NAV_COMMERCIAL,
+};
+
 /**
  * Coquille des espaces connectés — maquette « Espace écoles360 ».
  *
@@ -84,7 +113,8 @@ export function CoquilleEspace({
 }) {
   const naviguer = useNavigate();
   const { pathname } = useLocation();
-  const admin = identite.role === 'superadmin';
+  const espace = ESPACE_DU_ROLE[identite.role];
+  const admin = espace === 'administration';
 
   const propositions = useQuery({
     queryKey: ['admin', 'propositions'],
@@ -92,10 +122,13 @@ export function CoquilleEspace({
     enabled: admin,
   });
 
+  // Réservé à l'espace établissement, et non « tout sauf l'admin » : la route
+  // est gardée côté serveur, un commercial ne récolterait qu'un 403 à chaque
+  // écran pour une pastille qui ne figure pas dans son menu.
   const tableau = useQuery({
     queryKey: ['espace', 'dashboard'],
     queryFn: chargerTableauDeBord,
-    enabled: !admin,
+    enabled: espace === 'etablissement',
   });
 
   // File de modération : la pastille du menu « Avis » compte ce qui attend
@@ -121,7 +154,7 @@ export function CoquilleEspace({
     propositions: propositions.data?.length,
   } as const;
 
-  const entrees = (admin ? NAV_ADMIN : NAV_ETABLISSEMENT)
+  const entrees = NAV_DE_L_ESPACE[espace]
     .filter(
       (entree) =>
         !entree.portee ||
@@ -148,7 +181,10 @@ export function CoquilleEspace({
     <div style={{ display: 'flex', minHeight: '100vh', background: '#FAF8F4' }}>
       <div style={{ flex: 'none', position: 'sticky', top: 0, height: '100vh' }}>
         <SidebarNav
-          theme={admin ? 'administration' : identite.role === 'secretariat' ? 'secretariat' : 'etablissement'}
+          // `commercial` n'existe pas dans les SOURCES du design system, mais le
+          // bundle réellement chargé le connaît (« Espace commercial ») : c'est
+          // lui qui fait foi à l'exécution — voir CORRECTIFS.md.
+          theme={identite.role === 'secretariat' ? 'secretariat' : espace}
           items={entrees}
           activeKey={active}
           onSelect={(cle) => naviguer(cle)}
