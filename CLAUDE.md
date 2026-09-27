@@ -150,9 +150,12 @@ un IIFE qui accroche les composants sur `window.Coles360DesignSystem_66e6db` ;
 `web/src/ds/composants.tsx` les retype pour TypeScript. Les sources ne sont
 donc pas importées à l'exécution : elles servent à LIRE et à corriger.
 
-**`composants.tsx` ne retype pas tout.** Quatorze composants présents dans le
-bundle n'y figuraient pas — donc inutilisables, alors qu'ils répondent
-exactement à des écrans restant à construire :
+**`composants.tsx` retype désormais tout le bundle.** Quatorze composants n'y
+figuraient pas — donc inutilisables — alors qu'ils répondent exactement à des
+écrans restant à construire. Ils y sont, typés depuis le bundle, avec en
+commentaire ce que leur `.d.ts` ne dit pas (`TypePicker` n'a que six types par
+défaut, `CitySelect` douze villes figées, `Header` des liens qui rechargent la
+page) :
 
 | Composant | Pour |
 |---|---|
