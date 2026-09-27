@@ -460,55 +460,14 @@ fiche de son auteur, un commercial n'en a pas. La maquette prévoit la bascule
 « blog actif » pour les deux rôles (`blogCanToggle`).
 **Côté web ensuite :** remplacer `BlogCommercial` par `BlogEspace` dans
 `App.tsx` — une ligne.
-**Statut :** à faire — hors du périmètre de la coquille commerciale.
 
-## B-38 — Tableau de bord admin : « Pipeline CRM Clients » non construit
-
-La maquette (`isAdminDash`, liste `adminPipe`) pose en bas du tableau de bord
-le pipeline de prospection : une barre par étape, avec son effectif. Le modèle
-`Prospect` (et `Relance`) existe en base, **aucune route ne l'expose** — ni à
-l'admin, ni au commercial. Construire le bloc demanderait d'ouvrir d'abord la
-lecture du CRM, qui est un lot à part entière (avenant n° 1), avec ses propres
-règles de portée (un commercial ne voit que ses prospects).
-
-**À faire :** route de lecture `GET /admin/prospects` (ou un agrégat par étape
-dans `/admin/tableau-de-bord`), puis le bloc. L'écran « CRM Clients » en
-bénéficierait d'abord.
-**Statut :** à faire — lot CRM.
-
-## B-39 — Tableau de bord admin : « Derniers encaissements », « Encaisser » et « Reçu »
-
-La maquette (`facturesMini`) liste les dernières factures, avec deux boutons :
-**Encaisser** sur une facture impayée, **Reçu** sur une facture payée. Le
-modèle `Facture` existe, **aucune route ne l'expose**.
-
-Ce n'est pas qu'un bloc de lecture qui manque : « Encaisser » est une
-**écriture**, et c'est elle qui débloque la validation d'une fiche (RG14 — pas
-de validation sans abonnement encaissé). Elle exige sa transaction, sa trace
-au journal (RG15) et ses tests de concurrence ; la poser en passant sur un
-tableau de bord de lecture serait l'exposer sans ces garanties. Le reçu HTML,
-lui, sort de l'enveloppe (`@SansEnveloppe()`, livrable 11 §3.2).
-
-**À faire :** le module de facturation (écran `isAdminFact`), puis un agrégat
-« derniers encaissements » dans `/admin/tableau-de-bord`.
-**Statut :** à faire — lot facturation.
-
-## B-40 — « Recherches effectuées » : aucune source
-
-Le bloc « Visites du site » de la maquette pose trois tuiles : recherches
-effectuées, vues de fiches, demandes envoyées. Les deux dernières sont
-servies. **La première n'a pas de source** : l'enum `EvenementType` ne connaît
-que `appel | whatsapp | vue | vue_sponsorisee`, et aucune recherche n'est
-tracée. La tuile est omise — un zéro affiché ferait croire que personne ne
-cherche.
-
-**À faire, dans cet ordre :**
-1. une migration additive — valeur `recherche` dans `EvenementType`, et
-   `etablissement_id` à rendre nullable pour cette valeur (une recherche ne
-   porte sur aucune fiche), ou une table dédiée ;
-2. le traçage côté front, au lancement d'une recherche (au mieux, comme les
-   autres traces : un échec ne doit jamais gêner le parent) ;
-3. la tuile, et sa part dans la courbe.
-
-La migration passe par la relecture locale (SESSIONS-CLOUD.md).
-**Statut :** à faire — demande une migration.
+**Tranché :** un article de commercial est un **article de plateforme**
+(`etablissement_id` nul) signé de son auteur, qui passe par la validation —
+le commercial n'est pas une autorité éditoriale, contrairement à
+l'administrateur. `ArticlesService` raisonne désormais en `Redacteur` : un
+établissement voit les articles de sa fiche, un commercial **les siens
+seulement** (`auteur_id`), jamais ceux d'un collègue ni de l'administration,
+qui partagent le même `etablissement_id` nul. L'ouverture du blog est
+journalisée sous le rôle réel de l'acteur (elle l'était sous « établissement »
+en dur). Le secrétariat reste fermé.
+**Statut :** corrigé.

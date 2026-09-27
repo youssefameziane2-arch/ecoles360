@@ -121,8 +121,8 @@ export const JournalAdmin = ecranAdmin(
 
 // ---------------------------------------------------------------------------
 //  Espace commercial — sous-titres repris de la maquette « Espace écoles360 ».
-//  Aucune route de l'API n'est encore ouverte au rôle commercial : les six
-//  entrées attendent le CRM de l'avenant n° 1.
+//  Hors le blog, aucune route de l'API n'est encore ouverte au rôle
+//  commercial : ces cinq entrées attendent le CRM de l'avenant n° 1.
 // ---------------------------------------------------------------------------
 
 export const TableauDeBordCommercial = ecranCommercial(
@@ -153,16 +153,4 @@ export const StatistiquesCommercial = ecranCommercial(
   'Statistiques',
   'Votre activité — vues, contacts et conversions',
   "Les vues, contacts et conversions de vos établissements demandent le module de statistiques, le même qui manque encore aux espaces établissement et administration.",
-);
-
-/**
- * L'éditeur existe — c'est celui de l'espace établissement — mais
- * `/mon-espace/blog` est gardé `@Roles(etablissement)` côté serveur : le
- * brancher ici donnerait un écran qui échoue en 403 à la première requête.
- * Voir B-37.
- */
-export const BlogCommercial = ecranCommercial(
-  'Blog',
-  'Rédigez vos articles — publiés après validation par l’administrateur',
-  "L'éditeur d'articles est prêt : c'est celui de l'espace établissement. Il n'attend que l'ouverture de son API au rôle commercial : elle n'accepte aujourd'hui que les comptes établissement.",
 );

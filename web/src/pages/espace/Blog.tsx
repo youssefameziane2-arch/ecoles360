@@ -39,7 +39,7 @@ const TOUS = 'Tous';
 type Message = { tone: 'success' | 'error'; texte: string };
 
 /**
- * Blog — espace établissement et back-office, avenant 3.
+ * Blog — espaces établissement et commercial, et back-office, avenant 3.
  *
  * UN SEUL ÉCRAN POUR LES DEUX RÔLES, comme la maquette (`isBlogList` sert
  * `admin/blog` et `etablissement/blog`). L'administrateur y gagne les boutons
@@ -51,7 +51,9 @@ export function BlogEspace() {
 
   return (
     <AvecIdentite
-      role={['etablissement']}
+      // Le commercial y rédige des articles de plateforme ; le serveur borne
+      // ce qu'il voit à ses propres articles (`Redacteur`).
+      role={['etablissement', 'commercial']}
       rendu={(identite) => (
         <CoquilleEspace
           identite={identite}
@@ -326,7 +328,7 @@ function Contenu({ admin }: { admin: boolean }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ ...texteDoux, maxWidth: 560, fontSize: 13.5 }}>
           {admin
-            ? 'Contrôle total du blog : rédigez, validez les articles soumis par les établissements et choisissez ceux « à la une » sur le blog.'
+            ? 'Contrôle total du blog : rédigez, validez les articles soumis par les établissements et les commerciaux, et choisissez ceux « à la une » sur le blog.'
             : 'Vos articles sont relus par l’administrateur avant publication.'}
         </div>
 

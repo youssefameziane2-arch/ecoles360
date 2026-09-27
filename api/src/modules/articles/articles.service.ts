@@ -32,6 +32,29 @@ const SELECTION_GESTION = {
   auteur: { select: { name: true, email: true } },
 } as const;
 
+/**
+ * Qui rédige — et donc ce qu'il a le droit de voir et de toucher.
+ *
+ * UN ÉTABLISSEMENT ÉCRIT SUR SA FICHE : ses articles portent son
+ * `etablissement_id`, et c'est la fiche, pas le compte, qui les possède.
+ *
+ * UN COMMERCIAL N'A PAS DE FICHE : ses articles sont des articles de
+ * plateforme (`etablissement_id` nul), signés de son nom. Mais contrairement
+ * à ceux de l'administrateur, ils passent par la validation — le commercial
+ * n'est pas une autorité éditoriale. Et il ne voit que les siens : sans
+ * `auteur_id` dans la portée, il pourrait réécrire l'article d'un collègue ou
+ * celui de l'administration, qui partagent le même `etablissement_id` nul.
+ */
+export type Redacteur =
+  | { role: typeof RoleCode.etablissement; userId: bigint; etablissementId: bigint }
+  | { role: typeof RoleCode.commercial; userId: bigint };
+
+function portee(redacteur: Redacteur): Prisma.ArticleWhereInput {
+  return redacteur.role === RoleCode.etablissement
+    ? { etablissement_id: redacteur.etablissementId }
+    : { auteur_id: redacteur.userId, etablissement_id: null };
+}
+
 /** Nombre d'articles par page du blog public — trois colonnes, deux rangées. */
 const PAR_PAGE = 6;
 
@@ -39,10 +62,10 @@ const PAR_PAGE = 6;
  * Blog — livrable 11 §3.5, avenant 3.
  *
  * LE CIRCUIT ÉDITORIAL EST LA RAISON D'ÊTRE DE CE SERVICE :
- * `brouillon → en_attente → approuve | refuse`. Un établissement rédige et
- * soumet ; seul l'administrateur publie. C'est la même exigence que pour les
- * fiches (RG03) et les avis (RG06) — rien n'apparaît sur le site public sans
- * qu'un humain de la plateforme l'ait regardé.
+ * `brouillon → en_attente → approuve | refuse`. Un établissement ou un
+ * commercial rédige et soumet ; seul l'administrateur publie. C'est la même
+ * exigence que pour les fiches (RG03) et les avis (RG06) — rien n'apparaît sur
+ * le site public sans qu'un humain de la plateforme l'ait regardé.
  *
  * UN REFUS PORTE TOUJOURS UN MOTIF, et ce motif est rendu à l'auteur. Sans
  * lui, l'article reviendrait à l'identique et serait refusé une seconde fois.
@@ -157,13 +180,13 @@ export class ArticlesService {
   }
 
   // ---------------------------------------------------------------------------
-  //  Espace établissement
+  //  Espace de rédaction — établissement et commercial
   // ---------------------------------------------------------------------------
 
-  /** Articles de l'établissement connecté — tous statuts. */
-  listerPourEtablissement(etablissementId: bigint) {
+  /** Articles du rédacteur connecté — tous statuts. */
+  listerPourRedacteur(redacteur: Redacteur) {
     return this.db.article.findMany({
-      where: { etablissement_id: etablissementId },
+      where: portee(redacteur),
       orderBy: [{ cree_le: 'desc' }],
       select: SELECTION_GESTION,
     });
@@ -187,13 +210,17 @@ export class ArticlesService {
   }
 
   /** Ouvre ou ferme son propre blog — action de l'utilisateur connecté. */
-  async basculerBlog(userId: bigint, actif: boolean): Promise<void> {
+  async basculerBlog(redacteur: Redacteur, actif: boolean): Promise<void> {
+    const userId = redacteur.userId;
+
     await this.db.$transaction(async (tx) => {
       await tx.user.update({ where: { id: userId }, data: { blog_actif: actif } });
 
       await this.audit.journaliser(tx, {
         userId,
-        roleActeur: RoleCode.etablissement,
+        // Le rôle réel de l'acteur : un journal qui attribuerait au compte
+        // établissement l'action d'un commercial ne départagerait plus rien.
+        roleActeur: redacteur.role,
         action: actif ? 'blog.active' : 'blog.desactive',
         cibleType: 'user',
         cibleId: userId,
@@ -201,25 +228,26 @@ export class ArticlesService {
     });
   }
 
-  async creer(etablissementId: bigint, userId: bigint, dto: RedigerArticleDto) {
-    await this.exigeBlogActif(userId);
+  async creer(redacteur: Redacteur, dto: RedigerArticleDto) {
+    await this.exigeBlogActif(redacteur.userId);
 
     return this.db.article.create({
       data: {
         ...this.champsRedaction(dto),
         slug: await this.slugLibre(dto.titre),
         statut: ArticleStatut.brouillon,
-        auteur_id: userId,
-        etablissement_id: etablissementId,
+        auteur_id: redacteur.userId,
+        etablissement_id:
+          redacteur.role === RoleCode.etablissement ? redacteur.etablissementId : null,
       },
       select: SELECTION_GESTION,
     });
   }
 
-  async modifier(etablissementId: bigint, userId: bigint, id: bigint, dto: RedigerArticleDto) {
-    await this.exigeBlogActif(userId);
+  async modifier(redacteur: Redacteur, id: bigint, dto: RedigerArticleDto) {
+    await this.exigeBlogActif(redacteur.userId);
 
-    const article = await this.sien(etablissementId, id);
+    const article = await this.sien(redacteur, id);
 
     return this.db.article.update({
       where: { id: article.id },
@@ -239,10 +267,10 @@ export class ArticlesService {
   }
 
   /** Envoie l'article à la validation — livrable 11 §3.5. */
-  async soumettre(etablissementId: bigint, userId: bigint, id: bigint) {
-    await this.exigeBlogActif(userId);
+  async soumettre(redacteur: Redacteur, id: bigint) {
+    await this.exigeBlogActif(redacteur.userId);
 
-    const article = await this.sien(etablissementId, id);
+    const article = await this.sien(redacteur, id);
 
     if (article.statut === ArticleStatut.en_attente) {
       throw new AppException(
@@ -271,8 +299,8 @@ export class ArticlesService {
     });
   }
 
-  async supprimer(etablissementId: bigint, id: bigint): Promise<void> {
-    const article = await this.sien(etablissementId, id);
+  async supprimer(redacteur: Redacteur, id: bigint): Promise<void> {
+    const article = await this.sien(redacteur, id);
 
     await this.db.article.delete({ where: { id: article.id } });
   }
@@ -542,14 +570,14 @@ export class ArticlesService {
   }
 
   /** Charge un article EN VÉRIFIANT qu'il appartient à l'établissement. */
-  private async sien(etablissementId: bigint, id: bigint) {
+  private async sien(redacteur: Redacteur, id: bigint) {
     const article = await this.db.article.findFirst({
-      where: { id, etablissement_id: etablissementId },
+      where: { id, ...portee(redacteur) },
       select: { id: true, statut: true, contenu: true },
     });
 
     // 404 et non 403 : répondre « interdit » confirmerait l'existence de
-    // l'article d'un concurrent.
+    // l'article d'un concurrent — ou d'un collègue.
     if (!article) {
       throw this.introuvable();
     }

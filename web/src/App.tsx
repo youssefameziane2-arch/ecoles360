@@ -28,7 +28,6 @@ import { AvisAdmin } from './pages/admin/AvisAdmin';
 import { JournalAdmin } from './pages/admin/JournalAdmin';
 import {
   AgendaCommercial,
-  BlogCommercial,
   CommerciauxAdmin,
   CrmAdmin,
   FacturationAdmin,
@@ -97,7 +96,7 @@ export function App() {
         <Route path="/commercial/leads" element={<LeadsCommercial />} />
         <Route path="/commercial/transferts" element={<TransfertsCommercial />} />
         <Route path="/commercial/statistiques" element={<StatistiquesCommercial />} />
-        <Route path="/commercial/blog" element={<BlogCommercial />} />
+        <Route path="/commercial/blog" element={<BlogEspace />} />
 
         <Route path="*" element={<Introuvable />} />
       </Routes>

@@ -490,6 +490,131 @@ describe('Blog et circuit éditorial (intégration)', () => {
   });
 
   // ---------------------------------------------------------------------------
+  //  Rédaction par un commercial — maquette `commercial/blog`
+  // ---------------------------------------------------------------------------
+
+  describe('rédaction par un commercial', () => {
+    /**
+     * Le semeur laisse le blog des commerciaux fermé. Chaque test l'ouvre, et
+     * le referme en sortant : la base est partagée, et un blog resté ouvert
+     * fausserait le test de fermeture d'une exécution suivante.
+     */
+    async function commercialBlogOuvert(email: string) {
+      const commercial = await connecte(email);
+      await commercial.put('/mon-espace/blog').send({ actif: true }).expect(204);
+      return commercial;
+    }
+
+    afterEach(async () => {
+      await db.user.updateMany({
+        where: { email: { in: ['younes.c@ecoles360.com', 'karim.o@ecoles360.com'] } },
+        data: { blog_actif: false },
+      });
+    });
+
+    it('mène un article de plateforme, signé du commercial, par la validation', async () => {
+      const younes = await commercialBlogOuvert('younes.c@ecoles360.com');
+      const admin = await connecte('direction@ecoles360.com');
+
+      const article = await brouillon(younes, 'Bien choisir son lycée à Casablanca');
+
+      const enBase = await db.article.findUniqueOrThrow({
+        where: { id: BigInt(article.id) },
+        select: { etablissement_id: true, auteur: { select: { email: true } } },
+      });
+      // Article de plateforme : aucune fiche ne le signe, mais son auteur reste
+      // traçable — c'est ce qui distingue le commercial de l'administrateur.
+      expect(enBase.etablissement_id).toBeNull();
+      expect(enBase.auteur?.email).toBe('younes.c@ecoles360.com');
+
+      // Contrairement à l'administrateur, il ne publie pas directement.
+      expect(article.statut).toBe('brouillon');
+      await request(app.getHttpServer()).get(`/api/v1/articles/${article.slug}`).expect(404);
+
+      await younes.post(`/mon-espace/articles/${article.id}/soumettre`).expect(201);
+      await admin.patch(`/admin/articles/${article.id}`).send({ decision: 'approuve' }).expect(200);
+
+      await request(app.getHttpServer()).get(`/api/v1/articles/${article.slug}`).expect(200);
+    });
+
+    it('ne voit et ne touche que ses propres articles', async () => {
+      const younes = await commercialBlogOuvert('younes.c@ecoles360.com');
+      const karim = await commercialBlogOuvert('karim.o@ecoles360.com');
+
+      const sien = await brouillon(younes, 'Les internats au Maroc');
+
+      // Ni l'article d'un collègue, ni celui de l'administration, ni celui
+      // d'un établissement — tous partagent pourtant, sauf le dernier, le
+      // même `etablissement_id` nul. 404 et non 403 : rien n'est confirmé.
+      await karim.delete(`/mon-espace/articles/${sien.id}`).expect(404);
+      await karim
+        .put(`/mon-espace/articles/${sien.id}`)
+        .send({ titre: 'Détourné', categorie: 'Actualités', contenu: 'Texte.' })
+        .expect(404);
+
+      const [plateforme, etablissement] = await Promise.all([
+        db.article.findFirstOrThrow({
+          // Article de plateforme qui n'est pas celui d'un commercial — auteur
+          // nul compris : `NOT` le garde, une égalité sur la relation l'exclurait.
+          where: {
+            etablissement_id: null,
+            NOT: { auteur: { email: { in: ['younes.c@ecoles360.com', 'karim.o@ecoles360.com'] } } },
+          },
+          select: { id: true },
+        }),
+        db.article.findFirstOrThrow({
+          where: { etablissement_id: { not: null } },
+          select: { id: true },
+        }),
+      ]);
+      await younes.delete(`/mon-espace/articles/${plateforme.id}`).expect(404);
+      await younes.delete(`/mon-espace/articles/${etablissement.id}`).expect(404);
+
+      // Et sa liste ne contient que ce qu'il a écrit.
+      const liste = await karim.get('/mon-espace/blog').expect(200);
+      const ids = (liste.body.data.articles as { id: string }[]).map((a) => BigInt(a.id));
+      const etrangers = await db.article.count({
+        where: {
+          id: { in: ids },
+          OR: [
+            { etablissement_id: { not: null } },
+            { NOT: { auteur: { email: 'karim.o@ecoles360.com' } } },
+          ],
+        },
+      });
+
+      expect(etrangers).toBe(0);
+      expect(ids).not.toContain(BigInt(sien.id));
+    });
+
+    it('journalise l’ouverture du blog sous le rôle commercial', async () => {
+      await commercialBlogOuvert('younes.c@ecoles360.com');
+
+      const younes = await db.user.findUniqueOrThrow({
+        where: { email: 'younes.c@ecoles360.com' },
+        select: { id: true },
+      });
+      const trace = await db.journalAudit.findFirstOrThrow({
+        where: { user_id: younes.id, action: 'blog.active' },
+        // Par identifiant : `cree_le` est à la seconde, deux ouvertures dans
+        // la même seconde ne se départageraient pas.
+        orderBy: { id: 'desc' },
+        select: { role_acteur: true },
+      });
+
+      // Un journal qui attribuerait l'action au rôle établissement ne
+      // départagerait plus rien (RG15).
+      expect(trace.role_acteur).toBe('commercial');
+    });
+
+    it('reste fermé au secrétariat', async () => {
+      const sara = await connecte('sara.s@ecoles360.com');
+
+      await sara.get('/mon-espace/blog').expect(403);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   //  Activation du blog — RG27
   // ---------------------------------------------------------------------------
 
