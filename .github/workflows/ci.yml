@@ -9,10 +9,9 @@
 #  — verrous $queryRaw FOR UPDATE, ENUM natif, contraintes CHECK, FULLTEXT,
 #  collation utf8mb4 — n'existent que sur le moteur de production.
 #
-#  PÉRIMÈTRE DU LOT 1. Le livrable 14 §3 décrit quatre jobs : api · web ·
-#  images · e2e. Seul `api` a un objet ici — `web/` est vide jusqu'au lot 7, et
-#  la publication d'images sur ghcr.io comme les parcours Playwright arrivent
-#  avec leurs lots (docs/BACKLOG.md, B-10).
+#  PÉRIMÈTRE. Le livrable 14 §3 décrit quatre jobs : api · web · images · e2e.
+#  `api` et `web` ont un objet ici. La publication d'images sur ghcr.io et les
+#  parcours Playwright arrivent avec leurs lots (docs/BACKLOG.md, B-10).
 # =============================================================================
 
 name: CI
@@ -125,3 +124,46 @@ jobs:
           path: api/coverage/
           retention-days: 7
           if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  #  Front — livrable 14 §3, job `web`
+  # ---------------------------------------------------------------------------
+  #
+  #  ÉCRIT LE JOUR OÙ `web/` A CESSÉ D'ÊTRE VIDE. Le job `api` couvrait seul le
+  #  dépôt tant que le front n'existait pas ; il a continué à le couvrir seul
+  #  pendant que soixante-quinze fichiers de React s'y ajoutaient, sans que rien
+  #  ne le signale. Une session qui n'écrirait que du front aurait vu passer une
+  #  CI verte sans qu'une ligne de son travail ait été regardée.
+  #
+  #  NI MySQL NI REDIS ICI, et aucun test : le front n'en a pas encore. Ce que
+  #  ce job prouve est modeste et vaut quand même — que le TypeScript compile et
+  #  que le style tient. `pnpm --filter web build` enchaîne `tsc --noEmit` puis
+  #  `vite build` : un type cassé fait échouer avant même le bundle.
+  #
+  #  Il ne remplace pas le regard : un écran peut compiler, passer le lint, et
+  #  s'afficher de travers. La vérification visuelle reste locale
+  #  (docs/SESSIONS-CLOUD.md).
+  web:
+    name: Web — lint, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Même remarque que pour `api` : la version de pnpm vient du champ
+      # `packageManager` de la racine, jamais d'un `with: version`.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+
+      - name: Installer les dépendances
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (ESLint + Prettier)
+        run: pnpm --filter web lint
+
+      - name: Build (tsc --noEmit puis vite build)
+        run: pnpm --filter web build
