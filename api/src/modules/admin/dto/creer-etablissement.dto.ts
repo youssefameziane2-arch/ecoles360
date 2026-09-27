@@ -68,7 +68,7 @@ export class CreerEtablissementDto {
   @Length(0, 30)
   tel?: string;
 
-  @ApiPropertyOptional({ maxLength: 30, example: '06 61 18 98 21' })
+  @ApiPropertyOptional({ maxLength: 30, example: '06 12 34 56 78' })
   @IsOptional()
   @IsString()
   @Length(0, 30)

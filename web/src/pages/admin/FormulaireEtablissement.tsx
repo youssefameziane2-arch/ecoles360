@@ -256,7 +256,7 @@ export function FormulaireEtablissement({
               valeur={saisie.whatsapp}
               onChange={modifier('whatsapp')}
               erreur={erreurDuChamp('whatsapp')}
-              placeholder="06 61 18 98 21"
+              placeholder="06 12 34 56 78"
             />
             <Champ
               label="E-mail"

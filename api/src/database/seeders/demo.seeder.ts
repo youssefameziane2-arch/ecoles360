@@ -87,7 +87,7 @@ export class DemoSeeder {
       name: 'Younes Chraibi',
       role_id: commercial.id,
       motDePasse: this.motDePasse('SEED_COMMERCIAL_PASSWORD'),
-      telephone: '06 61 18 98 21',
+      telephone: '06 12 34 56 78',
     });
 
     // DEUX CONSEILLERS, PAS UN. La bannière d'aide du site public répartit les

@@ -1,7 +1,7 @@
 # Inventaire de la maquette — état d'avancement
 
 Relevé **automatiquement** depuis les deux fichiers de maquette livrés
-(`écoles360.dc.html` pour le site public, `Espace écoles360.dc.html` pour les
+(`handoff/écoles360.dc.html` pour le site public, `handoff/Espace écoles360.dc.html` pour les
 espaces connectés), puis rapproché à la main du code existant.
 
 Ce document existe parce que le périmètre a été sous-estimé deux fois. Il est la
@@ -129,7 +129,7 @@ Servi par **les mêmes écrans que l'établissement**, filtrés par portée dél
 ## Comment ce relevé a été produit
 
 ```bash
-node inventaire.mjs "Espace écoles360.dc.html"
+node inventaire.mjs "handoff/Espace écoles360.dc.html"
 ```
 
 Le script suit les blocs `<sc-if value="{{ isXxx }}">` en tenant compte de leur
@@ -145,7 +145,7 @@ Relevé section par section avec `docs/sections.mjs`, qui sort le plan d'un écr
 dans l'ordre : titres, surtitres, listes répétées et boutons.
 
 ```bash
-node docs/sections.mjs "écoles360.dc.html" isHome
+node docs/sections.mjs "docs/handoff/écoles360.dc.html" isHome
 ```
 
 ## Accueil (`isHome`) — 9 / 13 blocs

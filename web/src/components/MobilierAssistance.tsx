@@ -6,20 +6,24 @@ import { lienTelephone, lienWhatsApp } from '@/lib/telephone';
 /**
  * Numéro du conseiller — propriété `helpPhone` de la maquette.
  *
- * CE NUMÉRO APPELLE UNE VRAIE PERSONNE. Celui de la maquette
- * (« 06 61 18 98 21 ») est repris comme valeur de repli pour que l'écran ne
- * soit pas vide en développement, mais il ne doit PAS partir en production :
- * à la mise en ligne, chaque visiteur qui clique déclenche un appel ou un
- * message WhatsApp chez son propriétaire.
+ * LE REPLI EST DÉLIBÉRÉMENT FICTIF. Il n'est lu que si l'API ne rend aucun
+ * conseiller ; il sert à ce que l'écran ne soit pas vide en développement,
+ * rien de plus.
  *
- * Le vrai numéro se pose dans `web/.env` :
+ * Y mettre un vrai numéro serait un piège à deux détentes : il partirait dans
+ * le dépôt, et surtout un oubli de variable à la mise en ligne enverrait
+ * chaque visiteur qui clique appeler une personne qui n'a rien demandé. Un
+ * numéro visiblement faux, lui, se remarque avant la mise en production.
+ *
+ * Le vrai numéro vient des comptes commerciaux en base. Pour le forcer en
+ * développement, `web/.env` :
  *
  *     VITE_TELEPHONE_CONSEILLER="06 12 34 56 78"
  *
  * Il passera plus tard dans l'écran « Contenu du site », que la maquette
  * prévoit — le jour où ce bloc sera construit, cette constante disparaîtra.
  */
-const TELEPHONE = import.meta.env.VITE_TELEPHONE_CONSEILLER ?? '06 61 18 98 21';
+const TELEPHONE = import.meta.env.VITE_TELEPHONE_CONSEILLER ?? '06 00 00 00 00';
 
 
 /**

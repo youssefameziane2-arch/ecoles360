@@ -16,8 +16,8 @@ messages d'erreur, commentaires, messages de commit. `versListe`, pas
 seules exceptions sont les mots imposés par un cadre extérieur — `useState`,
 `data`, `meta`, `links`, les noms de colonnes Prisma déjà posés.
 
-**La maquette fait foi.** Elle est livrée dans `écoles360.dc.html` (site
-public) et `Espace écoles360.dc.html` (back-offices). Avant d'écrire un écran,
+**La maquette fait foi.** Elle est livrée dans `docs/handoff/écoles360.dc.html`
+(site public) et `docs/handoff/Espace écoles360.dc.html` (back-offices). Avant d'écrire un écran,
 on l'y lit — on ne l'approxime pas de mémoire. `docs/INVENTAIRE-MAQUETTE.md`
 recense chaque écran, son état, et ce qui manque. `docs/inventaire.mjs` et
 `docs/sections.mjs` savent extraire une section précise de ces fichiers.
