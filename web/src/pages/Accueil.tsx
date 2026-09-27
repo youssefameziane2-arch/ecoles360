@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { chargerArticles, type CarteArticle } from '@/api/articles';
+import { chargerArticleALaUne, chargerArticles, type CarteArticle } from '@/api/articles';
 import { chargerAvisEnAvant } from '@/api/avis';
 import { chargerFaq } from '@/api/faq';
 import {
+  chargerNiveauxFilieres,
   chargerVilles,
+  FAMILLES_PAR_TYPE,
+  LIBELLE_FAMILLE,
   LIBELLE_TYPE,
   rechercherEtablissements,
+  type FiltresRecherche,
   type TypeEtablissement,
 } from '@/api/etablissements';
 import { AccordeonFaq } from '@/components/AccordeonFaq';
@@ -19,7 +23,15 @@ import {
   TELEPHONE_CONSEILLER,
 } from '@/components/MobilierAssistance';
 import { CarteBlog } from './Blog';
-import { Button, CityCard, EstablishmentCard, Icon, SkeletonCard } from '@/ds/composants';
+import {
+  Button,
+  CityCard,
+  EmptyState,
+  EstablishmentCard,
+  Icon,
+  Skeleton,
+  SkeletonCard,
+} from '@/ds/composants';
 import { formaterDate, formaterMad, formaterNombre, formaterNote } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
 
@@ -52,6 +64,40 @@ const ICONE_TYPE: Record<TypeEtablissement, string> = {
 
 const TYPES = Object.keys(LIBELLE_TYPE) as TypeEtablissement[];
 
+/**
+ * Notes minimales de la recherche avancée.
+ *
+ * DES ENTIERS SEULEMENT, là où la maquette propose « 4,5 et plus » : l'API
+ * déclare `note_min` en `@IsInt()`, et 4.5 serait refusé en 422 — le parent
+ * atterrirait sur une page d'erreur. Ce sont aussi les deux seuils des puces
+ * « Note » des résultats, qui s'allument donc à l'arrivée.
+ */
+const OPTIONS_NOTE = [
+  { valeur: '', libelle: 'Toutes les notes' },
+  { valeur: '3', libelle: '3,0 et plus' },
+  { valeur: '4', libelle: '4,0 et plus' },
+];
+
+/**
+ * Tris de la recherche avancée — ceux que l'API sait faire.
+ *
+ * La maquette propose « Pertinence » et deux tris par prix : aucun n'existe
+ * côté serveur, et un tri affiché qui ne trierait rien tromperait le visiteur.
+ * Les libellés sont ceux du sélecteur des résultats, pour qu'il y retrouve son
+ * choix.
+ */
+const OPTIONS_TRI: { valeur: NonNullable<FiltresRecherche['tri']>; libelle: string }[] = [
+  { valeur: 'note', libelle: 'Mieux notés' },
+  { valeur: 'recent', libelle: 'Plus récents' },
+  { valeur: 'nom', libelle: 'Ordre alphabétique' },
+];
+
+/** Tri appliqué par l'API en l'absence de paramètre — inutile de l'écrire dans l'URL. */
+const TRI_PAR_DEFAUT = 'note';
+
+/** Pastilles d'avatar du carrousel, en rotation — les trois teintes de la maquette. */
+const TEINTES_AVATAR = ['#E63946', '#1D3557', '#2E9E5B'];
+
 export function Accueil() {
   useTitrePage(
     'écoles360',
@@ -64,7 +110,24 @@ export function Accueil() {
   const [villeOuverte, setVilleOuverte] = useState(false);
   const [messageType, setMessageType] = useState(false);
 
+  const [avanceeOuverte, setAvanceeOuverte] = useState(false);
+  const [noteMin, setNoteMin] = useState('');
+  const [tri, setTri] = useState<string>(TRI_PAR_DEFAUT);
+  const [budgetMin, setBudgetMin] = useState('');
+  const [budgetMax, setBudgetMax] = useState('');
+  const [caracteristiques, setCaracteristiques] = useState<string[]>([]);
+
   const villes = useQuery({ queryKey: ['villes'], queryFn: chargerVilles });
+  const referentiel = useQuery({
+    // Même clé et même durée que les résultats : le référentiel chargé ici
+    // sert encore à l'arrivée sur la recherche, sans second aller-retour.
+    queryKey: ['niveaux-filieres'],
+    queryFn: chargerNiveauxFilieres,
+    staleTime: 3_600_000,
+    // Seulement à l'ouverture du panneau : la plupart des visiteurs de
+    // l'accueil ne l'ouvrent pas, et n'ont pas à payer la requête.
+    enabled: avanceeOuverte,
+  });
   const aLaUne = useQuery({
     queryKey: ['etablissements', 'une'],
     queryFn: () => rechercherEtablissements({ per_page: 4 }),
@@ -76,16 +139,48 @@ export function Accueil() {
     queryKey: ['articles', 'accueil'],
     queryFn: () => chargerArticles(),
   });
+  const articleUne = useQuery({ queryKey: ['articles', 'une'], queryFn: chargerArticleALaUne });
 
   // Le carrousel de témoignages puise dans les MÊMES avis mis en avant que la
   // grille plus bas : l'administrateur n'a qu'une sélection à tenir, et les
   // deux blocs ne peuvent pas se contredire.
   const temoignages = avisEnAvant.data ?? [];
   const [temoin, setTemoin] = useState(0);
-  const temoin_actuel = temoignages[temoin % Math.max(1, temoignages.length)];
+  const rangTemoin = temoin % Math.max(1, temoignages.length);
+  const temoinActuel = temoignages[rangTemoin];
 
-  // Trois articles sur l'accueil, à la une d'abord — comme la maquette.
-  const apercuBlog: CarteArticle[] = (blog.data?.data ?? []).slice(0, 3);
+  /**
+   * Trois articles sur l'accueil, À LA UNE D'ABORD — comme la maquette.
+   *
+   * La liste publique EXCLUT l'article à la une, qui tient le bandeau du blog.
+   * Sans cette seconde requête, l'article que l'administrateur a choisi de
+   * pousser serait le seul à ne jamais paraître sur l'accueil.
+   */
+  const apercuBlog: CarteArticle[] = [
+    ...(articleUne.data ? [articleUne.data] : []),
+    ...(blog.data?.data ?? []),
+  ].slice(0, 3);
+  const blogEnCours = blog.isPending || articleUne.isPending;
+  const blogEnErreur = !blogEnCours && apercuBlog.length === 0 && (blog.isError || articleUne.isError);
+
+  // Les familles de filtres suivent le type choisi, comme dans la maquette :
+  // sans type, le panneau invite à en choisir un plutôt que d'afficher des
+  // filières d'ingénierie à qui cherche une crèche.
+  const famillesAvancees = type ? FAMILLES_PAR_TYPE[type] : [];
+  const groupesAvances = famillesAvancees
+    .map((famille) => ({
+      famille,
+      options: (referentiel.data ?? []).filter((c) => c.categorie === famille),
+    }))
+    .filter((groupe) => groupe.options.length > 0);
+
+  const basculerCaracteristique = (id: string) =>
+    setCaracteristiques((actuelles) =>
+      actuelles.includes(id) ? actuelles.filter((c) => c !== id) : [...actuelles, id],
+    );
+
+  /** Ne garde que les chiffres : `budget_min` est un entier côté API, « 12 000 » y serait refusé. */
+  const chiffresSeuls = (saisie: string) => saisie.replace(/[^0-9]/g, '');
 
   // Les rubriques sont aplaties : l'accueil montre les quatre premières
   // questions de la FAQ, toutes rubriques confondues, comme la maquette.
@@ -100,6 +195,9 @@ export function Accueil() {
     // plutôt que de lancer une recherche que le visiteur n'a pas cadrée.
     if (!type) {
       setMessageType(true);
+      // Comme la maquette : le panneau s'ouvre sur son invite « Choisissez
+      // d'abord un type… », qui redit la consigne là où le regard descend.
+      setAvanceeOuverte(true);
       return;
     }
 
@@ -110,6 +208,21 @@ export function Accueil() {
 
     if (correspondance) params.set('ville', correspondance.slug);
     else if (ville.trim()) params.set('q', ville.trim());
+
+    // Les noms sont ceux que lisent les résultats et l'API : la recherche
+    // avancée n'a pas d'état propre, elle pré-remplit l'URL partageable.
+    if (noteMin) params.set('note_min', noteMin);
+    if (tri !== TRI_PAR_DEFAUT) params.set('tri', tri);
+    if (budgetMin) params.set('budget_min', budgetMin);
+    if (budgetMax) params.set('budget_max', budgetMax);
+
+    // Seules partent les caractéristiques des familles du type COURANT. Une
+    // filière cochée pour « Lycée » avant de passer à « Crèche » filtrerait
+    // sinon en silence sur un critère que le panneau ne montre plus.
+    const retenues = caracteristiques.filter((id) =>
+      groupesAvances.some((groupe) => groupe.options.some((option) => option.id === id)),
+    );
+    if (retenues.length > 0) params.set('niveaux', retenues.join(','));
 
     naviguer(`/etablissements?${params.toString()}`);
   };
@@ -360,6 +473,221 @@ export function Accueil() {
               Rechercher
             </Button>
           </div>
+
+          {/*
+            RECHERCHE AVANCÉE. Le `FilterBar` du design system n'y convient pas :
+            c'est une rangée de déclencheurs à menu avec un bouton « Appliquer »,
+            là où la maquette dessine des sélecteurs et des rangées de puces
+            libellées, appliqués d'un seul « Rechercher ».
+
+            PAS DE BASCULE « École sponsorisée », pourtant dessinée : aucun
+            paramètre de l'API ne filtre dessus (même écart que les résultats),
+            et un interrupteur sans effet mentirait au visiteur.
+          */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginTop: 14,
+              flexWrap: 'wrap',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setAvanceeOuverte((ouverte) => !ouverte)}
+              aria-expanded={avanceeOuverte}
+              aria-controls="recherche-avancee"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                border: 'none',
+                background: 'transparent',
+                color: '#1D3557',
+                fontFamily: 'inherit',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                padding: '4px 0',
+              }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1D3557" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M4 6h16M7 12h10M10 18h4" />
+              </svg>
+              Recherche avancée
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1D3557"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+                style={{ transform: `rotate(${avanceeOuverte ? 180 : 0}deg)`, transition: 'transform .2s ease' }}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <span style={{ fontSize: 12.5, color: '#9AA3AF' }}>
+              Affinez par langues, activités, filière, budget…
+            </span>
+          </div>
+
+          {avanceeOuverte && (
+            <div
+              id="recherche-avancee"
+              style={{
+                marginTop: 12,
+                padding: 18,
+                background: '#FBFAF7',
+                border: '1px solid #EAE6DE',
+                borderRadius: 14,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap' }}>
+                <select
+                  value={noteMin}
+                  onChange={(evenement) => setNoteMin(evenement.target.value)}
+                  aria-label="Note minimale"
+                  style={selecteurAvance}
+                >
+                  {OPTIONS_NOTE.map((option) => (
+                    <option key={option.valeur} value={option.valeur}>
+                      {option.libelle}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={tri}
+                  onChange={(evenement) => setTri(evenement.target.value)}
+                  aria-label="Ordre des résultats"
+                  style={selecteurAvance}
+                >
+                  {OPTIONS_TRI.map((option) => (
+                    <option key={option.valeur} value={option.valeur}>
+                      Trier : {option.libelle}
+                    </option>
+                  ))}
+                </select>
+
+                {/*
+                  MAD/AN, là où la maquette écrit « MAD/mois » : l'API filtre sur
+                  le budget ANNUEL des fiches. Un montant mensuel saisi ici
+                  écarterait à tort presque toutes les écoles. Les champs sont
+                  élargis d'autant — un budget annuel compte six chiffres — et
+                  plafonnés à sept : au-delà, l'entier sort de ce que la base
+                  sait comparer, et la recherche échouerait.
+                */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: '#fff',
+                    border: '1px solid #E1E5EA',
+                    borderRadius: 11,
+                    padding: '5px 12px',
+                  }}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.6px', textTransform: 'uppercase', color: '#9AA3AF' }}>
+                    Budget
+                  </span>
+                  <input
+                    value={budgetMin}
+                    onChange={(evenement) => setBudgetMin(chiffresSeuls(evenement.target.value))}
+                    onKeyDown={(evenement) => evenement.key === 'Enter' && rechercher()}
+                    inputMode="numeric"
+                    maxLength={7}
+                    placeholder="Min"
+                    aria-label="Budget annuel minimum, en dirhams"
+                    style={champBudgetAvance}
+                  />
+                  <span style={{ color: '#9AA3AF' }}>–</span>
+                  <input
+                    value={budgetMax}
+                    onChange={(evenement) => setBudgetMax(chiffresSeuls(evenement.target.value))}
+                    onKeyDown={(evenement) => evenement.key === 'Enter' && rechercher()}
+                    inputMode="numeric"
+                    maxLength={7}
+                    placeholder="Max"
+                    aria-label="Budget annuel maximum, en dirhams"
+                    style={champBudgetAvance}
+                  />
+                  <span style={{ fontSize: 12, color: '#9AA3AF', fontWeight: 600, whiteSpace: 'nowrap' }}>MAD/an</span>
+                </div>
+              </div>
+
+              {!type && (
+                <div style={{ fontSize: 13, color: '#9AA3AF', paddingTop: 6 }}>
+                  Choisissez d&rsquo;abord un type d&rsquo;établissement ci-dessus pour affiner par
+                  langues, activités, filière…
+                </div>
+              )}
+
+              {type && referentiel.isPending && (
+                <div style={{ fontSize: 13, color: '#9AA3AF', paddingTop: 6 }}>Chargement des filtres…</div>
+              )}
+
+              {type && referentiel.isError && (
+                <div role="alert" style={{ fontSize: 13, color: 'var(--e360-red)', paddingTop: 6 }}>
+                  Les filtres par langue, activité ou filière n&rsquo;ont pas pu être chargés. Les
+                  autres critères restent utilisables.
+                </div>
+              )}
+
+              {groupesAvances.length > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    paddingTop: 12,
+                    borderTop: '1px solid #EFECE6',
+                  }}
+                >
+                  {groupesAvances.map(({ famille, options }) => (
+                    <div
+                      key={famille}
+                      role="group"
+                      aria-label={LIBELLE_FAMILLE[famille]}
+                      style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}
+                    >
+                      <span
+                        style={{
+                          flex: 'none',
+                          minWidth: 82,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          letterSpacing: '.6px',
+                          textTransform: 'uppercase',
+                          color: '#9AA3AF',
+                        }}
+                      >
+                        {LIBELLE_FAMILLE[famille]}
+                      </span>
+                      {options.map((option) => (
+                        <PuceFiltre
+                          key={option.id}
+                          actif={caracteristiques.includes(option.id)}
+                          onClick={() => basculerCaracteristique(option.id)}
+                        >
+                          {option.libelle}
+                        </PuceFiltre>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -371,7 +699,9 @@ export function Accueil() {
             libelle="Établissements référencés"
           />
           <Chiffre valeur={villes.data ? String(villes.data.length) : '—'} libelle="Villes couvertes" />
-          <Chiffre valeur="6" libelle="Types d'établissements" />
+          {/* Dérivé du référentiel plutôt qu'écrit en dur : un chiffre littéral
+              ne suit pas l'ajout d'un type (RG02), et finit par mentir. */}
+          <Chiffre valeur={String(TYPES.length)} libelle="Types d'établissements" />
           <Chiffre valeur="0 MAD" libelle="Pour les parents, toujours" />
         </div>
       </section>
@@ -480,112 +810,150 @@ export function Accueil() {
         UN SEUL TÉMOIGNAGE À LA FOIS, avec flèches et points : c'est ce que fait
         la maquette. Une grille de trois dirait la même chose en plus petit ;
         le carrousel donne au témoignage la place d'être lu.
+
+        LA SECTION RESTE EN PLACE SANS AVIS : la maquette la dessine sans
+        condition. Elle dit alors qu'aucun témoignage n'est encore publié,
+        plutôt que d'en inventer un.
       */}
-      {temoignages.length > 0 && (
-        <section
-          style={{
-            background: '#fff',
-            borderTop: '1px solid #EAE6DE',
-            borderBottom: '1px solid #EAE6DE',
-            marginTop: 80,
-            padding: '72px 0',
-          }}
-        >
-          <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 32px' }}>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div style={surtitreStyle}>Témoignages</div>
-              <h2 style={titreSectionStyle}>Ils nous font confiance</h2>
-            </div>
+      <section
+        style={{
+          background: '#fff',
+          borderTop: '1px solid #EAE6DE',
+          borderBottom: '1px solid #EAE6DE',
+          marginTop: 80,
+          padding: '72px 0',
+        }}
+      >
+        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 32px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <div style={surtitreStyle}>Témoignages</div>
+            <h2 style={titreSectionStyle}>Ils nous font confiance</h2>
+          </div>
 
-            <div className="e3-reviewrow" style={{ maxWidth: 760, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 20 }}>
-              <FlecheCarrousel
-                sens="precedent"
-                onClick={() => setTemoin((t) => (t - 1 + temoignages.length) % temoignages.length)}
-              />
-
-              <div
-                style={{
-                  flex: 1,
-                  background: '#FBFAF7',
-                  border: '1px solid #EAE6DE',
-                  borderRadius: 18,
-                  padding: '40px 44px',
-                  textAlign: 'center',
-                  minHeight: 200,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                }}
-              >
-                <div style={{ color: '#E9A23B', fontSize: 18, letterSpacing: 3, marginBottom: 18 }}>
-                  {'★'.repeat(temoin_actuel?.note ?? 5)}
-                </div>
-                <p
-                  style={{
-                    margin: 0,
-                    font: "500 20px/1.55 'Inter', sans-serif",
-                    color: '#1A1A1A',
-                    letterSpacing: '-0.2px',
-                  }}
-                >
-                  « {temoin_actuel?.commentaire} »
-                </p>
-                <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                  <div
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: '50%',
-                      background: '#1D3557',
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      font: "700 15px/1 'Inter', sans-serif",
-                    }}
-                  >
-                    {initialesDe(temoin_actuel?.auteur_nom ?? '')}
-                  </div>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ font: "700 14.5px/1.3 'Inter', sans-serif" }}>
-                      {temoin_actuel?.auteur_nom}
-                    </div>
-                    <div style={{ font: "400 13px/1.3 'Inter', sans-serif", color: '#9AA3AF' }}>
-                      Parent · {temoin_actuel?.etablissement.nom}
-                    </div>
-                  </div>
+          {avisEnAvant.isPending && (
+            <div style={{ maxWidth: 760, margin: '0 auto' }}>
+              <div className="e3-reviewcard" style={{ ...carteTemoignageStyle, alignItems: 'center', gap: 14 }}>
+                <Skeleton variant="text" width={110} height={16} />
+                <Skeleton variant="text" width="85%" height={18} />
+                <Skeleton variant="text" width="60%" height={18} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+                  <Skeleton variant="circle" width={42} />
+                  <Skeleton variant="text" width={120} height={14} />
                 </div>
               </div>
+            </div>
+          )}
 
-              <FlecheCarrousel
-                sens="suivant"
-                onClick={() => setTemoin((t) => (t + 1) % temoignages.length)}
+          {avisEnAvant.isError && (
+            <div style={{ maxWidth: 760, margin: '0 auto' }}>
+              <div className="e3-reviewcard" style={carteTemoignageStyle}>
+                <p role="alert" style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: 'var(--e360-red)' }}>
+                  Les témoignages n&rsquo;ont pas pu être chargés. Rechargez la page.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {avisEnAvant.isSuccess && !temoinActuel && (
+            <div style={{ maxWidth: 760, margin: '0 auto' }}>
+              <EmptyState
+                icon="message-circle"
+                title="Aucun témoignage publié pour l’instant"
+                description="Les avis de parents que nous mettons en avant paraîtront ici, une fois relus."
+                style={{ ...carteTemoignageStyle, padding: '36px 24px' }}
               />
             </div>
+          )}
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
-              {temoignages.map((avis, rang) => (
-                <button
-                  key={avis.id}
-                  type="button"
-                  aria-label={`Témoignage ${rang + 1}`}
-                  onClick={() => setTemoin(rang)}
-                  style={{
-                    cursor: 'pointer',
-                    border: 'none',
-                    padding: 0,
-                    width: rang === temoin ? 28 : 8,
-                    height: 8,
-                    borderRadius: 8,
-                    background: rang === temoin ? '#E63946' : '#E1E5EA',
-                    transition: 'all .3s ease',
-                  }}
+          {temoinActuel && (
+            <>
+              <div
+                className="e3-reviewrow"
+                style={{ maxWidth: 760, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 20 }}
+              >
+                <FlecheCarrousel
+                  sens="precedent"
+                  onClick={() => setTemoin((rangTemoin - 1 + temoignages.length) % temoignages.length)}
                 />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+
+                {/* Annoncé à chaque changement : sans cela, un lecteur d'écran
+                    presse la flèche et n'entend rien. */}
+                <div className="e3-reviewcard" style={carteTemoignageStyle} aria-live="polite">
+                  <div
+                    role="img"
+                    aria-label={`Note : ${temoinActuel.note} sur 5`}
+                    style={{ fontSize: 18, letterSpacing: 3, marginBottom: 18 }}
+                  >
+                    <span style={{ color: '#E9A23B' }}>{'★'.repeat(temoinActuel.note)}</span>
+                    <span style={{ color: '#D9DEE5' }}>{'☆'.repeat(5 - temoinActuel.note)}</span>
+                  </div>
+                  <p
+                    style={{
+                      margin: 0,
+                      font: "500 20px/1.55 'Inter', sans-serif",
+                      color: '#1A1A1A',
+                      letterSpacing: '-0.2px',
+                    }}
+                  >
+                    « {temoinActuel.commentaire} »
+                  </p>
+                  <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                    <div
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: '50%',
+                        background: TEINTES_AVATAR[rangTemoin % TEINTES_AVATAR.length],
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flex: 'none',
+                        font: "700 15px/1 'Inter', sans-serif",
+                      }}
+                    >
+                      {initialesDe(temoinActuel.auteur_nom)}
+                    </div>
+                    <div style={{ textAlign: 'left', minWidth: 0 }}>
+                      <div style={{ font: "700 14.5px/1.3 'Inter', sans-serif" }}>{temoinActuel.auteur_nom}</div>
+                      <div style={{ font: "400 13px/1.3 'Inter', sans-serif", color: '#9AA3AF' }}>
+                        Parent · {temoinActuel.etablissement.nom}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <FlecheCarrousel
+                  sens="suivant"
+                  onClick={() => setTemoin((rangTemoin + 1) % temoignages.length)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
+                {temoignages.map((avis, rang) => (
+                  <button
+                    key={avis.id}
+                    type="button"
+                    aria-label={`Témoignage ${rang + 1} sur ${temoignages.length}`}
+                    aria-current={rang === rangTemoin}
+                    onClick={() => setTemoin(rang)}
+                    style={{
+                      cursor: 'pointer',
+                      border: 'none',
+                      padding: 0,
+                      width: rang === rangTemoin ? 26 : 8,
+                      height: 8,
+                      borderRadius: 8,
+                      background: rang === rangTemoin ? '#E63946' : '#DED8CE',
+                      transition: 'all .3s ease',
+                    }}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
       {/* ---- Comment ça marche ------------------------------------------- */}
       <section style={{ maxWidth: 1180, margin: '80px auto 0', padding: '0 32px' }}>
@@ -629,9 +997,9 @@ export function Accueil() {
                   gap: 14,
                 }}
               >
-                <div style={{ fontSize: 15, letterSpacing: 2 }}>
+                <div role="img" aria-label={`Note : ${avis.note} sur 5`} style={{ fontSize: 15, letterSpacing: 2 }}>
                   <span style={{ color: '#E9A23B' }}>{'★'.repeat(avis.note)}</span>
-                  <span style={{ color: '#D9DEE5' }}>{'★'.repeat(5 - avis.note)}</span>
+                  <span style={{ color: '#D9DEE5' }}>{'☆'.repeat(5 - avis.note)}</span>
                 </div>
                 <p style={{ margin: 0, font: "400 15px/1.65 'Inter', sans-serif", color: '#1A1A1A', flex: 1 }}>
                   « {avis.commentaire} »
@@ -659,7 +1027,9 @@ export function Accueil() {
                       flex: 'none',
                     }}
                   >
-                    {initialesDe(avis.auteur_nom)}
+                    {/* Une seule initiale ici, deux dans le carrousel : la
+                        maquette distingue ainsi les deux blocs. */}
+                    {initialesDe(avis.auteur_nom).slice(0, 1) || '?'}
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ font: "700 14px/1.3 'Inter', sans-serif" }}>{avis.auteur_nom}</div>
@@ -683,22 +1053,64 @@ export function Accueil() {
       )}
 
       {/* ---- Le blog ------------------------------------------------------ */}
-      {apercuBlog.length > 0 && (
-        <section style={{ maxWidth: 1180, margin: '80px auto 0', padding: '0 32px' }}>
-          <EnTeteSection
-            surtitre="Le blog"
-            titre="Conseils pour les parents"
-            lien="Tous les articles"
-            onLien={() => naviguer('/blog')}
-          />
+      {/*
+        TOUJOURS AFFICHÉE, comme dans la maquette. Sans article publié, elle le
+        dit et renvoie au blog, au lieu de disparaître — ou de montrer des
+        conseils que personne n'a écrits.
 
+        Pas de durée de lecture, pourtant dessinée : aucune donnée ne la porte,
+        et la maquette elle-même l'écrit en dur (« 4 min ») pour les articles
+        venus de l'administration.
+      */}
+      <section style={{ maxWidth: 1180, margin: '80px auto 0', padding: '0 32px' }}>
+        <EnTeteSection
+          surtitre="Le blog"
+          titre="Conseils pour les parents"
+          lien="Tous les articles"
+          onLien={() => naviguer('/blog')}
+        />
+
+        {blogEnCours && (
           <div className="e3-blog-grille">
-            {apercuBlog.map((article) => (
-              <CarteBlog key={article.id} article={article} />
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                style={{ background: '#fff', border: '1px solid #EAE6DE', borderRadius: 16, overflow: 'hidden' }}
+              >
+                <Skeleton variant="rect" height={180} radius={0} />
+                <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <Skeleton variant="text" width={80} height={20} />
+                  <Skeleton variant="text" width="90%" height={16} />
+                  <Skeleton variant="text" width="40%" />
+                </div>
+              </div>
             ))}
           </div>
-        </section>
-      )}
+        )}
+
+        {blogEnErreur && (
+          <p role="alert" style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--e360-red)' }}>
+            Les articles n&rsquo;ont pas pu être chargés. Rechargez la page.
+          </p>
+        )}
+
+        {!blogEnCours && !blogEnErreur && apercuBlog.length === 0 && (
+          <EmptyState
+            icon="book-open"
+            title="Aucun article publié pour l’instant"
+            description="Nos conseils pour bien choisir un établissement paraîtront ici dès leur publication."
+            style={{ background: '#fff', border: '1px solid #EAE6DE', borderRadius: 16 }}
+          />
+        )}
+
+        {!blogEnCours && apercuBlog.length > 0 && (
+          <div className="e3-blog-grille">
+            {apercuBlog.map((article) => (
+              <CarteBlog key={article.id} article={article} afficherChapeau={false} />
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* ---- Emplacement annonceur --------------------------------------- */}
       {/*
@@ -933,6 +1345,7 @@ function FlecheCarrousel({ sens, onClick }: { sens: 'precedent' | 'suivant'; onC
       type="button"
       onClick={onClick}
       aria-label={sens === 'precedent' ? 'Témoignage précédent' : 'Témoignage suivant'}
+      className="e3-btn"
       style={{
         flex: 'none',
         width: 46,
@@ -1092,6 +1505,82 @@ function Etape({ n, titre, texte }: { n: number; titre: string; texte: string })
     </div>
   );
 }
+
+/**
+ * Puce de caractéristique de la recherche avancée.
+ *
+ * Pas la `Puce` des résultats : la maquette de l'accueil l'habille autrement
+ * (filet #E1E5EA, texte rouge vif une fois cochée), et la page des résultats
+ * n'a pas à changer d'allure pour autant.
+ */
+function PuceFiltre({
+  children,
+  actif,
+  onClick,
+}: {
+  children: React.ReactNode;
+  actif: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={actif}
+      style={{
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        fontSize: 13,
+        fontWeight: 600,
+        padding: '6px 13px',
+        borderRadius: 20,
+        background: actif ? '#FDE8EA' : '#fff',
+        border: `1px solid ${actif ? '#E63946' : '#E1E5EA'}`,
+        color: actif ? '#E63946' : '#5A6472',
+        transition: 'all .15s ease',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Carte du carrousel — partagée par ses états, pour que rien ne saute au chargement. */
+const carteTemoignageStyle: React.CSSProperties = {
+  flex: 1,
+  background: '#FBFAF7',
+  border: '1px solid #EAE6DE',
+  borderRadius: 18,
+  padding: '40px 44px',
+  textAlign: 'center',
+  minHeight: 200,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+};
+
+const selecteurAvance: React.CSSProperties = {
+  border: '1px solid #E1E5EA',
+  background: '#fff',
+  borderRadius: 11,
+  fontFamily: 'inherit',
+  fontSize: 14,
+  fontWeight: 500,
+  padding: '10px 14px',
+  cursor: 'pointer',
+  color: '#1A1A1A',
+};
+
+const champBudgetAvance: React.CSSProperties = {
+  width: 76,
+  background: '#fff',
+  border: '1px solid #E1E5EA',
+  borderRadius: 8,
+  fontFamily: 'inherit',
+  fontSize: 13.5,
+  padding: '7px 9px',
+  color: '#1A1A1A',
+};
 
 const surtitreStyle: React.CSSProperties = {
   fontSize: 12,

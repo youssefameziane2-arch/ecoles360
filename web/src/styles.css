@@ -46,7 +46,6 @@ a {
 
 /* ---- Grilles de la maquette ---------------------------------------- */
 
-/* Tuiles de type d'établissement — six types (RG02). */
 /* Sept types d'établissement depuis l'ajout de « École supérieure » (RG02). */
 .e3-typegrid {
   display: grid;
@@ -314,6 +313,23 @@ a {
   }
   .titre-section {
     font-size: 26px;
+  }
+  /* Carrousel de témoignages : avec ses gouttières et ses marges de bureau,
+     la citation ne garderait que quelques mots par ligne. `!important` parce
+     que ces valeurs sont posées en style en ligne, qui l'emporterait sinon. */
+  .e3-reviewrow {
+    gap: 10px !important;
+  }
+  .e3-reviewrow > .e3-btn {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .e3-reviewcard {
+    padding: 24px 16px !important;
+    min-height: 0 !important;
+  }
+  .e3-reviewcard p {
+    font-size: 16px !important;
   }
 }
 
