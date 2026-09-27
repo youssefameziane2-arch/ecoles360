@@ -364,3 +364,28 @@ Ce qu'une extension du DTO impliquerait, pour éclairer le choix :
 La page de résultats porte déjà les mêmes écarts (tri, sponsorisé) : la
 décision vaudra pour les deux écrans.
 **Statut :** à trancher.
+
+## B-35 — L'accueil affiche un numéro de conseiller factice
+
+Le bloc « Besoin d'aide pour choisir ? » de l'accueil affiche
+`TELEPHONE_CONSEILLER`, une constante de `MobilierAssistance.tsx` qui vaut
+`06 00 00 00 00` à défaut de `VITE_TELEPHONE_CONSEILLER`. Le bouton porte un
+lien `tel:` vers ce numéro inexistant, en pleine page publique.
+
+La bannière flottante, elle, fait déjà les choses correctement : elle appelle
+`chargerConseillers()` et fait tourner les commerciaux réels avec leur nom.
+Deux blocs qui affichent « le numéro du conseiller » puisent donc à deux
+sources différentes, et une seule est bonne.
+
+**Le défaut est ancien, il vient seulement d'être rendu visible.** Tant que la
+constante portait un vrai numéro, l'incohérence ne se voyait pas : les deux
+blocs affichaient quelque chose de plausible. La rendre factice — pour qu'un
+oubli de configuration ne fasse pas appeler un inconnu — a fait apparaître ce
+qu'elle masquait. C'est exactement ce qu'on attendait d'elle.
+
+**À faire :** le bloc 13 doit puiser à `chargerConseillers()` comme la
+bannière. La constante ne doit plus servir qu'au repli du composant qui la
+définit, et `TELEPHONE_CONSEILLER` / `LIEN_TELEPHONE` cesser d'être exportés.
+
+**Bloquant avant mise en ligne** : un numéro faux sur la page d'accueil.
+**Statut :** à faire.
