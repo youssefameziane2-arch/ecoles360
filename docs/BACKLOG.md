@@ -460,4 +460,14 @@ fiche de son auteur, un commercial n'en a pas. La maquette prévoit la bascule
 « blog actif » pour les deux rôles (`blogCanToggle`).
 **Côté web ensuite :** remplacer `BlogCommercial` par `BlogEspace` dans
 `App.tsx` — une ligne.
-**Statut :** à faire — hors du périmètre de la coquille commerciale.
+
+**Tranché :** un article de commercial est un **article de plateforme**
+(`etablissement_id` nul) signé de son auteur, qui passe par la validation —
+le commercial n'est pas une autorité éditoriale, contrairement à
+l'administrateur. `ArticlesService` raisonne désormais en `Redacteur` : un
+établissement voit les articles de sa fiche, un commercial **les siens
+seulement** (`auteur_id`), jamais ceux d'un collègue ni de l'administration,
+qui partagent le même `etablissement_id` nul. L'ouverture du blog est
+journalisée sous le rôle réel de l'acteur (elle l'était sous « établissement »
+en dur). Le secrétariat reste fermé.
+**Statut :** corrigé.
