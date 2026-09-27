@@ -78,7 +78,7 @@ référence, à la demande du client.
 | Avis reçus | `isEtabAvis` | `/espace/avis` | ✅ |
 | Blog | `isBlogList` | `/espace/blog` | ✅ |
 | Article (éditeur) | `isBlogDetail` | `/espace/blog` | ✅ |
-| Statistiques | `isEtabStats` | `/espace/statistiques` | 🟡 vues du mois, clics « Appeler », contacts WhatsApp (écart au mois précédent à date), vues mensuelles, origine des contacts — manque « Taux de contact », sans définition (B-42) ; l'origine « Accueil » n'est jamais tracée (B-41) |
+| Statistiques | `isEtabStats` | `/espace/statistiques` | 🟡 vues du mois, clics « Appeler », contacts WhatsApp (écart au mois précédent à date), vues mensuelles, origine des contacts — manque « Taux de contact », sans définition (B-42) |
 | Abonnement & facturation | `isEtabCredits` | `/espace/facturation` | ❌ formules, factures, conseiller |
 | CRM Leads | `isCrm` | — | ⛔ hors périmètre |
 

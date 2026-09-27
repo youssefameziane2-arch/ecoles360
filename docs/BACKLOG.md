@@ -594,7 +594,22 @@ sur une facture le jour où quelqu'un les additionnerait.
    autres devenant des « clics vers la fiche » ;
 3. tracer « à la une » comme les résultats, en acceptant la double trace.
 
-**Statut :** à trancher — ce qu'est une vue, et d'où on la dit venir.
+**Tranché par le client :** l'option 1, sans le paramètre de route. La trace
+`vue / resultats` du bouton « Voir la fiche » est retirée ; seule la fiche
+trace la vue, à son ouverture. Elle couvre tous les chemins d'arrivée, y
+compris ceux que les résultats ne voient pas — un lien partagé sur WhatsApp,
+un résultat Google. Garder la trace des résultats plutôt que celle de la
+fiche aurait perdu ces arrivées-là. Les traces `appel` et `whatsapp` des
+résultats restent : un clic y est un clic, jamais doublé.
+
+**Conséquence sur `une` :** les cartes « à la une » de l'accueil n'ont ni
+bouton « Appeler » ni « WhatsApp » — seulement la navigation vers la fiche,
+qui trace la vue. La source `une` n'a donc plus rien à porter ; l'écran
+« Statistiques » ne l'affiche que si une trace la porte, ce qui n'arrive pas.
+
+Les traces déjà en base ne sont pas réécrites : les doublons passés restent
+dans les totaux des mois écoulés.
+**Statut :** corrigé.
 
 ## B-42 — « Taux de contact » : aucune définition
 
@@ -623,5 +638,15 @@ deux « Vues ce mois » qui ne concordent pas.
 `EspaceService.statistiques()` (ou le même calcul), ou renommer la tuile
 « Vues sur 30 jours ». Le libellé est celui de la maquette ; le calcul
 conforme au libellé est le premier.
-**Statut :** à confirmer — l'écart est constaté, le choix entre corriger le
-calcul et renommer la tuile revient au client.
+**Tranché par le client :** corriger le calcul, garder le libellé. Le tableau
+de bord adopte la définition des statistiques — mois calendaire en UTC, `vue`
+et `vue_sponsorisee` —, la plus récente et celle que suit déjà le tableau de
+bord de l'administration. Le champ `vues_30j` devient `vues_ce_mois` : un nom
+qui annoncerait trente jours pour compter un mois reporterait l'erreur dans
+le contrat d'API.
+
+Les deux écrans lisent désormais la même série, `vuesMensuelles()`, sur
+`series-temporelles.ts` : la dernière barre du tableau de bord est la tuile,
+et la tuile est celle des statistiques. `canaux` garde ses trente jours
+glissants, annoncés comme tels à l'écran.
+**Statut :** corrigé.

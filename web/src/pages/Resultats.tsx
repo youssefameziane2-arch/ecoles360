@@ -560,9 +560,13 @@ function CarteResultat({ fiche }: { fiche: EtablissementListe }) {
             </a>
           )}
 
+          {/*
+            Pas de trace de vue au clic : la fiche la pose à son ouverture, par
+            quelque chemin qu'on y arrive (B-41). La poser ici aussi comptait
+            deux vues pour une consultation, et aucune pour l'image ou le nom.
+          */}
           <Link
             to={`/etablissements/${fiche.slug}`}
-            onClick={() => tracerEvenement(fiche.slug, 'vue', 'resultats')}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: '1px solid #D4DAE2', background: '#fff', color: '#1D3557', fontSize: 13, fontWeight: 700, padding: '9px 13px', borderRadius: 9, whiteSpace: 'nowrap' }}
           >
             Voir la fiche

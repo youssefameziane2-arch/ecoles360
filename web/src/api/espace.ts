@@ -17,7 +17,8 @@ export type StatutAvis = 'en_attente' | 'publie' | 'rejete';
 export interface TableauDeBord {
   note_moy: string;
   nb_avis: number;
-  vues_30j: number;
+  /** Mois calendaire, vues simples et sponsorisées — la définition des statistiques (B-43). */
+  vues_ce_mois: number;
   vues_par_mois: { mois: string; vues: number }[];
   canaux: { type: 'appel' | 'whatsapp' | 'vue' | 'vue_sponsorisee'; total: number }[];
   dernieres_demandes: {

@@ -23,6 +23,19 @@ export function joursAvant(reference: Date, jours: number): Date {
   return date;
 }
 
+/**
+ * Premier jour d'un mois, à minuit UTC — `moisEnArriere` mois avant celui de
+ * `reference`.
+ *
+ * EN UTC, PAS EN HEURE LOCALE : c'est l'horloge de `DATE()` côté MySQL et de
+ * `serieJournaliere`. Borné en heure locale, « ce mois » et la dernière barre
+ * des vues mensuelles pourraient différer d'une heure de traces, et deux
+ * écrans afficheraient deux nombres pour le même mois.
+ */
+export function debutDeMois(reference: Date, moisEnArriere = 0): Date {
+  return new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth() - moisEnArriere, 1));
+}
+
 export type Granularite = 'jour' | 'semaine' | 'mois';
 
 /** Un point de courbe : la date de son premier jour, et les vues qu'il couvre. */
