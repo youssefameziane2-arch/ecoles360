@@ -193,16 +193,6 @@ export interface ProprietesEmptyState {
 
 export const EmptyState = duDs<ProprietesEmptyState>('EmptyState');
 
-export interface ProprietesSkeleton {
-  variant?: 'text' | 'rect' | 'circle';
-  width?: number | string;
-  height?: number | string;
-  radius?: number | string;
-  style?: React.CSSProperties;
-}
-
-export const Skeleton = duDs<ProprietesSkeleton>('Skeleton');
-
 export interface ProprietesSkeletonCard {
   style?: React.CSSProperties;
 }

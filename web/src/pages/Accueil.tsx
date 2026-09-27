@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { chargerArticleALaUne, chargerArticles, type CarteArticle } from '@/api/articles';
+import { chargerArticles, type CarteArticle } from '@/api/articles';
 import { chargerAvisEnAvant } from '@/api/avis';
 import { chargerFaq } from '@/api/faq';
 import {
@@ -23,15 +23,7 @@ import {
   TELEPHONE_CONSEILLER,
 } from '@/components/MobilierAssistance';
 import { CarteBlog } from './Blog';
-import {
-  Button,
-  CityCard,
-  EmptyState,
-  EstablishmentCard,
-  Icon,
-  Skeleton,
-  SkeletonCard,
-} from '@/ds/composants';
+import { Button, CityCard, EstablishmentCard, Icon, SkeletonCard } from '@/ds/composants';
 import { formaterDate, formaterMad, formaterNombre, formaterNote } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
 
@@ -70,7 +62,8 @@ const TYPES = Object.keys(LIBELLE_TYPE) as TypeEtablissement[];
  * DES ENTIERS SEULEMENT, là où la maquette propose « 4,5 et plus » : l'API
  * déclare `note_min` en `@IsInt()`, et 4.5 serait refusé en 422 — le parent
  * atterrirait sur une page d'erreur. Ce sont aussi les deux seuils des puces
- * « Note » des résultats, qui s'allument donc à l'arrivée.
+ * « Note » des résultats, qui s'allument donc à l'arrivée. Écart consigné au
+ * backlog (B-34).
  */
 const OPTIONS_NOTE = [
   { valeur: '', libelle: 'Toutes les notes' },
@@ -84,7 +77,7 @@ const OPTIONS_NOTE = [
  * La maquette propose « Pertinence » et deux tris par prix : aucun n'existe
  * côté serveur, et un tri affiché qui ne trierait rien tromperait le visiteur.
  * Les libellés sont ceux du sélecteur des résultats, pour qu'il y retrouve son
- * choix.
+ * choix. Écart consigné au backlog (B-34).
  */
 const OPTIONS_TRI: { valeur: NonNullable<FiltresRecherche['tri']>; libelle: string }[] = [
   { valeur: 'note', libelle: 'Mieux notés' },
@@ -94,9 +87,6 @@ const OPTIONS_TRI: { valeur: NonNullable<FiltresRecherche['tri']>; libelle: stri
 
 /** Tri appliqué par l'API en l'absence de paramètre — inutile de l'écrire dans l'URL. */
 const TRI_PAR_DEFAUT = 'note';
-
-/** Pastilles d'avatar du carrousel, en rotation — les trois teintes de la maquette. */
-const TEINTES_AVATAR = ['#E63946', '#1D3557', '#2E9E5B'];
 
 export function Accueil() {
   useTitrePage(
@@ -139,29 +129,20 @@ export function Accueil() {
     queryKey: ['articles', 'accueil'],
     queryFn: () => chargerArticles(),
   });
-  const articleUne = useQuery({ queryKey: ['articles', 'une'], queryFn: chargerArticleALaUne });
 
   // Le carrousel de témoignages puise dans les MÊMES avis mis en avant que la
   // grille plus bas : l'administrateur n'a qu'une sélection à tenir, et les
   // deux blocs ne peuvent pas se contredire.
   const temoignages = avisEnAvant.data ?? [];
   const [temoin, setTemoin] = useState(0);
-  const rangTemoin = temoin % Math.max(1, temoignages.length);
-  const temoinActuel = temoignages[rangTemoin];
+  const temoin_actuel = temoignages[temoin % Math.max(1, temoignages.length)];
 
-  /**
-   * Trois articles sur l'accueil, À LA UNE D'ABORD — comme la maquette.
-   *
-   * La liste publique EXCLUT l'article à la une, qui tient le bandeau du blog.
-   * Sans cette seconde requête, l'article que l'administrateur a choisi de
-   * pousser serait le seul à ne jamais paraître sur l'accueil.
-   */
-  const apercuBlog: CarteArticle[] = [
-    ...(articleUne.data ? [articleUne.data] : []),
-    ...(blog.data?.data ?? []),
-  ].slice(0, 3);
-  const blogEnCours = blog.isPending || articleUne.isPending;
-  const blogEnErreur = !blogEnCours && apercuBlog.length === 0 && (blog.isError || articleUne.isError);
+  // Trois articles sur l'accueil, à la une d'abord — comme la maquette.
+  const apercuBlog: CarteArticle[] = (blog.data?.data ?? []).slice(0, 3);
+
+  // Les rubriques sont aplaties : l'accueil montre les quatre premières
+  // questions de la FAQ, toutes rubriques confondues, comme la maquette.
+  const apercuFaq = (faq.data ?? []).flatMap((rubrique) => rubrique.items).slice(0, 4);
 
   // Les familles de filtres suivent le type choisi, comme dans la maquette :
   // sans type, le panneau invite à en choisir un plutôt que d'afficher des
@@ -181,10 +162,6 @@ export function Accueil() {
 
   /** Ne garde que les chiffres : `budget_min` est un entier côté API, « 12 000 » y serait refusé. */
   const chiffresSeuls = (saisie: string) => saisie.replace(/[^0-9]/g, '');
-
-  // Les rubriques sont aplaties : l'accueil montre les quatre premières
-  // questions de la FAQ, toutes rubriques confondues, comme la maquette.
-  const apercuFaq = (faq.data ?? []).flatMap((rubrique) => rubrique.items).slice(0, 4);
 
   const suggestions = (villes.data ?? []).filter((v) =>
     v.nom.toLowerCase().includes(ville.trim().toLowerCase()),
@@ -482,7 +459,8 @@ export function Accueil() {
 
             PAS DE BASCULE « École sponsorisée », pourtant dessinée : aucun
             paramètre de l'API ne filtre dessus (même écart que les résultats),
-            et un interrupteur sans effet mentirait au visiteur.
+            et un interrupteur sans effet mentirait au visiteur. Consigné au
+            backlog (B-34).
           */}
           <div
             style={{
@@ -810,150 +788,112 @@ export function Accueil() {
         UN SEUL TÉMOIGNAGE À LA FOIS, avec flèches et points : c'est ce que fait
         la maquette. Une grille de trois dirait la même chose en plus petit ;
         le carrousel donne au témoignage la place d'être lu.
-
-        LA SECTION RESTE EN PLACE SANS AVIS : la maquette la dessine sans
-        condition. Elle dit alors qu'aucun témoignage n'est encore publié,
-        plutôt que d'en inventer un.
       */}
-      <section
-        style={{
-          background: '#fff',
-          borderTop: '1px solid #EAE6DE',
-          borderBottom: '1px solid #EAE6DE',
-          marginTop: 80,
-          padding: '72px 0',
-        }}
-      >
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 32px' }}>
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <div style={surtitreStyle}>Témoignages</div>
-            <h2 style={titreSectionStyle}>Ils nous font confiance</h2>
-          </div>
+      {temoignages.length > 0 && (
+        <section
+          style={{
+            background: '#fff',
+            borderTop: '1px solid #EAE6DE',
+            borderBottom: '1px solid #EAE6DE',
+            marginTop: 80,
+            padding: '72px 0',
+          }}
+        >
+          <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 32px' }}>
+            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+              <div style={surtitreStyle}>Témoignages</div>
+              <h2 style={titreSectionStyle}>Ils nous font confiance</h2>
+            </div>
 
-          {avisEnAvant.isPending && (
-            <div style={{ maxWidth: 760, margin: '0 auto' }}>
-              <div className="e3-reviewcard" style={{ ...carteTemoignageStyle, alignItems: 'center', gap: 14 }}>
-                <Skeleton variant="text" width={110} height={16} />
-                <Skeleton variant="text" width="85%" height={18} />
-                <Skeleton variant="text" width="60%" height={18} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-                  <Skeleton variant="circle" width={42} />
-                  <Skeleton variant="text" width={120} height={14} />
+            <div className="e3-reviewrow" style={{ maxWidth: 760, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 20 }}>
+              <FlecheCarrousel
+                sens="precedent"
+                onClick={() => setTemoin((t) => (t - 1 + temoignages.length) % temoignages.length)}
+              />
+
+              <div
+                style={{
+                  flex: 1,
+                  background: '#FBFAF7',
+                  border: '1px solid #EAE6DE',
+                  borderRadius: 18,
+                  padding: '40px 44px',
+                  textAlign: 'center',
+                  minHeight: 200,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                }}
+              >
+                <div style={{ color: '#E9A23B', fontSize: 18, letterSpacing: 3, marginBottom: 18 }}>
+                  {'★'.repeat(temoin_actuel?.note ?? 5)}
+                </div>
+                <p
+                  style={{
+                    margin: 0,
+                    font: "500 20px/1.55 'Inter', sans-serif",
+                    color: '#1A1A1A',
+                    letterSpacing: '-0.2px',
+                  }}
+                >
+                  « {temoin_actuel?.commentaire} »
+                </p>
+                <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                  <div
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: '50%',
+                      background: '#1D3557',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      font: "700 15px/1 'Inter', sans-serif",
+                    }}
+                  >
+                    {initialesDe(temoin_actuel?.auteur_nom ?? '')}
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ font: "700 14.5px/1.3 'Inter', sans-serif" }}>
+                      {temoin_actuel?.auteur_nom}
+                    </div>
+                    <div style={{ font: "400 13px/1.3 'Inter', sans-serif", color: '#9AA3AF' }}>
+                      Parent · {temoin_actuel?.etablissement.nom}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {avisEnAvant.isError && (
-            <div style={{ maxWidth: 760, margin: '0 auto' }}>
-              <div className="e3-reviewcard" style={carteTemoignageStyle}>
-                <p role="alert" style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: 'var(--e360-red)' }}>
-                  Les témoignages n&rsquo;ont pas pu être chargés. Rechargez la page.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {avisEnAvant.isSuccess && !temoinActuel && (
-            <div style={{ maxWidth: 760, margin: '0 auto' }}>
-              <EmptyState
-                icon="message-circle"
-                title="Aucun témoignage publié pour l’instant"
-                description="Les avis de parents que nous mettons en avant paraîtront ici, une fois relus."
-                style={{ ...carteTemoignageStyle, padding: '36px 24px' }}
+              <FlecheCarrousel
+                sens="suivant"
+                onClick={() => setTemoin((t) => (t + 1) % temoignages.length)}
               />
             </div>
-          )}
 
-          {temoinActuel && (
-            <>
-              <div
-                className="e3-reviewrow"
-                style={{ maxWidth: 760, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 20 }}
-              >
-                <FlecheCarrousel
-                  sens="precedent"
-                  onClick={() => setTemoin((rangTemoin - 1 + temoignages.length) % temoignages.length)}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
+              {temoignages.map((avis, rang) => (
+                <button
+                  key={avis.id}
+                  type="button"
+                  aria-label={`Témoignage ${rang + 1}`}
+                  onClick={() => setTemoin(rang)}
+                  style={{
+                    cursor: 'pointer',
+                    border: 'none',
+                    padding: 0,
+                    width: rang === temoin ? 28 : 8,
+                    height: 8,
+                    borderRadius: 8,
+                    background: rang === temoin ? '#E63946' : '#E1E5EA',
+                    transition: 'all .3s ease',
+                  }}
                 />
-
-                {/* Annoncé à chaque changement : sans cela, un lecteur d'écran
-                    presse la flèche et n'entend rien. */}
-                <div className="e3-reviewcard" style={carteTemoignageStyle} aria-live="polite">
-                  <div
-                    role="img"
-                    aria-label={`Note : ${temoinActuel.note} sur 5`}
-                    style={{ fontSize: 18, letterSpacing: 3, marginBottom: 18 }}
-                  >
-                    <span style={{ color: '#E9A23B' }}>{'★'.repeat(temoinActuel.note)}</span>
-                    <span style={{ color: '#D9DEE5' }}>{'☆'.repeat(5 - temoinActuel.note)}</span>
-                  </div>
-                  <p
-                    style={{
-                      margin: 0,
-                      font: "500 20px/1.55 'Inter', sans-serif",
-                      color: '#1A1A1A',
-                      letterSpacing: '-0.2px',
-                    }}
-                  >
-                    « {temoinActuel.commentaire} »
-                  </p>
-                  <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                    <div
-                      style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: '50%',
-                        background: TEINTES_AVATAR[rangTemoin % TEINTES_AVATAR.length],
-                        color: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flex: 'none',
-                        font: "700 15px/1 'Inter', sans-serif",
-                      }}
-                    >
-                      {initialesDe(temoinActuel.auteur_nom)}
-                    </div>
-                    <div style={{ textAlign: 'left', minWidth: 0 }}>
-                      <div style={{ font: "700 14.5px/1.3 'Inter', sans-serif" }}>{temoinActuel.auteur_nom}</div>
-                      <div style={{ font: "400 13px/1.3 'Inter', sans-serif", color: '#9AA3AF' }}>
-                        Parent · {temoinActuel.etablissement.nom}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <FlecheCarrousel
-                  sens="suivant"
-                  onClick={() => setTemoin((rangTemoin + 1) % temoignages.length)}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
-                {temoignages.map((avis, rang) => (
-                  <button
-                    key={avis.id}
-                    type="button"
-                    aria-label={`Témoignage ${rang + 1} sur ${temoignages.length}`}
-                    aria-current={rang === rangTemoin}
-                    onClick={() => setTemoin(rang)}
-                    style={{
-                      cursor: 'pointer',
-                      border: 'none',
-                      padding: 0,
-                      width: rang === rangTemoin ? 26 : 8,
-                      height: 8,
-                      borderRadius: 8,
-                      background: rang === rangTemoin ? '#E63946' : '#DED8CE',
-                      transition: 'all .3s ease',
-                    }}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ---- Comment ça marche ------------------------------------------- */}
       <section style={{ maxWidth: 1180, margin: '80px auto 0', padding: '0 32px' }}>
@@ -997,9 +937,9 @@ export function Accueil() {
                   gap: 14,
                 }}
               >
-                <div role="img" aria-label={`Note : ${avis.note} sur 5`} style={{ fontSize: 15, letterSpacing: 2 }}>
+                <div style={{ fontSize: 15, letterSpacing: 2 }}>
                   <span style={{ color: '#E9A23B' }}>{'★'.repeat(avis.note)}</span>
-                  <span style={{ color: '#D9DEE5' }}>{'☆'.repeat(5 - avis.note)}</span>
+                  <span style={{ color: '#D9DEE5' }}>{'★'.repeat(5 - avis.note)}</span>
                 </div>
                 <p style={{ margin: 0, font: "400 15px/1.65 'Inter', sans-serif", color: '#1A1A1A', flex: 1 }}>
                   « {avis.commentaire} »
@@ -1027,9 +967,7 @@ export function Accueil() {
                       flex: 'none',
                     }}
                   >
-                    {/* Une seule initiale ici, deux dans le carrousel : la
-                        maquette distingue ainsi les deux blocs. */}
-                    {initialesDe(avis.auteur_nom).slice(0, 1) || '?'}
+                    {initialesDe(avis.auteur_nom)}
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ font: "700 14px/1.3 'Inter', sans-serif" }}>{avis.auteur_nom}</div>
@@ -1053,64 +991,22 @@ export function Accueil() {
       )}
 
       {/* ---- Le blog ------------------------------------------------------ */}
-      {/*
-        TOUJOURS AFFICHÉE, comme dans la maquette. Sans article publié, elle le
-        dit et renvoie au blog, au lieu de disparaître — ou de montrer des
-        conseils que personne n'a écrits.
-
-        Pas de durée de lecture, pourtant dessinée : aucune donnée ne la porte,
-        et la maquette elle-même l'écrit en dur (« 4 min ») pour les articles
-        venus de l'administration.
-      */}
-      <section style={{ maxWidth: 1180, margin: '80px auto 0', padding: '0 32px' }}>
-        <EnTeteSection
-          surtitre="Le blog"
-          titre="Conseils pour les parents"
-          lien="Tous les articles"
-          onLien={() => naviguer('/blog')}
-        />
-
-        {blogEnCours && (
-          <div className="e3-blog-grille">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{ background: '#fff', border: '1px solid #EAE6DE', borderRadius: 16, overflow: 'hidden' }}
-              >
-                <Skeleton variant="rect" height={180} radius={0} />
-                <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <Skeleton variant="text" width={80} height={20} />
-                  <Skeleton variant="text" width="90%" height={16} />
-                  <Skeleton variant="text" width="40%" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {blogEnErreur && (
-          <p role="alert" style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--e360-red)' }}>
-            Les articles n&rsquo;ont pas pu être chargés. Rechargez la page.
-          </p>
-        )}
-
-        {!blogEnCours && !blogEnErreur && apercuBlog.length === 0 && (
-          <EmptyState
-            icon="book-open"
-            title="Aucun article publié pour l’instant"
-            description="Nos conseils pour bien choisir un établissement paraîtront ici dès leur publication."
-            style={{ background: '#fff', border: '1px solid #EAE6DE', borderRadius: 16 }}
+      {apercuBlog.length > 0 && (
+        <section style={{ maxWidth: 1180, margin: '80px auto 0', padding: '0 32px' }}>
+          <EnTeteSection
+            surtitre="Le blog"
+            titre="Conseils pour les parents"
+            lien="Tous les articles"
+            onLien={() => naviguer('/blog')}
           />
-        )}
 
-        {!blogEnCours && apercuBlog.length > 0 && (
           <div className="e3-blog-grille">
             {apercuBlog.map((article) => (
-              <CarteBlog key={article.id} article={article} afficherChapeau={false} />
+              <CarteBlog key={article.id} article={article} />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* ---- Emplacement annonceur --------------------------------------- */}
       {/*
@@ -1345,7 +1241,6 @@ function FlecheCarrousel({ sens, onClick }: { sens: 'precedent' | 'suivant'; onC
       type="button"
       onClick={onClick}
       aria-label={sens === 'precedent' ? 'Témoignage précédent' : 'Témoignage suivant'}
-      className="e3-btn"
       style={{
         flex: 'none',
         width: 46,
@@ -1544,20 +1439,6 @@ function PuceFiltre({
     </button>
   );
 }
-
-/** Carte du carrousel — partagée par ses états, pour que rien ne saute au chargement. */
-const carteTemoignageStyle: React.CSSProperties = {
-  flex: 1,
-  background: '#FBFAF7',
-  border: '1px solid #EAE6DE',
-  borderRadius: 18,
-  padding: '40px 44px',
-  textAlign: 'center',
-  minHeight: 200,
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-};
 
 const selecteurAvance: React.CSSProperties = {
   border: '1px solid #E1E5EA',

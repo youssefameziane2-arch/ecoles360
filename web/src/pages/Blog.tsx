@@ -263,20 +263,8 @@ export function Blog() {
   );
 }
 
-/**
- * Carte d'article de la grille — 180 px de visuel, chapeau, date.
- *
- * `afficherChapeau` à faux pour l'aperçu de l'accueil : la maquette y dessine
- * la même carte sans chapeau, et trois chapeaux de longueurs inégales y
- * désaligneraient les dates.
- */
-export function CarteBlog({
-  article,
-  afficherChapeau = true,
-}: {
-  article: CarteArticle;
-  afficherChapeau?: boolean;
-}) {
+/** Carte d'article de la grille — 180 px de visuel, chapeau, date. */
+export function CarteBlog({ article }: { article: CarteArticle }) {
   return (
     <Link
       to={`/blog/${article.slug}`}
@@ -313,7 +301,7 @@ export function CarteBlog({
         >
           {article.titre}
         </h3>
-        {afficherChapeau && article.chapeau && (
+        {article.chapeau && (
           <p style={{ margin: 0, font: "400 14px/1.55 'Inter', sans-serif", color: '#5A6472' }}>
             {article.chapeau}
           </p>
