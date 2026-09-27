@@ -1,0 +1,20 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Soft tint badges" subtitle="Background tints for status badges" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:#fff;padding:18px}
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .sw{border-radius:var(--radius-card);overflow:hidden;border:1px solid var(--border-hairline)}
+  .chip{height:58px;display:flex;align-items:center;justify-content:center}
+  .badge{font:var(--fw-semibold) var(--fs-2xs)/1 var(--font-sans);border-radius:var(--radius-badge);padding:5px 10px}
+  .meta{padding:8px 10px}
+  .hex{font:var(--fw-medium) var(--fs-xs)/1.3 var(--font-sans);color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px}
+</style></head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--e360-red-tint)"><span class="badge" style="background:var(--e360-red);color:#fff">Sponsorisé</span></div><div class="meta"><div class="hex">#FDE8EA</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--e360-navy-tint)"><span class="badge" style="background:var(--e360-navy);color:#fff">Nouveau</span></div><div class="meta"><div class="hex">#E7EDF5</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--e360-green-tint)"><span class="badge" style="background:var(--e360-green);color:#fff">Vérifié</span></div><div class="meta"><div class="hex">#E6F4EC</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--e360-amber-tint)"><span class="badge" style="background:var(--e360-amber);color:#fff">Solde bas</span></div><div class="meta"><div class="hex">#FCF1DE</div></div></div>
+  </div>
+</body></html>

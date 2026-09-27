@@ -1,0 +1,85 @@
+<!-- @dsCard group="Components" viewport="700x880" name="Navigation" subtitle="Header · SidebarNav (3 thèmes) · BottomTabBar · Breadcrumb · Stepper" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-page); color: var(--text-primary); padding: 22px; }
+  .grp { font: var(--fw-bold) var(--fs-2xs)/1 var(--font-sans); letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); margin: 0 0 11px; }
+  .sec { margin-bottom: 22px; }
+  .frame { border: 1px solid var(--border-hairline); border-radius: var(--radius-card); overflow: hidden; }
+  .row { display: flex; gap: 16px; align-items: flex-start; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { Header, SidebarNav, BottomTabBar, Breadcrumb, Stepper, Icon } = window.Coles360DesignSystem_66e6db;
+  function Demo() {
+    const [tab, setTab] = React.useState('search');
+    const etab = [
+      { key:'dashboard', label:'Tableau de bord', icon:<Icon name="layout-grid" size={18} /> },
+      { key:'fiche', label:'Ma fiche', icon:<Icon name="building" size={18} /> },
+      { key:'stats', label:'Statistiques', icon:<Icon name="bar-chart" size={18} /> },
+      { key:'avis', label:'Avis', icon:<Icon name="star" size={18} />, count:3 },
+      { key:'credits', label:'Crédits', icon:<Icon name="credit-card" size={18} /> },
+    ];
+    const secret = [
+      { key:'demandes', label:'Demandes', icon:<Icon name="mail" size={18} />, count:5 },
+      { key:'rdv', label:'Rendez-vous', icon:<Icon name="calendar" size={18} /> },
+      { key:'fiches', label:'Fiches', icon:<Icon name="building" size={18} /> },
+      { key:'moderation', label:'Modération', icon:<Icon name="flag" size={18} />, count:2 },
+    ];
+    const admin = [
+      { key:'etabs', label:'Établissements', icon:<Icon name="building" size={18} />, count:8 },
+      { key:'secs', label:'Secrétaires', icon:<Icon name="users" size={18} /> },
+      { key:'moder', label:'Modération', icon:<Icon name="flag" size={18} />, count:12 },
+      { key:'settings', label:'Réglages', icon:<Icon name="settings" size={18} /> },
+    ];
+    return (
+      <div>
+        <div className="sec">
+          <div className="grp">Header public</div>
+          <div className="frame"><Header onCta={()=>{}} /></div>
+        </div>
+        <div className="sec">
+          <div className="grp">SidebarNav — 3 thèmes</div>
+          <div className="row">
+            <div className="frame" style={{height:430}}><SidebarNav theme="etablissement" items={etab} activeKey="dashboard" user={{name:'Sara Bennani',role:'Établissement'}} /></div>
+            <div className="frame" style={{height:430}}><SidebarNav theme="secretariat" items={secret} activeKey="demandes" user={{name:'Imane Tazi',role:'Secrétaire'}} /></div>
+            <div className="frame" style={{height:430}}><SidebarNav theme="administration" items={admin} activeKey="moder" user={{name:'Admin',role:'Administration'}} /></div>
+          </div>
+        </div>
+        <div className="sec">
+          <div className="grp">BottomTabBar — mobile</div>
+          <div className="frame" style={{width:390}}>
+            <BottomTabBar activeKey={tab} onSelect={setTab} items={[
+              { key:'home', label:'Accueil', icon:<Icon name="home" size={20} /> },
+              { key:'search', label:'Rechercher', icon:<Icon name="search" size={20} /> },
+              { key:'saved', label:'Favoris', icon:<Icon name="heart" size={20} /> },
+              { key:'account', label:'Compte', icon:<Icon name="user" size={20} />, count:2 },
+            ]} />
+          </div>
+        </div>
+        <div className="sec">
+          <div className="grp">Breadcrumb</div>
+          <Breadcrumb items={[{label:'Accueil',href:'#'},{label:'Casablanca',href:'#'},{label:'Lycées',href:'#'},{label:'Groupe Al Massira'}]} />
+        </div>
+        <div className="sec">
+          <div className="grp">Stepper — inscription établissement</div>
+          <div className="frame" style={{padding:'24px 20px'}}>
+            <Stepper current={2} steps={[{label:'Compte'},{label:'Fiche'},{label:'Filières'},{label:'Paiement'}]} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

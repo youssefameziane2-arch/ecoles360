@@ -1,0 +1,93 @@
+<!-- @dsCard group="Secrétariat" viewport="1280x760" name="Demandes & rendez-vous" -->
+<!-- @startingPoint section="Secrétariat" subtitle="Delegated inbox — contact requests + appointments table" viewport="1280x800" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>écoles360 — Secrétariat</title>
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--surface-page);color:var(--text-primary)}
+  .app{display:flex;min-height:100vh}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{height:64px;background:#fff;border-bottom:1px solid var(--border-hairline);display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+  .content{padding:26px 28px;display:flex;flex-direction:column;gap:22px}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .panel{background:#fff;border:1px solid var(--border-hairline);border-radius:var(--radius-card-lg);padding:20px}
+  .ptitle{font:var(--fw-bold) var(--fs-h2)/1 var(--font-sans);letter-spacing:var(--ls-h2);margin:0 0 16px}
+  .h1{font:var(--text-title);letter-spacing:var(--ls-h1);margin:0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const DS = window.Coles360DesignSystem_66e6db;
+const { SidebarNav, RequestCard, DataTable, Badge, Button, FilterBar, Pagination, Icon } = DS;
+
+const NAV = [
+  { key:'demandes', label:'Demandes', icon:<Icon name="mail" size={18} />, count:5 },
+  { key:'rdv', label:'Rendez-vous', icon:<Icon name="calendar" size={18} /> },
+  { key:'fiches', label:'Fiches', icon:<Icon name="building" size={18} /> },
+  { key:'moderation', label:'Modération', icon:<Icon name="flag" size={18} />, count:2 },
+];
+const REQS = [
+  { name:'Karim Idrissi', channel:'WhatsApp', message:'Avez-vous des places en 2nde pour la rentrée ?', time:'il y a 2 h', status:'Nouveau' },
+  { name:'Nadia El Fassi', channel:'Formulaire', message:'Je souhaite visiter l\'établissement la semaine prochaine.', time:'hier', status:'En cours' },
+  { name:'Younes Berrada', channel:'Appel', message:'Demande de tarifs pour le primaire bilingue.', time:'lun.', status:'Traité' },
+];
+
+function App(){
+  const [active,setActive] = React.useState('demandes');
+  const [filters,setFilters] = React.useState([
+    {key:'nouveau',label:'Nouveau',active:true},{key:'encours',label:'En cours'},{key:'traite',label:'Traité'},{key:'wa',label:'WhatsApp'},
+  ]);
+  const toggle = (k)=> setFilters(fs=>fs.map(f=>f.key===k?{...f,active:!f.active}:f));
+  return (
+    <div className="app">
+      <SidebarNav theme="secretariat" items={NAV} activeKey={active} onSelect={setActive}
+        logoSrc="../../assets/logo-on-dark.png" user={{name:'Imane Tazi', role:'Secrétaire'}} />
+      <div className="main">
+        <div className="topbar">
+          <div className="h1">Demandes de contact</div>
+          <Badge tone="red" solid>5 nouvelles</Badge>
+        </div>
+        <div className="content">
+          <div className="panel">
+            <FilterBar filters={filters} onToggle={toggle} onApply={()=>{}} onReset={()=>setFilters(fs=>fs.map(f=>({...f,active:false})))} />
+          </div>
+          <div className="g2">
+            {REQS.map((r,i)=> <RequestCard key={i} {...r} onOpen={()=>{}} />)}
+          </div>
+
+          <div className="panel">
+            <p className="ptitle">Rendez-vous à venir</p>
+            <DataTable
+              columns={[
+                { key:'parent', header:'Parent' },
+                { key:'date', header:'Date' },
+                { key:'motif', header:'Motif' },
+                { key:'statut', header:'Statut', align:'right', render:r=> <Badge tone={r.tone}>{r.statut}</Badge> },
+              ]}
+              rows={[
+                { parent:'Karim Idrissi', date:'24 juin · 10:00', motif:'Visite campus', statut:'Confirmé', tone:'green' },
+                { parent:'Nadia El Fassi', date:'25 juin · 14:30', motif:'Inscription 6e', statut:'À confirmer', tone:'amber' },
+                { parent:'Sanae Oukili', date:'26 juin · 09:00', motif:'Entretien', statut:'Confirmé', tone:'green' },
+              ]} />
+            <div style={{display:'flex',justifyContent:'flex-end',marginTop:16}}>
+              <Pagination page={1} pageCount={4} onChange={()=>{}} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

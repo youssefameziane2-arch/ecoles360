@@ -1,0 +1,20 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Accent & structure" subtitle="Red accent · navy structure · sidebar" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:#fff;padding:18px}
+  .row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .sw{border-radius:var(--radius-card);overflow:hidden;border:1px solid var(--border-hairline)}
+  .chip{height:74px}
+  .meta{padding:9px 11px}
+  .name{font:var(--fw-semibold) var(--fs-sm)/1.2 var(--font-sans);color:var(--text-primary)}
+  .hex{font:var(--fw-medium) var(--fs-xs)/1.4 var(--font-sans);color:var(--text-muted);margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+  .role{font:var(--fw-regular) var(--fs-xs)/1.4 var(--font-sans);color:var(--text-muted)}
+</style></head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--e360-red)"></div><div class="meta"><div class="name">Rouge — accent</div><div class="hex">#E63946</div><div class="role">CTA · actif · lien clé</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--e360-navy)"></div><div class="meta"><div class="name">Bleu nuit</div><div class="hex">#1D3557</div><div class="role">Structure · panneaux</div></div></div>
+    <div class="sw"><div class="chip" style="background:var(--e360-navy-sidebar)"></div><div class="meta"><div class="name">Sidebar</div><div class="hex">#15233A</div><div class="role">Surface la plus sombre</div></div></div>
+  </div>
+</body></html>

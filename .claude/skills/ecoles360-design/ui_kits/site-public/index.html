@@ -1,0 +1,120 @@
+<!-- @dsCard group="Site public" viewport="1280x760" name="Accueil — parcours parent" -->
+<!-- @startingPoint section="Site public" subtitle="Public homepage — search hero, featured establishments, cities" viewport="1280x900" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>écoles360 — Accueil</title>
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--surface-card);color:var(--text-primary)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 40px}
+  .eyebrow{font:var(--fw-bold) var(--fs-eyebrow)/1 var(--font-sans);letter-spacing:var(--ls-eyebrow);text-transform:uppercase;color:var(--action)}
+  .h{font:var(--text-display);letter-spacing:var(--ls-display);margin:0}
+  .sub{font-size:var(--fs-body-lg);color:var(--text-secondary);margin:8px 0 0;line-height:1.5}
+  .sectitle{font:var(--fw-extrabold) var(--fs-h1)/1.2 var(--font-sans);letter-spacing:var(--ls-h1);margin:0}
+  .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .heroCard{background:#fff;border:1px solid var(--border-hairline);border-radius:var(--radius-card-lg);box-shadow:var(--shadow-pop);padding:22px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const DS = window.Coles360DesignSystem_66e6db;
+const { Header, TypePicker, CitySelect, Button, EstablishmentCard, CityCard } = DS;
+const seed = (s) => `https://picsum.photos/seed/${s}/640/420`;
+
+const ESTABS = [
+  { name:'Groupe scolaire Al Massira', city:'Casablanca', type:'Lycée', rating:'4,8', reviews:126, image:seed('almassira'), sponsored:true, verified:true, tags:['Bilingue','Sciences'] },
+  { name:'Institution Les Oliviers', city:'Rabat', type:'Collège', rating:'4,6', reviews:84, image:seed('oliviers'), verified:true, tags:['Internat'] },
+  { name:'École La Colombe', city:'Marrakech', type:'Primaire', rating:'4,3', reviews:51, image:seed('colombe'), tags:['Montessori'] },
+  { name:'Université Atlas', city:'Fès', type:'Université', rating:'4,7', reviews:212, image:seed('atlas'), verified:true, tags:['Ingénierie'] },
+];
+const CITIES = [
+  { city:'Casablanca', count:342, image:seed('casa') },
+  { city:'Rabat', count:188, image:seed('rabat') },
+  { city:'Marrakech', count:146, image:seed('marrakech') },
+];
+
+function App(){
+  const [types,setTypes] = React.useState(['lycee']);
+  const [city,setCity] = React.useState('Casablanca');
+  return (
+    <div>
+      <Header logoSrc="../../assets/logo.png" onCta={()=>{}} />
+
+      {/* Hero */}
+      <section style={{background:'var(--surface-page)',borderBottom:'1px solid var(--border-hairline)'}}>
+        <div className="wrap" style={{padding:'48px 40px'}}>
+          <div className="eyebrow">En toute confiance</div>
+          <h1 className="h" style={{fontSize:'var(--fs-hero)',letterSpacing:'var(--ls-hero)',marginTop:10,maxWidth:680}}>Trouvez l'établissement scolaire idéal au Maroc</h1>
+          <p className="sub" style={{maxWidth:560}}>Recherchez, comparez et contactez les écoles privées près de chez vous — crèches, écoles, collèges, lycées et universités.</p>
+          <div className="heroCard" style={{marginTop:26}}>
+            <div style={{font:'var(--fw-semibold) var(--fs-sm)/1 var(--font-sans)',color:'var(--text-body)',marginBottom:12}}>Type d'établissement</div>
+            <TypePicker value={types} onChange={setTypes} />
+            <div style={{display:'flex',gap:14,alignItems:'flex-end',marginTop:18}}>
+              <div style={{flex:1,maxWidth:280}}><CitySelect value={city} onChange={e=>setCity(e.target.value)} /></div>
+              <Button size="lg" onClick={()=>{}} icon="⌕">Rechercher</Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured */}
+      <section className="wrap" style={{padding:'48px 40px'}}>
+        <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',marginBottom:22}}>
+          <div>
+            <div className="eyebrow">À la une</div>
+            <h2 className="sectitle" style={{marginTop:8}}>Établissements à la une</h2>
+          </div>
+          <Button variant="ghost" onClick={()=>{}}>Tout voir →</Button>
+        </div>
+        <div className="g4">
+          {ESTABS.map((e)=> <EstablishmentCard key={e.name} {...e} onCall={()=>{}} onWhatsApp={()=>{}} />)}
+        </div>
+      </section>
+
+      {/* Cities */}
+      <section style={{background:'var(--surface-page)'}}>
+        <div className="wrap" style={{padding:'48px 40px'}}>
+          <div className="eyebrow">Explorer</div>
+          <h2 className="sectitle" style={{margin:'8px 0 22px'}}>Par ville</h2>
+          <div className="g3">
+            {CITIES.map((c)=> <CityCard key={c.city} {...c} height={200} />)}
+          </div>
+        </div>
+      </section>
+
+      {/* Pro CTA */}
+      <section className="wrap" style={{padding:'48px 40px'}}>
+        <div style={{background:'var(--surface-dark)',borderRadius:'var(--radius-card-lg)',padding:'34px 40px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:24,flexWrap:'wrap'}}>
+          <div>
+            <div style={{font:'var(--fw-extrabold) var(--fs-h1)/1.2 var(--font-sans)',letterSpacing:'var(--ls-h1)',color:'#fff'}}>Vous dirigez un établissement&nbsp;?</div>
+            <div style={{fontSize:'var(--fs-body-lg)',color:'var(--e360-navy-soft)',marginTop:8,maxWidth:520,lineHeight:1.5}}>Gagnez en visibilité auprès de milliers de parents. Inscrivez votre fiche et recevez des demandes de contact qualifiées.</div>
+          </div>
+          <Button onClick={()=>{}}>Inscrire mon établissement</Button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{background:'var(--surface-dark)',color:'#fff',padding:'30px 0'}}>
+        <div className="wrap" style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:16}}>
+          <img src="../../assets/logo-on-dark.png" alt="écoles360" style={{height:26}} />
+          <div style={{display:'flex',gap:22,font:'var(--fw-regular) var(--fs-sm)/1 var(--font-sans)',color:'var(--e360-navy-soft)'}}>
+            <span>Établissements</span><span>Villes</span><span>À propos</span><span>Espace pro</span><span>Contact</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

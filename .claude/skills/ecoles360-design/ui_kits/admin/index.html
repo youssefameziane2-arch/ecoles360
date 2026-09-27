@@ -1,0 +1,107 @@
+<!-- @dsCard group="Administration" viewport="1280x760" name="Back-office admin" -->
+<!-- @startingPoint section="Administration" subtitle="Admin — establishments table, moderation queue, permissions" viewport="1280x860" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>écoles360 — Administration</title>
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--surface-page);color:var(--text-primary)}
+  .app{display:flex;min-height:100vh}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{height:64px;background:#fff;border-bottom:1px solid var(--border-hairline);display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+  .content{padding:26px 28px;display:flex;flex-direction:column;gap:22px}
+  .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .g2{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start}
+  .panel{background:#fff;border:1px solid var(--border-hairline);border-radius:var(--radius-card-lg);padding:20px}
+  .ptitle{font:var(--fw-bold) var(--fs-h2)/1 var(--font-sans);letter-spacing:var(--ls-h2);margin:0 0 16px}
+  .h1{font:var(--text-title);letter-spacing:var(--ls-h1);margin:0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const DS = window.Coles360DesignSystem_66e6db;
+const { SidebarNav, StatCard, DataTable, Badge, Button, ReviewCard, PermissionToggle, Pagination, Icon } = DS;
+
+const NAV = [
+  { key:'etabs', label:'Établissements', icon:<Icon name="building" size={18} />, count:8 },
+  { key:'secs', label:'Secrétaires', icon:<Icon name="users" size={18} /> },
+  { key:'moder', label:'Modération', icon:<Icon name="flag" size={18} />, count:12 },
+  { key:'rappels', label:'Rappels paiement', icon:<Icon name="bell" size={18} />, count:3 },
+  { key:'settings', label:'Réglages', icon:<Icon name="settings" size={18} /> },
+];
+
+function App(){
+  const [active,setActive] = React.useState('etabs');
+  return (
+    <div className="app">
+      <SidebarNav theme="administration" items={NAV} activeKey={active} onSelect={setActive}
+        logoSrc="../../assets/logo-on-dark.png" user={{name:'Réda Alami', role:'Administration'}} />
+      <div className="main">
+        <div className="topbar">
+          <div className="h1">Établissements</div>
+          <Button size="sm" onClick={()=>{}}>+ Nouvel établissement</Button>
+        </div>
+        <div className="content">
+          <div className="g4">
+            <StatCard label="Établissements" value="412" delta="9" deltaDir="up" icon={<Icon name="building" size={17} />} tone="navy" />
+            <StatCard label="En attente" value="8" icon={<Icon name="alert-circle" size={17} />} tone="amber" />
+            <StatCard label="Avis signalés" value="12" icon={<Icon name="flag" size={17} />} tone="red" />
+            <StatCard label="Revenus / mois" value="186 K" delta="14%" deltaDir="up" icon={<Icon name="credit-card" size={17} />} tone="green" />
+          </div>
+
+          <div className="panel">
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+              <p className="ptitle" style={{margin:0}}>Validation des fiches</p>
+              <Pagination page={1} pageCount={6} onChange={()=>{}} />
+            </div>
+            <DataTable
+              columns={[
+                { key:'nom', header:'Établissement' },
+                { key:'ville', header:'Ville' },
+                { key:'abo', header:'Abonnement' },
+                { key:'statut', header:'Statut', render:r=> <Badge tone={r.tone}>{r.statut}</Badge> },
+                { key:'action', header:'', align:'right', render:r=> <Button variant="ghost" size="sm" onClick={()=>{}}>Examiner</Button> },
+              ]}
+              rows={[
+                { nom:'Groupe scolaire Al Massira', ville:'Casablanca', abo:'Pro', statut:'Vérifié', tone:'green' },
+                { nom:'Institution El Andalous', ville:'Mohammedia', abo:'Découverte', statut:'En attente', tone:'amber' },
+                { nom:'Lycée Ibn Khaldoun', ville:'Casablanca', abo:'Abonnement', statut:'Vérifié', tone:'green' },
+                { nom:'École Nour', ville:'Salé', abo:'—', statut:'Suspendu', tone:'red' },
+              ]} />
+          </div>
+
+          <div className="g2">
+            <div className="panel">
+              <p className="ptitle">File de modération — avis</p>
+              <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                <ReviewCard author="Anonyme" date="3 juin 2026" rating={2} body="Frais d'inscription peu clairs à mon goût." status="Signalé" flagged />
+                <ReviewCard author="Sara B." date="12 mai 2026" rating={5} body="Encadrement remarquable, communication fluide." status="En attente" />
+              </div>
+            </div>
+            <div className="panel">
+              <p className="ptitle">Permissions secrétaire</p>
+              <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                <PermissionToggle label="Répondre aux avis" description="Publier des réponses publiques" defaultChecked />
+                <PermissionToggle label="Gérer les rendez-vous" description="Créer et confirmer" defaultChecked />
+                <PermissionToggle label="Gérer les crédits" description="Recharger / consommer" />
+                <PermissionToggle label="Modifier la fiche" description="Photos, filières, tarifs" defaultChecked />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

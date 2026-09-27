@@ -1,0 +1,22 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Corner radii" subtitle="badge 6 → button 9 → card 14 → pill 20" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:#fff;padding:20px}
+  .row{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap}
+  .it{display:flex;flex-direction:column;gap:8px;align-items:center}
+  .box{width:74px;height:54px;background:var(--e360-navy-tint);border:1.5px solid var(--action-secondary)}
+  .n{font:var(--fw-semibold) var(--fs-xs)/1.2 var(--font-sans);color:var(--text-primary);text-align:center}
+  .px{font:var(--fw-regular) 10px/1 var(--font-sans);color:var(--text-muted)}
+</style></head>
+<body>
+  <div class="row">
+    <div class="it"><div class="box" style="border-radius:var(--radius-badge)"></div><span class="n">Badge</span><span class="px">6px</span></div>
+    <div class="it"><div class="box" style="border-radius:var(--radius-control)"></div><span class="n">Bouton</span><span class="px">9px</span></div>
+    <div class="it"><div class="box" style="border-radius:var(--radius-field)"></div><span class="n">Champ / chip</span><span class="px">12px</span></div>
+    <div class="it"><div class="box" style="border-radius:var(--radius-card)"></div><span class="n">Carte</span><span class="px">14px</span></div>
+    <div class="it"><div class="box" style="border-radius:var(--radius-card-lg)"></div><span class="n">Panneau</span><span class="px">16px</span></div>
+    <div class="it"><div class="box" style="border-radius:var(--radius-pill)"></div><span class="n">Pill</span><span class="px">20px</span></div>
+    <div class="it"><div class="box" style="width:54px;border-radius:var(--radius-round)"></div><span class="n">Avatar</span><span class="px">50%</span></div>
+  </div>
+</body></html>

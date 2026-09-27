@@ -1,0 +1,84 @@
+<!-- @dsCard group="Components" viewport="700x900" name="Feedback" subtitle="Modal · Toast · EmptyState · Skeleton · ProfileUnavailable" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--surface-page);color:var(--text-primary);padding:22px}
+  .grp{font:var(--fw-bold) var(--fs-2xs)/1 var(--font-sans);letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin:0 0 11px}
+  .sec{margin-bottom:24px}
+  .panel{background:#fff;border:1px solid var(--border-hairline);border-radius:var(--radius-card-lg);padding:18px}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { Modal, Toast, EmptyState, Skeleton, SkeletonCard, Button, ProfileUnavailable } = window.Coles360DesignSystem_66e6db;
+  function Demo(){
+    const [open,setOpen] = React.useState(false);
+    return (
+      <div>
+        <div className="sec">
+          <div className="grp">Toast — 4 tons</div>
+          <div className="g2">
+            <Toast tone="success" title="Demande envoyée" message="L'établissement vous répondra sous 48 h." onClose={()=>{}} />
+            <Toast tone="error" title="Échec du paiement" message="Vérifiez les informations de votre carte." onClose={()=>{}} />
+            <Toast tone="info" title="Fiche en cours de validation" message="Visible sous 24 h." onClose={()=>{}} />
+            <Toast tone="warning" title="Solde de crédits bas" message="Il vous reste 40 crédits." onClose={()=>{}} />
+          </div>
+        </div>
+
+        <div className="sec">
+          <div className="grp">EmptyState · Modal</div>
+          <div className="g2">
+            <div className="panel">
+              <EmptyState icon="search" title="Aucun résultat"
+                description="Aucun établissement ne correspond à vos filtres."
+                action={<Button variant="navy" size="sm" onClick={()=>{}}>Réinitialiser</Button>} />
+            </div>
+            <div className="panel" style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:200}}>
+              <Button onClick={()=>setOpen(true)}>Ouvrir la modale</Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="sec">
+          <div className="grp">Skeleton — chargement</div>
+          <div className="g2">
+            <SkeletonCard />
+            <div className="panel" style={{display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{display:'flex',gap:12,alignItems:'center'}}>
+                <Skeleton variant="circle" width={44} />
+                <div style={{flex:1,display:'flex',flexDirection:'column',gap:8}}>
+                  <Skeleton variant="text" width="55%" height={13} />
+                  <Skeleton variant="text" width="35%" />
+                </div>
+              </div>
+              <Skeleton variant="rect" height={70} />
+              <Skeleton variant="text" width="80%" />
+            </div>
+          </div>
+        </div>
+
+        <Modal open={open} title="Confirmer le contact" onClose={()=>setOpen(false)}
+          footer={<><Button variant="ghost" onClick={()=>setOpen(false)}>Annuler</Button><Button onClick={()=>setOpen(false)}>Envoyer la demande</Button></>}>
+          <p style={{margin:0}}>Votre message sera transmis à <b>Groupe scolaire Al Massira</b>. Vous serez notifié de leur réponse par WhatsApp et email.</p>
+        </Modal>
+
+        <div className="sec">
+          <div className="grp">ProfileUnavailable — fiche en mise à jour</div>
+          <ProfileUnavailable overlay={false} onSearch={()=>{}} onContact={()=>{}} />
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

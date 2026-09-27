@@ -1,0 +1,115 @@
+<!-- @dsCard group="Espace établissement" viewport="1280x760" name="Tableau de bord" -->
+<!-- @startingPoint section="Espace établissement" subtitle="Back-office dashboard — KPIs, charts, requests, credits" viewport="1280x820" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>écoles360 — Espace établissement</title>
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--surface-page);color:var(--text-primary)}
+  .app{display:flex;min-height:100vh}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{height:64px;background:#fff;border-bottom:1px solid var(--border-hairline);display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+  .content{padding:26px 28px;display:flex;flex-direction:column;gap:22px}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .g2{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start}
+  .panel{background:#fff;border:1px solid var(--border-hairline);border-radius:var(--radius-card-lg);padding:20px}
+  .ptitle{font:var(--fw-bold) var(--fs-h2)/1 var(--font-sans);letter-spacing:var(--ls-h2);margin:0 0 16px}
+  .h1{font:var(--text-title);letter-spacing:var(--ls-h1);margin:0}
+  .muted{font:var(--fw-regular) var(--fs-sm)/1.4 var(--font-sans);color:var(--text-secondary)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const DS = window.Coles360DesignSystem_66e6db;
+const { SidebarNav, StatCard, BarChart, SourceBars, RequestCard, ProgressBar, Button, Badge, Icon } = DS;
+
+const NAV = [
+  { key:'dashboard', label:'Tableau de bord', icon:<Icon name="layout-grid" size={18} /> },
+  { key:'fiche', label:'Ma fiche', icon:<Icon name="building" size={18} /> },
+  { key:'stats', label:'Statistiques', icon:<Icon name="bar-chart" size={18} /> },
+  { key:'avis', label:'Avis', icon:<Icon name="star" size={18} />, count:3 },
+  { key:'credits', label:'Crédits & abonnement', icon:<Icon name="credit-card" size={18} /> },
+  { key:'demandes', label:'Demandes', icon:<Icon name="mail" size={18} />, count:5 },
+];
+
+function App(){
+  const [active,setActive] = React.useState('dashboard');
+  return (
+    <div className="app">
+      <SidebarNav theme="etablissement" items={NAV} activeKey={active} onSelect={setActive}
+        logoSrc="../../assets/logo-on-dark.png" user={{name:'Sara Bennani', role:'Groupe Al Massira'}} />
+      <div className="main">
+        <div className="topbar">
+          <div>
+            <div className="h1">Bonjour, Sara 👋</div>
+          </div>
+          <div style={{display:'flex',gap:10,alignItems:'center'}}>
+            <Badge tone="green" dot>Fiche en ligne</Badge>
+            <Button variant="navy" size="sm" onClick={()=>{}}>Voir ma fiche</Button>
+          </div>
+        </div>
+        <div className="content">
+          <div className="g3">
+            <StatCard label="Vues ce mois" value="8 420" delta="12%" deltaDir="up" icon={<Icon name="eye" size={17} />} tone="navy" />
+            <StatCard label="Contacts reçus" value="214" delta="6%" deltaDir="up" icon={<Icon name="mail" size={17} />} tone="green" />
+            <StatCard label="Crédits restants" value="320" delta="8%" deltaDir="down" icon={<Icon name="credit-card" size={17} />} tone="red" />
+          </div>
+
+          <div className="g2">
+            <div className="panel">
+              <p className="ptitle">Vues sponsorisées — 2026</p>
+              <BarChart currentIndex={5} valueFormat={v=>v.toLocaleString('fr-FR')} data={[
+                {label:'Jan',value:320},{label:'Fév',value:410},{label:'Mar',value:380},
+                {label:'Avr',value:520},{label:'Mai',value:640},{label:'Juin',value:710},
+              ]} />
+            </div>
+            <div className="panel">
+              <p className="ptitle">Origine des contacts</p>
+              <SourceBars data={[
+                {label:'WhatsApp', value:128, tone:'green'},
+                {label:'Appel', value:64, tone:'navy'},
+                {label:'Formulaire', value:42, tone:'amber'},
+                {label:'Fiche', value:18, tone:'red'},
+              ]} />
+            </div>
+          </div>
+
+          <div className="g2">
+            <div className="panel">
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+                <p className="ptitle" style={{margin:0}}>Dernières demandes</p>
+                <Button variant="ghost" size="sm" onClick={()=>{}}>Tout voir →</Button>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                <RequestCard name="Karim Idrissi" channel="WhatsApp" message="Bonjour, avez-vous des places en 2nde pour la rentrée de septembre ?" time="il y a 2 h" status="Nouveau" />
+                <RequestCard name="Nadia El Fassi" channel="Formulaire" message="Je souhaite visiter l'établissement la semaine prochaine." time="hier" status="En cours" />
+              </div>
+            </div>
+            <div className="panel" style={{background:'var(--surface-dark)',border:'none',color:'#fff'}}>
+              <p className="ptitle" style={{color:'#fff'}}>Solde de crédits</p>
+              <div style={{display:'flex',alignItems:'baseline',gap:8,marginBottom:14}}>
+                <span style={{font:'var(--fw-extrabold) var(--fs-stat-lg)/1 var(--font-sans)',letterSpacing:'-1px'}}>320</span>
+                <span style={{color:'var(--e360-navy-soft)',fontSize:'var(--fs-sm)'}}>/ 500 crédits</span>
+              </div>
+              <ProgressBar value={320} max={500} tone="red" height={9} />
+              <div className="muted" style={{color:'var(--e360-navy-soft)',margin:'14px 0 16px'}}>Vos crédits sont consommés à chaque vue sponsorisée et contact reçu.</div>
+              <Button block onClick={()=>{}}>Recharger mes crédits</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -127,18 +127,36 @@ corepack pnpm --filter @ecoles360/web  exec eslint "src/**/*.{ts,tsx}" --max-war
 
 ## Le design system
 
-Livré **compilé** : `web/public/ds/bundle.js`, un IIFE qui accroche 44
-composants sur `window.Coles360DesignSystem_66e6db`. **Zéro export ES, aucune
-source `.jsx`.** `web/src/ds/composants.tsx` les retype un par un.
+**Les sources sont dans `.claude/skills/ecoles360-design/`.** Chaque composant
+y a son `.jsx`, son `.d.ts` (les propriétés) et son `.prompt.md` (usage et
+exemple). **Lire le `.prompt.md` avant d'employer un composant** — c'est là
+que se trouvent les noms exacts des propriétés.
 
-On ne peut donc pas le corriger depuis le projet. Les défauts constatés sont
-consignés dans `docs/design-system/CORRECTIFS.md`, et
-`docs/design-system/appliquer-correctifs.mjs` applique les rustines — script
-**idempotent**, à garder rejouable.
+Ce que l'application CHARGE est le bundle compilé `web/public/ds/bundle.js`,
+un IIFE qui accroche les composants sur `window.Coles360DesignSystem_66e6db` ;
+`web/src/ds/composants.tsx` les retype pour TypeScript. Les sources ne sont
+donc pas importées à l'exécution : elles servent à LIRE et à corriger.
 
-Avant de conclure qu'un composant est défaillant, **vérifier le nom de sa
-propriété** dans `composants.tsx`. Une propriété mal nommée ressemble beaucoup
-à un bug du composant.
+**`composants.tsx` ne retype pas tout.** Quatorze composants présents dans le
+bundle n'y figuraient pas — donc inutilisables, alors qu'ils répondent
+exactement à des écrans restant à construire :
+
+| Composant | Pour |
+|---|---|
+| `FilterBar` · `TypePicker` · `CitySelect` | les filtres de recherche |
+| `PricingCard` | « Formules de visibilité » de l'inscription |
+| `TeamMember` | l'équipe de la page À propos |
+| `Stepper` · `Breadcrumb` · `Header` · `BottomTabBar` | navigation |
+| `SocialLinks` · `Skeleton` · `SourceBars` · `PermissionToggle` · `ProfileUnavailable` | divers |
+
+**Avant d'écrire un composant à la main, chercher s'il existe déjà** dans
+`.claude/skills/ecoles360-design/components/`. Il a suffi de ne pas le faire
+une fois pour que les filtres de recherche soient réécrits de zéro alors qu'un
+`FilterBar` attendait dans le bundle déjà chargé par la page.
+
+Les défauts constatés sont consignés dans `docs/design-system/CORRECTIFS.md`,
+et `docs/design-system/appliquer-correctifs.mjs` applique les rustines sur le
+bundle — script **idempotent**, à garder rejouable.
 
 ---
 

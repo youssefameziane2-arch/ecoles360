@@ -1,0 +1,22 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Text greys" subtitle="Ink → muted → placeholder" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:#fff;padding:18px}
+  .row{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}
+  .it{display:flex;flex-direction:column;gap:7px}
+  .swatch{width:54px;height:54px;border-radius:var(--radius-control);border:1px solid var(--border-hairline)}
+  .name{font:var(--fw-semibold) var(--fs-sm)/1.1 var(--font-sans)}
+  .hex{font:var(--fw-medium) var(--fs-xs)/1.3 var(--font-sans);color:var(--text-muted);text-transform:uppercase}
+  .sample{font:var(--fw-bold) 22px/1 var(--font-sans);letter-spacing:-.4px;margin-top:12px}
+</style></head>
+<body>
+  <div class="row">
+    <div class="it"><div class="swatch" style="background:var(--e360-ink)"></div><div class="name" style="color:var(--e360-ink)">Ink</div><div class="hex">#1A1A1A</div></div>
+    <div class="it"><div class="swatch" style="background:var(--e360-ink-2)"></div><div class="name" style="color:var(--e360-ink-2)">Body</div><div class="hex">#3A424E</div></div>
+    <div class="it"><div class="swatch" style="background:var(--e360-grey)"></div><div class="name" style="color:var(--e360-grey)">Secondary</div><div class="hex">#5A6472</div></div>
+    <div class="it"><div class="swatch" style="background:var(--e360-grey-2)"></div><div class="name" style="color:var(--e360-grey-2)">Muted</div><div class="hex">#9AA3AF</div></div>
+    <div class="it"><div class="swatch" style="background:var(--e360-grey-3)"></div><div class="name" style="color:var(--e360-grey-3)">Placeholder</div><div class="hex">#AEB6C2</div></div>
+  </div>
+  <div class="sample" style="color:var(--text-primary)">Trouvez l'établissement idéal <span style="color:var(--text-secondary)">en toute confiance</span></div>
+</body></html>

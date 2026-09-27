@@ -1,0 +1,89 @@
+<!-- @dsCard group="Components" viewport="700x900" name="Cards" subtitle="Establishment · City · Stat · Pricing · Review · Request" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--surface-page); color: var(--text-primary); padding: 22px; }
+  .grp { font: var(--fw-bold) var(--fs-2xs)/1 var(--font-sans); letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); margin: 0 0 12px; }
+  .sec { margin-bottom: 26px; }
+  .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { EstablishmentCard, CityCard, StatCard, PricingCard, ReviewCard, RequestCard } = window.Coles360DesignSystem_66e6db;
+  const seed = (s) => `https://picsum.photos/seed/${s}/640/420`;
+  function Demo() {
+    return (
+      <div>
+        <div className="sec">
+          <div className="grp">EstablishmentCard — grille</div>
+          <div className="g3">
+            <EstablishmentCard name="Groupe scolaire Al Massira" city="Casablanca" type="Lycée" rating="4,8" reviews={126} image={seed('almassira')} sponsored verified tags={['Bilingue','Sciences']} onCall={()=>{}} onWhatsApp={()=>{}} />
+            <EstablishmentCard name="Institution Les Oliviers" city="Rabat" type="Collège" rating="4,6" reviews={84} image={seed('oliviers')} verified onCall={()=>{}} onWhatsApp={()=>{}} />
+            <EstablishmentCard name="École La Colombe" city="Marrakech" type="Primaire" rating="4,3" reviews={51} image={seed('colombe')} onCall={()=>{}} onWhatsApp={()=>{}} />
+          </div>
+        </div>
+
+        <div className="sec">
+          <div className="grp">EstablishmentCard — ligne (résultats)</div>
+          <EstablishmentCard layout="row" name="Lycée Ibn Khaldoun" city="Casablanca" type="Lycée" rating="4,5" reviews={92} image={seed('ibnkhaldoun')} sponsored tags={['Internat','Sciences']} price="à partir de 2 500 MAD" onCall={()=>{}} onWhatsApp={()=>{}} />
+        </div>
+
+        <div className="sec">
+          <div className="grp">CityCard</div>
+          <div className="g3">
+            <CityCard city="Casablanca" count={342} image={seed('casa')} />
+            <CityCard city="Rabat" count={188} image={seed('rabat')} />
+            <CityCard city="Marrakech" count={146} image={seed('marrakech')} />
+          </div>
+        </div>
+
+        <div className="sec">
+          <div className="grp">StatCard</div>
+          <div className="g3">
+            <StatCard label="Vues ce mois" value="8 420" delta="12%" deltaDir="up" icon="👁" tone="navy" />
+            <StatCard label="Contacts reçus" value="214" delta="6%" deltaDir="up" icon="✉️" tone="green" />
+            <StatCard label="Crédits restants" value="320" delta="8%" deltaDir="down" icon="💳" tone="red" />
+          </div>
+        </div>
+
+        <div className="sec">
+          <div className="grp">PricingCard</div>
+          <div className="g3">
+            <PricingCard name="Pack Découverte" price="299 MAD" credits={120} features={['Fiche publiée','Contacts illimités']} cta="Choisir" />
+            <PricingCard name="Pack Pro" price="1 200 MAD" credits={600} features={['Placement sponsorisé','Badge Vérifié','Statistiques avancées']} popular cta="Recharger" />
+            <PricingCard name="Abonnement" price="499 MAD" unit="/mois" features={['Visibilité continue','Réponses aux avis','Support prioritaire']} cta="S'abonner" />
+          </div>
+        </div>
+
+        <div className="sec">
+          <div className="grp">ReviewCard</div>
+          <div className="g2">
+            <ReviewCard author="Sara Bennani" date="12 mai 2026" rating={5} body="Encadrement remarquable, ma fille a beaucoup progressé. Communication fluide avec les enseignants." reply="Merci pour votre confiance, c'est un plaisir de l'accompagner." status="Publié" />
+            <ReviewCard author="Anonyme" date="3 juin 2026" rating={2} body="Frais d'inscription peu clairs à mon goût." status="Signalé" flagged />
+          </div>
+        </div>
+
+        <div className="sec">
+          <div className="grp">RequestCard — boîte de réception</div>
+          <div className="g2">
+            <RequestCard name="Karim Idrissi" channel="WhatsApp" message="Bonjour, avez-vous des places en 2nde pour la rentrée de septembre ?" time="il y a 2 h" status="Nouveau" />
+            <RequestCard name="Nadia El Fassi" channel="Formulaire" message="Je souhaite visiter l'établissement la semaine prochaine." time="hier" status="En cours" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

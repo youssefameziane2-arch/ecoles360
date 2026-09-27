@@ -280,15 +280,25 @@ actives. Découvert parce que le test utilisait un préfixe de test distinct.
 `CityCard` rend `count + " établissements"` sans distinguer le singulier : une
 ville qui compte une seule fiche affiche « 1 établissements ».
 
-Le composant est livré compilé (`web/public/ds/bundle.js`, aucun `export`), donc
-non corrigeable depuis le projet. Deux issues :
+CE CONSTAT ÉTAIT FAUX : « le composant est livré compilé, donc non corrigeable
+depuis le projet ». Les SOURCES existaient — elles dormaient dans un ZIP sur le
+poste, jamais versionnées. Elles sont désormais dans
+`.claude/skills/ecoles360-design/components/cards/CityCard.jsx`, et le défaut y
+tient en une ligne :
 
-1. demander une version corrigée à l'auteur du design system — le bon chemin ;
-2. accepter un `label` en propriété, ce qui rendrait le composant réutilisable
-   hors du contexte « ville ».
+    {count} établissements
+
+La correction propre est un `label` en propriété, qui rendrait au passage le
+composant réutilisable hors du contexte « ville ». Elle se fait dans la source,
+puis se reporte sur le bundle par `appliquer-correctifs.mjs` — l'application
+charge le bundle, pas les sources.
 
 En attendant, l'accueil masque les villes sans fiche, ce qui réduit l'occurrence
 sans la supprimer.
+
+**Leçon au-delà de ce défaut :** avant de déclarer qu'un composant livré n'est
+pas modifiable, vérifier que ses sources n'existent pas ailleurs. Ici elles
+étaient sur le poste depuis le début, dans une livraison jamais ouverte.
 
 ## B-32 — `viderBase()` listait les tables à la main
 

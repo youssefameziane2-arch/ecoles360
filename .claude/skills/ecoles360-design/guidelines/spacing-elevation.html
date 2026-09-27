@@ -1,0 +1,18 @@
+<!-- @dsCard group="Spacing" viewport="700x170" name="Elevation" subtitle="Flat shadows · cards rest on a hairline" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:var(--surface-page);padding:24px}
+  .row{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+  .it{display:flex;flex-direction:column;gap:9px;align-items:center}
+  .box{width:128px;height:74px;background:#fff;border-radius:var(--radius-card)}
+  .n{font:var(--fw-semibold) var(--fs-xs)/1.2 var(--font-sans);color:var(--text-primary)}
+  .d{font:var(--fw-regular) 10px/1.3 var(--font-sans);color:var(--text-muted);text-align:center}
+</style></head>
+<body>
+  <div class="row">
+    <div class="it"><div class="box" style="border:1px solid var(--border-hairline)"></div><span class="n">Repos</span><span class="d">hairline · 0 ombre</span></div>
+    <div class="it"><div class="box" style="box-shadow:var(--shadow-card)"></div><span class="n">Carte flottante</span><span class="d">0 8px 30px /.10</span></div>
+    <div class="it"><div class="box" style="box-shadow:var(--shadow-pop)"></div><span class="n">Popover / héros</span><span class="d">0 14px 40px /.16</span></div>
+  </div>
+</body></html>

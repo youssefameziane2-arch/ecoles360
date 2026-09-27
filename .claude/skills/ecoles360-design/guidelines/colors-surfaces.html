@@ -1,0 +1,21 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Surfaces & lines" subtitle="App bg · tracks · hairlines · borders" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  body{margin:0;font-family:var(--font-sans);background:#fff;padding:18px}
+  .row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  .it{display:flex;flex-direction:column;gap:6px}
+  .swatch{height:56px;border-radius:var(--radius-control);border:1px solid var(--border-hairline)}
+  .name{font:var(--fw-semibold) var(--fs-xs)/1.2 var(--font-sans);color:var(--text-primary)}
+  .hex{font:var(--fw-medium) 10px/1.3 var(--font-sans);color:var(--text-muted);text-transform:uppercase}
+</style></head>
+<body>
+  <div class="row">
+    <div class="it"><div class="swatch" style="background:var(--e360-bg)"></div><div class="name">App bg</div><div class="hex">#F5F6F8</div></div>
+    <div class="it"><div class="swatch" style="background:var(--e360-bg-2)"></div><div class="name">Track</div><div class="hex">#F1F3F6</div></div>
+    <div class="it"><div class="swatch" style="background:var(--e360-placeholder)"></div><div class="name">Image</div><div class="hex">#E3E7EC</div></div>
+    <div class="it"><div class="swatch" style="background:#fff;border-color:var(--e360-line)"></div><div class="name">Hairline</div><div class="hex">#ECEEF1</div></div>
+    <div class="it"><div class="swatch" style="background:#fff;border-color:var(--e360-line-2)"></div><div class="name">Control</div><div class="hex">#E1E5EA</div></div>
+    <div class="it"><div class="swatch" style="background:#fff;border-color:var(--e360-line-3)"></div><div class="name">Strong</div><div class="hex">#D4DAE2</div></div>
+  </div>
+</body></html>
