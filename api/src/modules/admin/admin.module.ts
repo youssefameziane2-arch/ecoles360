@@ -9,6 +9,7 @@ import { AdminController } from './admin.controller';
 import { AdminEtablissementsService } from './admin-etablissements.service';
 import { ParametresFacturationService } from './parametres-facturation.service';
 import { AuditLectureService } from './audit-lecture.service';
+import { TableauDeBordAdminService } from './tableau-de-bord-admin.service';
 
 /**
  * Back-office admin — établissements et validation de fiche.
@@ -27,6 +28,11 @@ import { AuditLectureService } from './audit-lecture.service';
     PhotosModule,
   ],
   controllers: [AdminController],
-  providers: [AdminEtablissementsService, ParametresFacturationService, AuditLectureService],
+  providers: [
+    AdminEtablissementsService,
+    ParametresFacturationService,
+    AuditLectureService,
+    TableauDeBordAdminService,
+  ],
 })
 export class AdminModule {}

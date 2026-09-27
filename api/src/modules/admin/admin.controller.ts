@@ -33,6 +33,7 @@ import { FicheProposalService } from '../espace/fiche-proposal.service';
 import { AdminEtablissementsService } from './admin-etablissements.service';
 import { ParametresFacturationService } from './parametres-facturation.service';
 import { AuditLectureService } from './audit-lecture.service';
+import { TableauDeBordAdminService } from './tableau-de-bord-admin.service';
 import { SponsoringsService } from '../sponsorings/sponsorings.service';
 import { ArticlesService } from '../articles/articles.service';
 import { DecisionArticleDto } from '../articles/dto/decision-article.dto';
@@ -77,7 +78,19 @@ export class AdminController {
     private readonly moderationAvis: ModerationAvisService,
     private readonly photosService: PhotosService,
     private readonly audit: AuditLectureService,
+    private readonly tableauDeBordService: TableauDeBordAdminService,
   ) {}
+
+  @Get('tableau-de-bord')
+  @ApiOperation({
+    summary: 'Vue d’ensemble de l’administration — activité, files à traiter, audience, classement',
+    description:
+      'Une seule requête pour tout l’écran. Fenêtre glissante de 30 jours, comparée aux 30 ' +
+      'jours précédents.',
+  })
+  tableauDeBord() {
+    return this.tableauDeBordService.lire();
+  }
 
   @Get('etablissements')
   @ApiOperation({ summary: 'Liste des établissements, filtrable par statut et type' })
