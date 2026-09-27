@@ -378,3 +378,205 @@ export interface ProprietesAvatar {
 }
 
 export const Avatar = duDs<ProprietesAvatar>('Avatar');
+
+// ---------------------------------------------------------------------------
+//  Présents dans le bundle, typés sans être encore employés.
+//
+//  Signatures relevées dans `web/public/ds/bundle.js`, pas dans les `.d.ts`
+//  du skill : quand les deux divergent, c'est le bundle que le navigateur
+//  exécute. Les écarts relevés sont consignés dans CORRECTIFS.md.
+// ---------------------------------------------------------------------------
+
+// ---- Recherche --------------------------------------------------------------
+
+export interface ProprietesFilterBar {
+  filters?: { key: string; label: string; active?: boolean }[];
+  onToggle?: (cle: string) => void;
+  onApply?: () => void;
+  /** Sans lui, le bouton « Réinitialiser » n'est pas rendu. */
+  onReset?: () => void;
+  applyLabel?: string;
+  resetLabel?: string;
+  style?: React.CSSProperties;
+}
+
+export const FilterBar = duDs<ProprietesFilterBar>('FilterBar');
+
+export interface ProprietesTypePicker {
+  /**
+   * À FOURNIR TOUJOURS. La liste par défaut du bundle n'a que six types :
+   * `superieur` y manque, alors que la RG02 en pose sept. La dériver de
+   * `LIBELLE_TYPE`.
+   */
+  types?: { key: string; label: string; icon?: ReactNode }[];
+  /** Le bundle accepte aussi une clé seule, qu'il met en tableau. */
+  value?: string | string[];
+  multi?: boolean;
+  /** Toujours un tableau, même hors `multi` : vide quand on désélectionne. */
+  onChange?: (cles: string[]) => void;
+  columns?: number;
+  style?: React.CSSProperties;
+}
+
+export const TypePicker = duDs<ProprietesTypePicker>('TypePicker');
+
+export interface ProprietesCitySelect {
+  label?: string;
+  /**
+   * Le NOM de la ville, pas son slug : les options portent le libellé comme
+   * valeur. Convertir avant d'appeler l'API, qui filtre par slug.
+   */
+  value?: string;
+  defaultValue?: string;
+  onChange?: (evenement: React.ChangeEvent<HTMLSelectElement>) => void;
+  /**
+   * À FOURNIR TOUJOURS. Par défaut, douze villes figées dans le bundle :
+   * une ville ajoutée en base n'y apparaîtrait jamais.
+   */
+  cities?: string[];
+  placeholder?: string;
+  required?: boolean;
+  style?: React.CSSProperties;
+}
+
+export const CitySelect = duDs<ProprietesCitySelect>('CitySelect');
+
+// ---- Navigation -------------------------------------------------------------
+
+export interface ProprietesHeader {
+  /**
+   * Des `<a href>` natifs, pas des `Link` du routeur : un clic recharge
+   * toute l'application. À réserver aux pages hors du routeur.
+   */
+  items?: { label: string; href?: string; active?: boolean }[];
+  cta?: ReactNode;
+  onCta?: () => void;
+  logoSrc?: string | null;
+  style?: React.CSSProperties;
+}
+
+export const Header = duDs<ProprietesHeader>('Header');
+
+export interface ProprietesBreadcrumb {
+  /** Le dernier élément, et tout élément sans `href`, s'affiche en texte. */
+  items?: { label: string; href?: string }[];
+  style?: React.CSSProperties;
+}
+
+export const Breadcrumb = duDs<ProprietesBreadcrumb>('Breadcrumb');
+
+export interface ProprietesBottomTabBar {
+  items?: { key: string; label: string; icon?: ReactNode; count?: number }[];
+  activeKey?: string;
+  onSelect?: (cle: string) => void;
+  style?: React.CSSProperties;
+}
+
+export const BottomTabBar = duDs<ProprietesBottomTabBar>('BottomTabBar');
+
+export interface ProprietesStepper {
+  steps?: { label: string }[];
+  /** Rang de l'étape en cours, à partir de 0 ; celles d'avant sont cochées. */
+  current?: number;
+  orientation?: 'horizontal' | 'vertical';
+  style?: React.CSSProperties;
+}
+
+export const Stepper = duDs<ProprietesStepper>('Stepper');
+
+// ---- Fiche et vitrine -------------------------------------------------------
+
+export interface ProprietesPricingCard {
+  name: string;
+  /** Rendu tel quel : le formater avant (`formaterMad`). */
+  price: ReactNode;
+  unit?: string;
+  /** Nul : la ligne « crédits » est remplacée par un espace de même hauteur. */
+  credits?: number | null;
+  /** Chaque intitulé sert aussi de clé React : deux identiques se confondraient. */
+  features?: string[];
+  popular?: boolean;
+  cta?: ReactNode;
+  onSelect?: () => void;
+  style?: React.CSSProperties;
+}
+
+export const PricingCard = duDs<ProprietesPricingCard>('PricingCard');
+
+export interface ProprietesTeamMember {
+  name: string;
+  role: string;
+  /** Sans photo, les initiales du nom. */
+  photo?: string | null;
+  style?: React.CSSProperties;
+}
+
+export const TeamMember = duDs<ProprietesTeamMember>('TeamMember');
+
+export interface ProprietesSocialLinks {
+  /**
+   * Un `type` connu donne libellé, icône et teinte ; sinon `label` et `glyph`.
+   * `facebook` et `instagram` s'affichent avec les icônes génériques
+   * « users » et « heart » : le jeu d'icônes n'a pas leurs logos.
+   */
+  links?: {
+    type?: 'whatsapp' | 'phone' | 'website' | 'facebook' | 'instagram' | 'email';
+    href?: string;
+    label?: string;
+    glyph?: ReactNode;
+  }[];
+  size?: number;
+  style?: React.CSSProperties;
+}
+
+export const SocialLinks = duDs<ProprietesSocialLinks>('SocialLinks');
+
+// ---- Retour d'état ----------------------------------------------------------
+
+export interface ProprietesSkeleton {
+  variant?: 'text' | 'rect' | 'circle';
+  width?: number | string;
+  height?: number | string;
+  radius?: number | string;
+  style?: React.CSSProperties;
+}
+
+export const Skeleton = duDs<ProprietesSkeleton>('Skeleton');
+
+export interface ProprietesProfileUnavailable {
+  title?: string;
+  message?: string;
+  note?: string;
+  /** `false` retire le bloc image ; `null` y dessine une icône de bâtiment. */
+  image?: string | null | false;
+  searchLabel?: string;
+  contactLabel?: string;
+  onSearch?: () => void;
+  onContact?: () => void;
+  /**
+   * Par défaut, une MODALE plein écran (`position: fixed`, voile flouté) :
+   * rendue dans une page, elle en masquerait tout le contenu. `false`
+   * l'intègre au flux.
+   */
+  overlay?: boolean;
+  /** Posé sur le voile en surimpression, sur la carte sinon. */
+  style?: React.CSSProperties;
+}
+
+export const ProfileUnavailable = duDs<ProprietesProfileUnavailable>('ProfileUnavailable');
+
+// ---- Administration ---------------------------------------------------------
+
+export interface ProprietesPermissionToggle {
+  label?: ReactNode;
+  description?: string;
+  /** Fourni, le composant est contrôlé ; sinon il garde son propre état. */
+  checked?: boolean;
+  defaultChecked?: boolean;
+  /** Reçoit le nouvel état, pas l'événement. */
+  onChange?: (active: boolean) => void;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+}
+
+export const PermissionToggle = duDs<ProprietesPermissionToggle>('PermissionToggle');
