@@ -26,7 +26,7 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 
 | Écran | Route | État |
 |---|---|---|
-| Accueil | `/` | 🟡 4 sections manquantes + recherche avancée + carrousel |
+| Accueil | `/` | 🟡 blocs 13 et 14 à cocher |
 | Résultats de recherche | `/etablissements` | 🟡 filtres dynamiques et vue carte manquants |
 | Fiche établissement | `/etablissements/:slug` | 🟡 équipe, articles liés, similaires manquants |
 | Page ville | `/villes/:slug` | 🟡 quartiers populaires manquants |
@@ -155,13 +155,13 @@ dans l'ordre : titres, surtitres, listes répétées et boutons.
 node docs/sections.mjs "docs/handoff/écoles360.dc.html" isHome
 ```
 
-## Accueil (`isHome`) — 9 / 13 blocs
+## Accueil (`isHome`) — 12 / 14 blocs
 
 | # | Bloc de la maquette | État |
 |---|---|---|
 | 1 | Héros + `heroSlides` (carrousel de photos) | ✅ 7 diapositives, une par type, défilement 5 s |
 | 2 | Carte de recherche : `typeCards`, `villeSuggest`, « Rechercher » | ✅ |
-| 3 | **« Recherche avancée »** : `noteOptions`, `sortOptions`, `homeDynGroups` | ❌ |
+| 3 | « Recherche avancée » : `noteOptions`, `sortOptions`, `homeDynGroups` | ✅ options réduites à ce que l'API accepte (B-34) |
 | 4 | `trustStats` — bandeau navy de chiffres | ✅ |
 | 5 | « Notre sélection / Établissements à la une » + `featured` | ✅ |
 | 6 | « Ce que nous faisons / Choisir une école, enfin simple » + `whatWeDo` | ✅ |
@@ -169,7 +169,7 @@ node docs/sections.mjs "docs/handoff/écoles360.dc.html" isHome
 | 8 | « Témoignages / Ils nous font confiance » + `reviewDots` | ✅ |
 | 9 | « Simple et rapide / Comment ça marche » + `howSteps` | ✅ |
 | 10 | « Ce que disent les parents » + `homeReviews` | ✅ |
-| 11 | « Le blog / Conseils pour les parents » + `homeBlog` | ✅ |
+| 11 | « Le blog / Conseils pour les parents » + `homeBlog` | ✅ article à la une en tête, puis les plus récents |
 | 12 | « Questions fréquentes / Vous vous demandez peut-être… » | ✅ |
 | 13 | **« Besoin d'aide pour choisir ? »** — téléphone + « Nous écrire » | ❌ |
 | 14 | **« Vous dirigez un établissement ? »** + « Inscrire mon établissement » | ❌ |
