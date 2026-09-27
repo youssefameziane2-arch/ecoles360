@@ -78,7 +78,7 @@ référence, à la demande du client.
 | Avis reçus | `isEtabAvis` | `/espace/avis` | ✅ |
 | Blog | `isBlogList` | `/espace/blog` | ✅ |
 | Article (éditeur) | `isBlogDetail` | `/espace/blog` | ✅ |
-| Statistiques | `isEtabStats` | `/espace/statistiques` | ❌ |
+| Statistiques | `isEtabStats` | `/espace/statistiques` | 🟡 vues du mois, clics « Appeler », contacts WhatsApp (écart au mois précédent à date), vues mensuelles, origine des contacts — manque « Taux de contact », sans définition (B-42) ; l'origine « Accueil » n'est jamais tracée (B-41) |
 | Abonnement & facturation | `isEtabCredits` | `/espace/facturation` | ❌ formules, factures, conseiller |
 | CRM Leads | `isCrm` | — | ⛔ hors périmètre |
 
@@ -119,7 +119,7 @@ route à ce rôle.
 | Agenda & tâches | `isAgenda` | `/commercial/agenda` | ❌ page d'attente — calendrier, tâches, retards, Google Agenda |
 | Mes leads | `isCrm` | `/commercial/leads` | ❌ page d'attente — pipeline, température, relances |
 | Transferts & commissions | `isTransferts` | `/commercial/transferts` | ❌ page d'attente — CA généré, ventes, dossiers transférés |
-| Statistiques | `stats` (pas de bloc propre) | `/commercial/statistiques` | ❌ page d'attente |
+| Statistiques | `isEtabStats` (bloc partagé avec l'établissement) | `/commercial/statistiques` | ❌ page d'attente — la maquette y remet les chiffres d'une fiche ; ce qu'un commercial doit y lire (son portefeuille ?) n'est pas dit |
 | Blog | `isBlogList` | `/commercial/blog` | ✅ écran de l'espace établissement ; articles de plateforme soumis à validation, portée limitée aux siens (B-37) |
 ---
 
@@ -129,10 +129,10 @@ route à ce rôle.
 |---|---|---|
 | Site public | 10 écrans, 6 complets | 4 écrans à compléter, tous demandant une migration ou une route |
 | Administration | 6 | 6 + 3 partiels |
-| Établissement | 5 | 2 |
+| Établissement | 5 | 1 + 1 partiel |
 | Secrétariat | 5 | 0 |
 | Commercial | 1 (blog ouvert ; coquille et navigation en place) | 5 |
-| **Total** | **27** | **13 + 3 partiels** |
+| **Total** | **27** | **12 + 4 partiels** |
 
 ---
 

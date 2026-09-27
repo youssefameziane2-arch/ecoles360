@@ -3,10 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { chargerTableauDeBord, type TableauDeBord as Donnees } from '@/api/espace';
 import { AvecIdentite, CoquilleEspace } from '@/components/CoquilleEspace';
 import { BarChart, Badge, Button, Icon } from '@/ds/composants';
-import { formaterDepuis, formaterNombre, formaterNote } from '@/lib/formats';
+import { formaterDepuis, formaterNombre, formaterNote, MOIS_COURTS } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
-
-const MOIS_COURTS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 
 const LIBELLE_CANAL: Record<string, string> = {
   vue: 'Formulaire écoles360',

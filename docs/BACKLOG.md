@@ -561,3 +561,67 @@ session ? une page vue ?), ce que la maquette ne dit pas.
 La migration passe par la relecture locale (SESSIONS-CLOUD.md).
 **Statut :** à trancher — la forme de la trace (valeur d'enum ou table
 dédiée) et la définition d'une visite.
+
+## B-41 — Traces d'audience : `une` jamais émise, une vue comptée deux fois
+
+Relevé en construisant les statistiques de l'espace établissement
+(`isEtabStats`), qui rangent les clics selon la page d'où ils partent
+(`EvenementTrace.source`).
+
+**`une` n'est jamais émise.** Le DTO de traçage l'accepte
+(`resultats | fiche | une`), `tracerEvenement()` côté web aussi, mais le bloc
+« Établissements à la une » de l'accueil (`Accueil.tsx`) ne trace rien. Un
+parent qui y clique arrive sur la fiche, et la vue est rangée sous `fiche` :
+l'accueil n'apparaît jamais comme origine. L'écran le dit sans l'inventer — la
+ligne « Accueil » n'y figure que si une trace la porte.
+
+**Une vue venue des résultats est comptée deux fois.** Le bouton « Voir la
+fiche » de `Resultats.tsx` trace `vue / resultats`, puis la fiche trace
+`vue / fiche` à son montage (`Fiche.tsx`). L'image et le nom de la même carte
+mènent à la même fiche sans rien tracer. Selon l'endroit où le parent clique,
+une visite vaut donc une ou deux vues. Tous les totaux de vues en héritent :
+tableau de bord et statistiques, admin comme établissement.
+
+Ce n'est pas neutre pour l'argent : seule `vue / fiche` est promise à la
+facturation à la vue (RG12, `contacts.service.ts`). La double trace ne la
+gonfle pas, mais un compteur de vues qui ne mesure pas des visites finirait
+sur une facture le jour où quelqu'un les additionnerait.
+
+**Options, à trancher :**
+1. ne garder que la vue de la fiche, et faire porter l'origine par la
+   navigation (paramètre ou état de route lu au montage de la fiche) ;
+2. garder deux traces distinctes, mais ne compter comme vue que `fiche`, les
+   autres devenant des « clics vers la fiche » ;
+3. tracer « à la une » comme les résultats, en acceptant la double trace.
+
+**Statut :** à trancher — ce qu'est une vue, et d'où on la dit venir.
+
+## B-42 — « Taux de contact » : aucune définition
+
+La maquette `isEtabStats` pose une quatrième tuile, « Taux de contact »,
+à 1,5 % pour 8 420 vues, 312 appels et 126 WhatsApp. Aucun rapport entre ces
+nombres ne donne 1,5 % : (312 + 126) ÷ 8 420 = 5,2 %, 312 ÷ 8 420 = 3,7 %.
+Seul 126 ÷ 8 420 tombe juste, ce qui ferait d'un « taux de contact » un taux
+de WhatsApp — peu probable.
+
+La tuile est omise. Il faudrait choisir le numérateur (appels, WhatsApp,
+demandes par formulaire, ou leur somme) et le dénominateur (toutes les vues
+ou les seules vues de fiche — voir B-41).
+**Statut :** à trancher.
+
+## B-43 — Tableau de bord établissement : « Vues ce mois » ne compte pas ce mois
+
+La tuile « Vues ce mois » de `/espace` affiche `vues_30j` : trente jours
+glissants, et les seules vues `vue`, sans `vue_sponsorisee`. L'écran
+« Statistiques » affiche sous le même libellé le mois calendaire en cours,
+vues sponsorisées comprises — comme l'administration.
+
+Les deux chiffres diffèrent donc sous le même nom, et l'établissement verra
+deux « Vues ce mois » qui ne concordent pas.
+
+**À faire :** servir au tableau de bord `indicateurs.vues.courant` de
+`EspaceService.statistiques()` (ou le même calcul), ou renommer la tuile
+« Vues sur 30 jours ». Le libellé est celui de la maquette ; le calcul
+conforme au libellé est le premier.
+**Statut :** à confirmer — l'écart est constaté, le choix entre corriger le
+calcul et renommer la tuile revient au client.

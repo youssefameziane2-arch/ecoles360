@@ -1,11 +1,12 @@
 import { EvenementType } from '../../generated/prisma';
 
 /**
- * Séries temporelles de l'administration — tableau de bord et statistiques.
+ * Séries temporelles d'audience — tableau de bord et statistiques de
+ * l'administration, statistiques de l'espace établissement.
  *
- * PARTAGÉES PLUTÔT QUE RECOPIÉES : les deux écrans montrent la même audience,
- * et deux calculs voisins finiraient par afficher deux totaux différents pour
- * la même période.
+ * PARTAGÉES PLUTÔT QUE RECOPIÉES : ces écrans montrent la même audience, et
+ * deux calculs voisins finiraient par afficher à l'établissement un autre
+ * total que celui que l'administration lit pour sa fiche.
  */
 
 /**

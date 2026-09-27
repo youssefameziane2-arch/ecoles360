@@ -60,6 +60,24 @@ export class EspaceController {
     return this.espace.tableauDeBord(this.etablissementIdOuRefuse(utilisateur));
   }
 
+  /**
+   * SANS `@PorteeEspace`, COMME `dashboard` : un secrétariat rattaché lit ces
+   * chiffres quelle que soit sa délégation. Il les lit déjà — le tableau de
+   * bord rend `vues_30j` et `canaux` sans portée — et les lui retirer ici
+   * créerait une règle que la RG05 ne pose pas : ses trois portées (`fiches`,
+   * `contacts`, `avis`) bornent des écritures et des données personnelles,
+   * pas l'audience agrégée de la fiche.
+   */
+  @Get('statistiques')
+  @ApiOperation({
+    summary: 'Statistiques de ma fiche — vues du mois, vues mensuelles, origine des contacts',
+    description:
+      'Bornées à l’établissement de la session : aucun identifiant ne passe en paramètre.',
+  })
+  statistiques(@Utilisateur() utilisateur: UtilisateurAuthentifie) {
+    return this.espace.statistiques(this.etablissementIdOuRefuse(utilisateur));
+  }
+
   @Get('fiche')
   @PorteeEspace(PermissionPortee.fiches)
   @ApiOperation({ summary: 'Ma fiche' })
