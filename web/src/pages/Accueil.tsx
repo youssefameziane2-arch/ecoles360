@@ -5,9 +5,13 @@ import { chargerArticles, type CarteArticle } from '@/api/articles';
 import { chargerAvisEnAvant } from '@/api/avis';
 import { chargerFaq } from '@/api/faq';
 import {
+  chargerNiveauxFilieres,
   chargerVilles,
+  FAMILLES_PAR_TYPE,
+  LIBELLE_FAMILLE,
   LIBELLE_TYPE,
   rechercherEtablissements,
+  type FiltresRecherche,
   type TypeEtablissement,
 } from '@/api/etablissements';
 import { AccordeonFaq } from '@/components/AccordeonFaq';
@@ -52,6 +56,38 @@ const ICONE_TYPE: Record<TypeEtablissement, string> = {
 
 const TYPES = Object.keys(LIBELLE_TYPE) as TypeEtablissement[];
 
+/**
+ * Notes minimales de la recherche avancée.
+ *
+ * DES ENTIERS SEULEMENT, là où la maquette propose « 4,5 et plus » : l'API
+ * déclare `note_min` en `@IsInt()`, et 4.5 serait refusé en 422 — le parent
+ * atterrirait sur une page d'erreur. Ce sont aussi les deux seuils des puces
+ * « Note » des résultats, qui s'allument donc à l'arrivée. Écart consigné au
+ * backlog (B-34).
+ */
+const OPTIONS_NOTE = [
+  { valeur: '', libelle: 'Toutes les notes' },
+  { valeur: '3', libelle: '3,0 et plus' },
+  { valeur: '4', libelle: '4,0 et plus' },
+];
+
+/**
+ * Tris de la recherche avancée — ceux que l'API sait faire.
+ *
+ * La maquette propose « Pertinence » et deux tris par prix : aucun n'existe
+ * côté serveur, et un tri affiché qui ne trierait rien tromperait le visiteur.
+ * Les libellés sont ceux du sélecteur des résultats, pour qu'il y retrouve son
+ * choix. Écart consigné au backlog (B-34).
+ */
+const OPTIONS_TRI: { valeur: NonNullable<FiltresRecherche['tri']>; libelle: string }[] = [
+  { valeur: 'note', libelle: 'Mieux notés' },
+  { valeur: 'recent', libelle: 'Plus récents' },
+  { valeur: 'nom', libelle: 'Ordre alphabétique' },
+];
+
+/** Tri appliqué par l'API en l'absence de paramètre — inutile de l'écrire dans l'URL. */
+const TRI_PAR_DEFAUT = 'note';
+
 export function Accueil() {
   useTitrePage(
     'écoles360',
@@ -64,7 +100,24 @@ export function Accueil() {
   const [villeOuverte, setVilleOuverte] = useState(false);
   const [messageType, setMessageType] = useState(false);
 
+  const [avanceeOuverte, setAvanceeOuverte] = useState(false);
+  const [noteMin, setNoteMin] = useState('');
+  const [tri, setTri] = useState<string>(TRI_PAR_DEFAUT);
+  const [budgetMin, setBudgetMin] = useState('');
+  const [budgetMax, setBudgetMax] = useState('');
+  const [caracteristiques, setCaracteristiques] = useState<string[]>([]);
+
   const villes = useQuery({ queryKey: ['villes'], queryFn: chargerVilles });
+  const referentiel = useQuery({
+    // Même clé et même durée que les résultats : le référentiel chargé ici
+    // sert encore à l'arrivée sur la recherche, sans second aller-retour.
+    queryKey: ['niveaux-filieres'],
+    queryFn: chargerNiveauxFilieres,
+    staleTime: 3_600_000,
+    // Seulement à l'ouverture du panneau : la plupart des visiteurs de
+    // l'accueil ne l'ouvrent pas, et n'ont pas à payer la requête.
+    enabled: avanceeOuverte,
+  });
   const aLaUne = useQuery({
     queryKey: ['etablissements', 'une'],
     queryFn: () => rechercherEtablissements({ per_page: 4 }),
@@ -91,6 +144,25 @@ export function Accueil() {
   // questions de la FAQ, toutes rubriques confondues, comme la maquette.
   const apercuFaq = (faq.data ?? []).flatMap((rubrique) => rubrique.items).slice(0, 4);
 
+  // Les familles de filtres suivent le type choisi, comme dans la maquette :
+  // sans type, le panneau invite à en choisir un plutôt que d'afficher des
+  // filières d'ingénierie à qui cherche une crèche.
+  const famillesAvancees = type ? FAMILLES_PAR_TYPE[type] : [];
+  const groupesAvances = famillesAvancees
+    .map((famille) => ({
+      famille,
+      options: (referentiel.data ?? []).filter((c) => c.categorie === famille),
+    }))
+    .filter((groupe) => groupe.options.length > 0);
+
+  const basculerCaracteristique = (id: string) =>
+    setCaracteristiques((actuelles) =>
+      actuelles.includes(id) ? actuelles.filter((c) => c !== id) : [...actuelles, id],
+    );
+
+  /** Ne garde que les chiffres : `budget_min` est un entier côté API, « 12 000 » y serait refusé. */
+  const chiffresSeuls = (saisie: string) => saisie.replace(/[^0-9]/g, '');
+
   const suggestions = (villes.data ?? []).filter((v) =>
     v.nom.toLowerCase().includes(ville.trim().toLowerCase()),
   );
@@ -100,6 +172,9 @@ export function Accueil() {
     // plutôt que de lancer une recherche que le visiteur n'a pas cadrée.
     if (!type) {
       setMessageType(true);
+      // Comme la maquette : le panneau s'ouvre sur son invite « Choisissez
+      // d'abord un type… », qui redit la consigne là où le regard descend.
+      setAvanceeOuverte(true);
       return;
     }
 
@@ -110,6 +185,21 @@ export function Accueil() {
 
     if (correspondance) params.set('ville', correspondance.slug);
     else if (ville.trim()) params.set('q', ville.trim());
+
+    // Les noms sont ceux que lisent les résultats et l'API : la recherche
+    // avancée n'a pas d'état propre, elle pré-remplit l'URL partageable.
+    if (noteMin) params.set('note_min', noteMin);
+    if (tri !== TRI_PAR_DEFAUT) params.set('tri', tri);
+    if (budgetMin) params.set('budget_min', budgetMin);
+    if (budgetMax) params.set('budget_max', budgetMax);
+
+    // Seules partent les caractéristiques des familles du type COURANT. Une
+    // filière cochée pour « Lycée » avant de passer à « Crèche » filtrerait
+    // sinon en silence sur un critère que le panneau ne montre plus.
+    const retenues = caracteristiques.filter((id) =>
+      groupesAvances.some((groupe) => groupe.options.some((option) => option.id === id)),
+    );
+    if (retenues.length > 0) params.set('niveaux', retenues.join(','));
 
     naviguer(`/etablissements?${params.toString()}`);
   };
@@ -360,6 +450,222 @@ export function Accueil() {
               Rechercher
             </Button>
           </div>
+
+          {/*
+            RECHERCHE AVANCÉE. Le `FilterBar` du design system n'y convient pas :
+            c'est une rangée de déclencheurs à menu avec un bouton « Appliquer »,
+            là où la maquette dessine des sélecteurs et des rangées de puces
+            libellées, appliqués d'un seul « Rechercher ».
+
+            PAS DE BASCULE « École sponsorisée », pourtant dessinée : aucun
+            paramètre de l'API ne filtre dessus (même écart que les résultats),
+            et un interrupteur sans effet mentirait au visiteur. Consigné au
+            backlog (B-34).
+          */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginTop: 14,
+              flexWrap: 'wrap',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setAvanceeOuverte((ouverte) => !ouverte)}
+              aria-expanded={avanceeOuverte}
+              aria-controls="recherche-avancee"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                border: 'none',
+                background: 'transparent',
+                color: '#1D3557',
+                fontFamily: 'inherit',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                padding: '4px 0',
+              }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1D3557" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M4 6h16M7 12h10M10 18h4" />
+              </svg>
+              Recherche avancée
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1D3557"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+                style={{ transform: `rotate(${avanceeOuverte ? 180 : 0}deg)`, transition: 'transform .2s ease' }}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <span style={{ fontSize: 12.5, color: '#9AA3AF' }}>
+              Affinez par langues, activités, filière, budget…
+            </span>
+          </div>
+
+          {avanceeOuverte && (
+            <div
+              id="recherche-avancee"
+              style={{
+                marginTop: 12,
+                padding: 18,
+                background: '#FBFAF7',
+                border: '1px solid #EAE6DE',
+                borderRadius: 14,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 11, flexWrap: 'wrap' }}>
+                <select
+                  value={noteMin}
+                  onChange={(evenement) => setNoteMin(evenement.target.value)}
+                  aria-label="Note minimale"
+                  style={selecteurAvance}
+                >
+                  {OPTIONS_NOTE.map((option) => (
+                    <option key={option.valeur} value={option.valeur}>
+                      {option.libelle}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={tri}
+                  onChange={(evenement) => setTri(evenement.target.value)}
+                  aria-label="Ordre des résultats"
+                  style={selecteurAvance}
+                >
+                  {OPTIONS_TRI.map((option) => (
+                    <option key={option.valeur} value={option.valeur}>
+                      Trier : {option.libelle}
+                    </option>
+                  ))}
+                </select>
+
+                {/*
+                  MAD/AN, là où la maquette écrit « MAD/mois » : l'API filtre sur
+                  le budget ANNUEL des fiches. Un montant mensuel saisi ici
+                  écarterait à tort presque toutes les écoles. Les champs sont
+                  élargis d'autant — un budget annuel compte six chiffres — et
+                  plafonnés à sept : au-delà, l'entier sort de ce que la base
+                  sait comparer, et la recherche échouerait.
+                */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: '#fff',
+                    border: '1px solid #E1E5EA',
+                    borderRadius: 11,
+                    padding: '5px 12px',
+                  }}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.6px', textTransform: 'uppercase', color: '#9AA3AF' }}>
+                    Budget
+                  </span>
+                  <input
+                    value={budgetMin}
+                    onChange={(evenement) => setBudgetMin(chiffresSeuls(evenement.target.value))}
+                    onKeyDown={(evenement) => evenement.key === 'Enter' && rechercher()}
+                    inputMode="numeric"
+                    maxLength={7}
+                    placeholder="Min"
+                    aria-label="Budget annuel minimum, en dirhams"
+                    style={champBudgetAvance}
+                  />
+                  <span style={{ color: '#9AA3AF' }}>–</span>
+                  <input
+                    value={budgetMax}
+                    onChange={(evenement) => setBudgetMax(chiffresSeuls(evenement.target.value))}
+                    onKeyDown={(evenement) => evenement.key === 'Enter' && rechercher()}
+                    inputMode="numeric"
+                    maxLength={7}
+                    placeholder="Max"
+                    aria-label="Budget annuel maximum, en dirhams"
+                    style={champBudgetAvance}
+                  />
+                  <span style={{ fontSize: 12, color: '#9AA3AF', fontWeight: 600, whiteSpace: 'nowrap' }}>MAD/an</span>
+                </div>
+              </div>
+
+              {!type && (
+                <div style={{ fontSize: 13, color: '#9AA3AF', paddingTop: 6 }}>
+                  Choisissez d&rsquo;abord un type d&rsquo;établissement ci-dessus pour affiner par
+                  langues, activités, filière…
+                </div>
+              )}
+
+              {type && referentiel.isPending && (
+                <div style={{ fontSize: 13, color: '#9AA3AF', paddingTop: 6 }}>Chargement des filtres…</div>
+              )}
+
+              {type && referentiel.isError && (
+                <div role="alert" style={{ fontSize: 13, color: 'var(--e360-red)', paddingTop: 6 }}>
+                  Les filtres par langue, activité ou filière n&rsquo;ont pas pu être chargés. Les
+                  autres critères restent utilisables.
+                </div>
+              )}
+
+              {groupesAvances.length > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    paddingTop: 12,
+                    borderTop: '1px solid #EFECE6',
+                  }}
+                >
+                  {groupesAvances.map(({ famille, options }) => (
+                    <div
+                      key={famille}
+                      role="group"
+                      aria-label={LIBELLE_FAMILLE[famille]}
+                      style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}
+                    >
+                      <span
+                        style={{
+                          flex: 'none',
+                          minWidth: 82,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          letterSpacing: '.6px',
+                          textTransform: 'uppercase',
+                          color: '#9AA3AF',
+                        }}
+                      >
+                        {LIBELLE_FAMILLE[famille]}
+                      </span>
+                      {options.map((option) => (
+                        <PuceFiltre
+                          key={option.id}
+                          actif={caracteristiques.includes(option.id)}
+                          onClick={() => basculerCaracteristique(option.id)}
+                        >
+                          {option.libelle}
+                        </PuceFiltre>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -371,7 +677,9 @@ export function Accueil() {
             libelle="Établissements référencés"
           />
           <Chiffre valeur={villes.data ? String(villes.data.length) : '—'} libelle="Villes couvertes" />
-          <Chiffre valeur="6" libelle="Types d'établissements" />
+          {/* Dérivé du référentiel plutôt qu'écrit en dur : un chiffre littéral
+              ne suit pas l'ajout d'un type (RG02), et finit par mentir. */}
+          <Chiffre valeur={String(TYPES.length)} libelle="Types d'établissements" />
           <Chiffre valeur="0 MAD" libelle="Pour les parents, toujours" />
         </div>
       </section>
@@ -1092,6 +1400,68 @@ function Etape({ n, titre, texte }: { n: number; titre: string; texte: string })
     </div>
   );
 }
+
+/**
+ * Puce de caractéristique de la recherche avancée.
+ *
+ * Pas la `Puce` des résultats : la maquette de l'accueil l'habille autrement
+ * (filet #E1E5EA, texte rouge vif une fois cochée), et la page des résultats
+ * n'a pas à changer d'allure pour autant.
+ */
+function PuceFiltre({
+  children,
+  actif,
+  onClick,
+}: {
+  children: React.ReactNode;
+  actif: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={actif}
+      style={{
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        fontSize: 13,
+        fontWeight: 600,
+        padding: '6px 13px',
+        borderRadius: 20,
+        background: actif ? '#FDE8EA' : '#fff',
+        border: `1px solid ${actif ? '#E63946' : '#E1E5EA'}`,
+        color: actif ? '#E63946' : '#5A6472',
+        transition: 'all .15s ease',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const selecteurAvance: React.CSSProperties = {
+  border: '1px solid #E1E5EA',
+  background: '#fff',
+  borderRadius: 11,
+  fontFamily: 'inherit',
+  fontSize: 14,
+  fontWeight: 500,
+  padding: '10px 14px',
+  cursor: 'pointer',
+  color: '#1A1A1A',
+};
+
+const champBudgetAvance: React.CSSProperties = {
+  width: 76,
+  background: '#fff',
+  border: '1px solid #E1E5EA',
+  borderRadius: 8,
+  fontFamily: 'inherit',
+  fontSize: 13.5,
+  padding: '7px 9px',
+  color: '#1A1A1A',
+};
 
 const surtitreStyle: React.CSSProperties = {
   fontSize: 12,

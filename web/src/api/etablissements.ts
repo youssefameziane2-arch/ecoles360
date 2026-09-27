@@ -1,6 +1,6 @@
 import { apiFetch, apiFetchPage } from './client';
 
-/** Les six types du référentiel (RG02). */
+/** Les sept types du référentiel (RG02). */
 export type TypeEtablissement =
   | 'creche'
   | 'primaire'

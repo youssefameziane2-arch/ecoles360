@@ -46,7 +46,6 @@ a {
 
 /* ---- Grilles de la maquette ---------------------------------------- */
 
-/* Tuiles de type d'établissement — six types (RG02). */
 /* Sept types d'établissement depuis l'ajout de « École supérieure » (RG02). */
 .e3-typegrid {
   display: grid;

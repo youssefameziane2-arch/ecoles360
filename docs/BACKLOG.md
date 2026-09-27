@@ -331,3 +331,36 @@ complètes valent mieux qu'un dossier inaccessible.
 **À faire :** bloc `location /media/` dans la configuration nginx, avec
 `expires 1y` (le nom de fichier est un aléa, son contenu ne change jamais).
 **Statut :** planifié — lot mise en ligne.
+
+## B-34 — Recherche avancée de l'accueil : la maquette demande plus que l'API
+
+La maquette (`isHome`, `noteOptions` / `sortOptions` / bascule sponsorisée)
+propose des critères que `RechercheEtablissementsDto` n'accepte pas. L'écran
+s'est aligné sur l'API telle qu'elle est ; **à trancher : étendre le DTO ou
+aligner la maquette.**
+
+| Critère | Maquette | API aujourd'hui | Écran livré |
+|---|---|---|---|
+| Note minimale | « 4,0 et plus », « 4,5 et plus » | `note_min` entier 1–5 (`@IsInt()`) — 4,5 → **422** | « 3,0 et plus », « 4,0 et plus » (les seuils des puces des résultats) |
+| Tri | Pertinence, Mieux notés, Prix croissant, Prix décroissant | `tri` ∈ `note` · `recent` · `nom` | Mieux notés, Plus récents, Ordre alphabétique |
+| « École sponsorisée » | bascule | aucun paramètre | absente |
+| Budget | MAD/**mois** | `budget_min` / `budget_max` **annuels** | MAD/an |
+
+Ce qu'une extension du DTO impliquerait, pour éclairer le choix :
+
+- **Note au demi-point** : `@IsNumber({ maxDecimalPlaces: 1 })` au lieu de
+  `@IsInt()`, et les puces « Note » des résultats à revoir en même temps.
+- **Tri par prix** : sur `budget_min` / `budget_max`, qui sont nullables — il
+  faut décider où vont les fiches sans budget (en fin de liste, sans doute).
+- **« Pertinence »** n'a de sens qu'avec une recherche plein texte classée ;
+  sans `q`, elle se confondrait avec le tri par défaut.
+- **Filtre sponsorisé** : RG19 place déjà les sponsorisés en tête. Filtrer
+  dessus retire les autres fiches, ce qui touche au modèle commercial — décision
+  client plutôt que technique.
+- **Budget mensuel** : les fiches portent un budget annuel. Afficher du
+  mensuel, c'est diviser par 10 ou 12 selon l'établissement : à trancher côté
+  données, pas dans l'écran.
+
+La page de résultats porte déjà les mêmes écarts (tri, sponsorisé) : la
+décision vaudra pour les deux écrans.
+**Statut :** à trancher.
