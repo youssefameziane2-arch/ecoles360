@@ -388,4 +388,17 @@ bannière. La constante ne doit plus servir qu'au repli du composant qui la
 définit, et `TELEPHONE_CONSEILLER` / `LIEN_TELEPHONE` cesser d'être exportés.
 
 **Bloquant avant mise en ligne** : un numéro faux sur la page d'accueil.
-**Statut :** à faire.
+
+**Tranché :** le tirage du conseiller sort du composant et se fait au
+chargement du module (`TIRAGE` dans `MobilierAssistance.tsx`), servi par
+`useConseillerAffiche()` à la bannière comme au bloc 13 — même requête, même
+index, donc le même conseiller des deux côtés. Sans conseiller en base, le
+bloc 13 retire son bouton téléphone plutôt que d'afficher le repli.
+`TELEPHONE_CONSEILLER`, `LIEN_TELEPHONE` et `LIEN_WHATSAPP` ne sont plus
+exportés.
+
+**Reste ouvert :** sans aucun conseiller en base, « Nous écrire » et le bouton
+WhatsApp flottant pointent toujours sur le repli factice — le bloc garde ce
+bouton par décision. À régler avec l'écran « Contenu du site », qui doit
+porter un numéro de contact configurable.
+**Statut :** corrigé pour le téléphone ; repli WhatsApp à trancher.

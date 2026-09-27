@@ -16,12 +16,8 @@ import {
 } from '@/api/etablissements';
 import { AccordeonFaq } from '@/components/AccordeonFaq';
 import { HerosAccueil } from '@/components/HerosAccueil';
-import {
-  IconeWhatsApp,
-  LIEN_TELEPHONE,
-  LIEN_WHATSAPP,
-  TELEPHONE_CONSEILLER,
-} from '@/components/MobilierAssistance';
+import { IconeWhatsApp, useConseillerAffiche } from '@/components/MobilierAssistance';
+import { lienTelephone, lienWhatsApp } from '@/lib/telephone';
 import { CarteBlog } from './Blog';
 import { Button, CityCard, EstablishmentCard, Icon, SkeletonCard } from '@/ds/composants';
 import { formaterDate, formaterMad, formaterNombre, formaterNote } from '@/lib/formats';
@@ -122,6 +118,10 @@ export function Accueil() {
     queryKey: ['etablissements', 'une'],
     queryFn: () => rechercherEtablissements({ per_page: 4 }),
   });
+
+  // Le même conseiller que la bannière flottante, par construction : une seule
+  // offre d'aide sur la page ne peut pas afficher deux numéros.
+  const { conseiller, numero: numeroAide } = useConseillerAffiche();
 
   const faq = useQuery({ queryKey: ['faq'], queryFn: chargerFaq });
   const avisEnAvant = useQuery({ queryKey: ['avis', 'en-avant'], queryFn: chargerAvisEnAvant });
@@ -1132,24 +1132,34 @@ export function Accueil() {
           </div>
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {/*
+              PAS DE BOUTON SANS CONSEILLER RÉEL. La bannière flottante peut se
+              permettre un repli le temps d'un chargement ; ce bloc, en pleine
+              page, afficherait un numéro factice comme s'il était le bon. Mieux
+              vaut un bouton de moins qu'un appel vers personne.
+            */}
+            {conseiller && (
+              <a
+                href={lienTelephone(conseiller.telephone)}
+                aria-label={`Appeler ${conseiller.nom}, conseiller écoles360, au ${conseiller.telephone}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 9,
+                  background: '#1D3557',
+                  color: '#fff',
+                  font: "600 15px/1 'Inter', sans-serif",
+                  padding: '14px 24px',
+                  borderRadius: 11,
+                }}
+              >
+                <Icon name="phone" size={17} color="#fff" />
+                {conseiller.telephone}
+              </a>
+            )}
+            {/* Même numéro que le bouton WhatsApp flottant, dans tous les cas. */}
             <a
-              href={LIEN_TELEPHONE}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 9,
-                background: '#1D3557',
-                color: '#fff',
-                font: "600 15px/1 'Inter', sans-serif",
-                padding: '14px 24px',
-                borderRadius: 11,
-              }}
-            >
-              <Icon name="phone" size={17} color="#fff" />
-              {TELEPHONE_CONSEILLER}
-            </a>
-            <a
-              href={LIEN_WHATSAPP}
+              href={lienWhatsApp(numeroAide)}
               target="_blank"
               rel="noreferrer"
               style={{
