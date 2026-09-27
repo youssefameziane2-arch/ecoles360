@@ -54,7 +54,7 @@ cookies, CGU — liens présents, contenu absent). Le texte légal relève du cl
 | Article (éditeur) | `isBlogDetail` | `/admin/blog` | ✅ |
 | Journal d'audit | `isAdminJournal` | `/admin/journal` | ✅ |
 | Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ seule — manquent les catégories d'articles et la page « À propos » |
-| Tableau de bord | `isAdminDash` | — | ❌ activité, rappels, top établissements, pipeline, factures |
+| Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
 | CRM Clients | `isAdminCrm` | `/admin/crm` | ❌ KPI, prospects, dossiers, étapes |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | ❌ périodes, filtres ville/type, KPI, courbe, top |
 | Abonnement & facturation | `isAdminFact` | `/admin/facturation` | ❌ KPI, tarifs, historique, encaissement |
@@ -128,11 +128,11 @@ route à ce rôle.
 | Périmètre | Fait | Reste |
 |---|---|---|
 | Site public | 10 écrans, 4 complets | 6 écrans à compléter |
-| Administration | 6 | 8 + 1 partiel |
+| Administration | 6 | 7 + 2 partiels |
 | Établissement | 5 | 2 |
 | Secrétariat | 5 | 0 |
 | Commercial | 1 (coquille et navigation en place) | 5 |
-| **Total** | **27** | **15 + 1 partiel** |
+| **Total** | **27** | **14 + 2 partiels** |
 
 ---
 

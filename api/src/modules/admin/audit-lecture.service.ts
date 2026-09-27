@@ -33,8 +33,11 @@ export class AuditLectureService {
     role?: string;
     domaine?: string;
     page?: number;
+    /** Le tableau de bord n'en montre que quelques-unes : inutile d'en lire 25. */
+    parPage?: number;
   }): Promise<Page<unknown>> {
     const page = Math.max(1, filtres.page ?? 1);
+    const parPage = filtres.parPage ?? PAR_PAGE;
 
     const where: Prisma.JournalAuditWhereInput = {
       ...(filtres.role ? { role_acteur: filtres.role } : {}),
@@ -48,8 +51,8 @@ export class AuditLectureService {
       this.db.journalAudit.findMany({
         where,
         orderBy: { cree_le: 'desc' },
-        skip: (page - 1) * PAR_PAGE,
-        take: PAR_PAGE,
+        skip: (page - 1) * parPage,
+        take: parPage,
         select: {
           id: true,
           role_acteur: true,
@@ -64,7 +67,7 @@ export class AuditLectureService {
       }),
     ]);
 
-    return new Page(entrees, total, page, PAR_PAGE);
+    return new Page(entrees, total, page, parPage);
   }
 
   /** Domaines présents dans le journal — alimente les pastilles de filtre. */

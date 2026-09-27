@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { EntreeAudit } from './audit';
 import type { TypeEtablissement } from './etablissements';
 import type { ChampsModifies } from './espace';
 
@@ -202,3 +203,44 @@ export const reordonnerPhotos = (etablissementId: string, ids: string[]) =>
     method: 'PUT',
     body: JSON.stringify({ ids }),
   });
+
+/** Une file qui attend une décision humaine — bloc « À traiter ». */
+export interface FileATraiter {
+  file: 'propositions' | 'avis' | 'articles';
+  en_attente: number;
+  /** Date de la plus ancienne en attente — nulle quand la file est vide. */
+  plus_ancienne: string | null;
+}
+
+/** Nombre sur la fenêtre de 30 jours, et sur les 30 jours d'avant. */
+export interface Comparaison {
+  courant: number;
+  precedent: number;
+}
+
+/** `GET /admin/tableau-de-bord` — maquette `isAdminDash`, un seul aller-retour. */
+export interface TableauDeBordAdmin {
+  fenetre_jours: number;
+  activite: EntreeAudit[];
+  a_traiter: FileATraiter[];
+  visites: {
+    vues_fiches: Comparaison;
+    demandes: Comparaison;
+    vues_par_jour: { jour: string; vues: number }[];
+  };
+  top_etablissements: {
+    id: string;
+    nom: string;
+    slug: string;
+    type: TypeEtablissement;
+    statut: StatutEtablissement;
+    quartier: string | null;
+    note_moy: string;
+    nb_avis: number;
+    ville: { nom: string };
+    vues: number;
+  }[];
+}
+
+export const chargerTableauDeBordAdmin = () =>
+  apiFetch<TableauDeBordAdmin>('/admin/tableau-de-bord');
