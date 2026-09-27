@@ -77,6 +77,7 @@ export const LIBELLE_ACTION: Record<string, string> = {
   'faq.modifiee': 'Question modifiée',
   'faq.supprimee': 'Question supprimée',
   'faq.reordonnee': 'FAQ réordonnée',
+  'page_cms.modifiee': 'Page « À propos » publiée',
   'sponsoring.cree': 'Campagne ouverte',
   'sponsoring.arrete': 'Campagne arrêtée',
   'parametre_facturation.modifie': 'Paramètre de facturation modifié',
