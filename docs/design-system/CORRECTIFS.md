@@ -82,3 +82,14 @@ Ces corrections devraient remonter à la source plutôt que vivre ici :
    dans notre copie du bundle.
 2. **Les sources `.jsx`**, tout simplement. Un bundle exécuté dans un bac à
    sable pour le rendu serveur fonctionne, mais un `import` propre vaut mieux.
+3. **Réaligner les sources sur le bundle livré — `SidebarNav` d'abord.** Les
+   sources versées dans `.claude/skills/ecoles360-design/` ne sont pas celles
+   du bundle que l'application charge (`web/public/ds/bundle.js`, et sa copie
+   `_ds_bundle.js` : les deux portent le thème). Écart constaté sur `SidebarNav` : le bundle connaît le
+   thème `commercial` (sur-titre « Espace commercial »), que
+   `SidebarNav.jsx` et `SidebarNav.d.ts` ignorent — ils n'en listent que
+   trois. L'espace commercial s'appuie sur ce thème, ce n'est donc **pas** une
+   rustine : c'est le comportement livré. Le risque est inverse — qu'un bundle
+   un jour recompilé depuis ces sources perde le thème sans que rien ne le
+   signale. Demande : les sources exactes du bundle livré, ou l'ajout de
+   `commercial` à `SidebarNav.jsx` et à son `.d.ts`.

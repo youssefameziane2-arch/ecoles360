@@ -105,19 +105,21 @@ Servi par **les mêmes écrans que l'établissement**, filtrés par portée dél
 
 ---
 
-## Espace commercial — 0 / 6
+## Espace commercial — coquille en place, 0 / 6 écrans
 
-**Le rôle entier reste à construire** : aucune navigation, aucun écran.
+**La navigation et les six routes existent** (`/commercial/…`, thème
+`commercial` de `SidebarNav`) : un commercial se connecte et arrive dans son
+espace. Chaque entrée mène à une page d'attente qui nomme ce qu'elle
+contiendra — aucune route de l'API n'est encore ouverte à ce rôle.
 
-| Écran | Clé maquette | État |
-|---|---|---|
-| Tableau de bord | `isCommercialDash` | ❌ tâches du jour, intérêts, transferts |
-| Agenda & tâches | `isAgenda` | ❌ calendrier, tâches, retards, Google Agenda |
-| Mes leads | `isCrm` | ❌ |
-| Transferts & commissions | `isTransferts` | ❌ |
-| Statistiques | `isStats` | ❌ |
-| Blog | `isBlogList` | ❌ l'écran existe, la navigation commerciale non |
-
+| Écran | Clé maquette | Route | État |
+|---|---|---|---|
+| Tableau de bord | `isCommercialDash` | `/commercial` | ❌ page d'attente — tâches du jour, intérêts, transferts, commission |
+| Agenda & tâches | `isAgenda` | `/commercial/agenda` | ❌ page d'attente — calendrier, tâches, retards, Google Agenda |
+| Mes leads | `isCrm` | `/commercial/leads` | ❌ page d'attente — pipeline, température, relances |
+| Transferts & commissions | `isTransferts` | `/commercial/transferts` | ❌ page d'attente — CA généré, ventes, dossiers transférés |
+| Statistiques | `stats` (pas de bloc propre) | `/commercial/statistiques` | ❌ page d'attente |
+| Blog | `isBlogList` | `/commercial/blog` | ❌ page d'attente — écran prêt, garde serveur à ouvrir (B-37) |
 ---
 
 ## Récapitulatif
@@ -128,7 +130,7 @@ Servi par **les mêmes écrans que l'établissement**, filtrés par portée dél
 | Administration | 6 | 8 + 1 partiel |
 | Établissement | 5 | 2 |
 | Secrétariat | 5 | 0 |
-| Commercial | 0 | 6 |
+| Commercial | 0 (coquille et navigation en place) | 6 |
 | **Total** | **26** | **16 + 1 partiel** |
 
 ---
