@@ -6,8 +6,16 @@ ce qu'aucune session cloud ne doit faire seule.
 
 La raison de ce partage n'est pas une question de confiance : c'est que le bac
 à sable cloud n'a ni MySQL, ni Redis, ni `.env`, ni navigateur sur le serveur
-de développement. **Il ne peut donc pas exécuter les 210 tests, ni regarder
-un écran.** Il écrit du code qui compile ; il ne peut pas prouver qu'il marche.
+de développement. **Il ne peut donc pas exécuter les 210 tests lui-même, ni
+regarder un écran.**
+
+Mais la CI, elle, le peut. `.github/workflows/ci.yml` se déclenche sur **chaque
+pull request**, monte MySQL 8 et Redis 7, applique les migrations, sème et joue
+la suite complète. C'est précisément pourquoi une session cloud **ouvre une PR**
+au lieu de pousser une branche seule : la PR est ce qui déclenche la preuve.
+
+Ce qui reste strictement local : **regarder les écrans** — la CI ne voit pas
+un rendu — et **appliquer une migration** sur des données réelles.
 
 ---
 
@@ -22,15 +30,22 @@ un écran.** Il écrit du code qui compile ; il ne peut pas prouver qu'il marche
 - Les refactors mécaniques : extraire un helper partagé, renommer, dédoublonner.
 - Le paquet de types partagés généré depuis l'OpenAPI.
 
+### Ce que la CI vérifie à notre place
+
+Sur chaque PR, sans intervention : lint et format, `nest build`, migrations,
+seed, puis les 210 tests avec couverture. Le job s'appelle
+**`API — lint, build, tests`**.
+
+Une PR rouge ne se fusionne pas. Une PR verte prouve que les règles de gestion
+tiennent encore — c'est la garantie qui manquait au bac à sable.
+
 ### Ce qui reste en local
 
-- **Faire tourner les 210 tests.** C'est la seule preuve que les règles de
-  gestion tiennent encore.
-- **Regarder les écrans.** Deux défauts trouvés ainsi et invisibles à la
-  lecture : une classe CSS qui n'existait pas (`grille-fiche`), et
-  `prefers-reduced-motion` qui supprimait un carrousel entier au lieu du seul
-  zoom.
-- **Appliquer et vérifier les migrations.**
+- **Regarder les écrans.** La CI ne voit pas un rendu. Deux défauts trouvés
+  ainsi et invisibles à la lecture comme aux tests : une classe CSS qui
+  n'existait pas (`grille-fiche`), et `prefers-reduced-motion` qui supprimait
+  un carrousel entier au lieu du seul zoom.
+- **Appliquer les migrations** sur les données réelles, après relecture.
 - Tout ce qui touche à `.env`, au volume `storage`, à Docker.
 
 ---

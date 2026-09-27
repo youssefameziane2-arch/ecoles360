@@ -171,9 +171,17 @@ Un bac à sable cloud clone le dépôt. Il n'a donc **ni** :
 - `api/src/generated/` — régénéré par `prisma generate` ;
 - de navigateur sur le serveur de développement local.
 
-**Conséquence : une session cloud ne peut pas prouver que son travail
-fonctionne.** Elle peut écrire du code qui compile et passe le lint. La
-vérification se fait en local.
+**Conséquence : une session cloud ne peut pas exécuter les tests elle-même.**
+Elle écrit du code qui compile et passe le lint ; elle ne doit jamais affirmer
+avoir lancé la suite.
+
+Elle n'est pas seule pour autant : `.github/workflows/ci.yml` se déclenche sur
+**chaque pull request**, monte MySQL 8 et Redis 7, applique les migrations,
+sème, et joue les 210 tests. Une PR verte vaut donc preuve d'exécution — c'est
+la raison d'ouvrir une PR plutôt que de pousser une branche seule.
+
+Restent hors de portée de la CI, et donc réservés au local : **regarder les
+écrans**, et **appliquer une migration** sur des données réelles.
 
 Voir `docs/SESSIONS-CLOUD.md` pour le protocole d'aller-retour, et en
 particulier **l'interdit sur les migrations**.
