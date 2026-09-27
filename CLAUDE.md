@@ -219,6 +219,22 @@ particulier **l'interdit sur les migrations**.
 
 ---
 
+## Le backlog dit qui peut agir
+
+`docs/BACKLOG.md` porte un statut par entrée, et ce statut n'est pas qu'un
+état d'avancement : **`à arbitrer`, `à trancher` et `à confirmer` veulent dire
+qu'une décision du client est attendue.** On peut préparer l'entrée et exposer
+les options ; on ne choisit pas à sa place.
+
+`à faire` et `planifié` se prennent librement : ce qui manque est du travail,
+pas un arbitrage.
+
+Les règles de gestion viennent des livrables et du client. En inventer une
+parce qu'elle manquait, c'est produire un défaut qui compile, passe les tests,
+et ne se découvre qu'à la recette.
+
+---
+
 ## Git
 
 Messages de commit en français, préfixe conventionnel

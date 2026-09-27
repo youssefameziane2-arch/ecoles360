@@ -3,7 +3,25 @@
 Tout besoin identifié en cours de lot mais **hors de son périmètre** est noté ici
 plutôt qu'implémenté. Chaque entrée référence le livrable qui la fonde.
 
-Statuts : `à arbitrer` · `planifié lot N` · `tranché`
+## Statuts — et qui a le droit d'agir
+
+Le statut ne décrit pas seulement l'avancement : **il dit qui peut prendre
+l'entrée.** Trois familles.
+
+| Famille | Statuts | Qui agit |
+|---|---|---|
+| **Décision attendue** | `à arbitrer` · `à trancher` · `à confirmer` | **Personne seul.** L'entrée attend un arbitrage du client. Une session peut la préparer et exposer les options ; elle ne choisit pas. |
+| **Chemin connu** | `à faire` · `planifié — lot N` | Une session peut la prendre : ce qui manque est du travail, pas une décision. |
+| **Close** | `tranché` · `corrigé` · `convention posée` · `contrainte documentée` | Rien à faire. Conservée pour la trace du raisonnement. |
+
+**La distinction se paie quand on la rate.** B-37 portait « trancher ce que son
+blog veut dire pour lui » dans son texte et `Statut : à faire` en bas. Une
+session cloud l'a prise pour un travail cadré et a inventé une règle d'accès —
+bien inventée, mais inventée. Une règle de gestion plausible et fausse compile,
+passe les tests, et n'est fausse que par rapport à ce que le client voulait.
+
+**En écrivant une entrée :** si son texte contient « trancher », « décider »,
+« choisir entre », le statut appartient à la première famille. Sans exception.
 
 ---
 
