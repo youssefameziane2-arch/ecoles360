@@ -15,6 +15,7 @@ import {
   type FiltresRecherche,
   type TypeEtablissement,
 } from '@/api/etablissements';
+import { CarteResultats } from '@/components/CarteResultats';
 import { Icon } from '@/ds/composants';
 import { formaterMad, formaterNombre, formaterNote } from '@/lib/formats';
 import { versInternational } from '@/lib/telephone';
@@ -182,8 +183,6 @@ export function Resultats() {
   const [centreLat, centreLng] = filtres.ville
     ? (CENTRE_VILLE[filtres.ville] ?? CENTRE_MAROC)
     : CENTRE_MAROC;
-  const zoom = filtres.ville && CENTRE_VILLE[filtres.ville] ? 12 : 5;
-  const urlCarteEmbed = `https://maps.google.com/maps?ll=${centreLat},${centreLng}&z=${zoom}&hl=fr&output=embed`;
   const urlCarteExterne = `https://www.google.com/maps/search/?api=1&query=${centreLat},${centreLng}`;
 
   return (
@@ -416,13 +415,7 @@ export function Resultats() {
                 <Icon name="external-link" size={13} color="#1D3557" />
               </a>
             </div>
-            <iframe
-              title="Carte des établissements"
-              src={urlCarteEmbed}
-              style={{ flex: 1, width: '100%', border: 0, display: 'block' }}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+            <CarteResultats fiches={resultats.data?.data ?? []} />
           </div>
         </div>
       </div>
