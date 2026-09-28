@@ -282,3 +282,49 @@ export const chargerStatistiquesAdmin = (filtres: {
 
   return apiFetch<StatistiquesAdmin>(`/admin/statistiques?${query.toString()}`);
 };
+
+// ---------------------------------------------------------------------------
+//  Secrétariat — comptes et portées déléguées (RG05, RG25)
+// ---------------------------------------------------------------------------
+
+export type PorteeDeleguee = 'fiches' | 'contacts' | 'avis';
+
+export const LIBELLE_PORTEE: Record<PorteeDeleguee, string> = {
+  fiches: 'Fiches',
+  contacts: 'Demandes de contact',
+  avis: 'Modération des avis',
+};
+
+/** Ce que chaque portée ouvre réellement — l'écran doit le dire, pas le supposer. */
+export const EFFET_PORTEE: Record<PorteeDeleguee, string> = {
+  fiches: 'Voir et proposer des modifications de la fiche.',
+  contacts: 'Lire les demandes de parents et les faire avancer.',
+  avis: 'Répondre aux avis publiés et les signaler.',
+};
+
+export interface CompteSecretariat {
+  id: string;
+  name: string;
+  email: string;
+  statut: 'actif' | 'suspendu';
+  cree_le: string;
+  etablissementRattache: { id: string; nom: string; slug: string } | null;
+  portees: PorteeDeleguee[];
+  accordees: { portee: PorteeDeleguee; accordee_le: string; accordeur: { name: string } }[];
+}
+
+export const chargerSecretariat = () => apiFetch<CompteSecretariat[]>('/admin/secretariat');
+
+/** La ligne est conservée et datée : une portée se révoque, elle ne s'efface pas. */
+export const basculerPortee = (id: string, portee: PorteeDeleguee, accordee: boolean) =>
+  apiFetch<CompteSecretariat[]>(`/admin/secretariat/${id}/portee`, {
+    method: 'PATCH',
+    body: JSON.stringify({ portee, accordee }),
+  });
+
+/** Suspendre DÉTRUIT les sessions en cours (RG25) — l'accès tombe aussitôt. */
+export const basculerStatutCompte = (id: string, suspendu: boolean) =>
+  apiFetch<CompteSecretariat[]>(`/admin/secretariat/${id}/statut`, {
+    method: 'PATCH',
+    body: JSON.stringify({ suspendu }),
+  });

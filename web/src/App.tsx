@@ -26,6 +26,7 @@ import { ContenuAdmin } from './pages/admin/ContenuAdmin';
 import { BlogAdmin, BlogEspace } from './pages/espace/Blog';
 import { AvisAdmin } from './pages/admin/AvisAdmin';
 import { JournalAdmin } from './pages/admin/JournalAdmin';
+import { SecretariatAdmin } from './pages/admin/SecretariatAdmin';
 import { StatistiquesAdmin } from './pages/admin/StatistiquesAdmin';
 import { StatistiquesEspace } from './pages/espace/StatistiquesEspace';
 import {
@@ -35,7 +36,6 @@ import {
   FacturationAdmin,
   FacturationEspace,
   LeadsCommercial,
-  SecretariatAdmin,
   StatistiquesCommercial,
   TableauDeBordCommercial,
   TransfertsCommercial,

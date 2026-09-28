@@ -19,7 +19,7 @@ Légende : ✅ fait · 🟡 partiel · ❌ à faire · ⛔ hors périmètre (dé
 
 ---
 
-## Site public — 10 écrans présents, 4 incomplets
+## Site public — 13 écrans attendus, 8 complets
 
 **Un écran présent n'est pas un écran fait.** Le détail bloc par bloc est en fin
 de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
@@ -54,7 +54,7 @@ appelé mais jamais dessiné).
 
 ---
 
-## Administration — 6 / 14
+## Administration — 15 écrans attendus, 5 complets
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -70,7 +70,7 @@ appelé mais jamais dessiné).
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
 | Abonnement & facturation | `isAdminFact` | `/admin/facturation` | ❌ KPI, tarifs, historique, encaissement |
 | Facture (détail) | `isAdminFactDetail` | — | ❌ formules, essai, remise, reçu |
-| Secrétariat | `isAdminUsers` | `/admin/secretariat` | ❌ comptes, portées déléguées, réinit. mot de passe |
+| Secrétariat | `isAdminUsers` | `/admin/secretariat` | 🟡 comptes et rattachement, portées déléguées (RG05), suspension qui coupe les sessions (RG25) — manquent la **création de compte** et la **réinitialisation de mot de passe** : qui a le droit de créer un compte et comment le mot de passe parvient à son titulaire ne sont écrits nulle part |
 | Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | ❌ |
 | Base de données | `isAdminDb` | — | ❌ explorateur lecture seule (pas dans la navigation actuelle) |
 
@@ -138,12 +138,16 @@ route à ce rôle.
 
 | Périmètre | Fait | Reste |
 |---|---|---|
-| Site public | 13 écrans, 8 complets | 1 partiel + 3 pages légales, toutes suspendues à un texte du client |
-| Administration | 6 | 6 + 3 partiels |
+| Site public | 8 | 3 + 2 partiels — les 3 sont les pages légales, suspendues à un texte du client |
+| Administration | 5 | 5 + 5 partiels |
 | Établissement | 5 | 1 + 1 partiel |
 | Secrétariat | 5 | 0 |
 | Commercial | 1 (blog ouvert ; coquille et navigation en place) | 5 |
-| **Total** | **27** | **12 + 4 partiels** |
+| **Total** | **24** | **14 + 8 partiels** |
+
+Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
+main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait
+croire à quatre reprises que le reste à faire était plus court qu'il ne l'est.
 
 ---
 

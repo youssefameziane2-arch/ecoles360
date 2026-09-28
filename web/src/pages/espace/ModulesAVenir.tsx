@@ -77,12 +77,6 @@ export const FacturationEspace = ecranEspace(
   "La formule, le compteur de vues facturées et l'historique des factures arrivent avec le module de facturation. En attendant, votre conseiller reste l'interlocuteur pour toute question de tarif.",
 );
 
-export const SecretariatAdmin = ecranAdmin(
-  'Secrétariat',
-  'Comptes du secrétariat — accès délégués et permissions',
-  "La création de comptes et l'octroi des portées déléguées (fiches, contacts, avis) sont prévus au livrable 11 §3.6. Les portées existantes fonctionnent déjà côté serveur : elles ont été semées avec le jeu de démonstration.",
-);
-
 export const CommerciauxAdmin = ecranAdmin(
   'Commerciaux',
   'Comptes commerciaux et transferts',

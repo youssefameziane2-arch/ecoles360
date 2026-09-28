@@ -56,6 +56,9 @@ import { OrdrePhotosDto } from '../photos/dto/ordre-photos.dto';
 import { FORMULAIRE_PHOTO, FORMULAIRE_PHOTOS, PHOTOS_PAR_ENVOI } from '../photos/televersement';
 import { BadgesEtablissementDto } from './dto/badges-etablissement.dto';
 import { CreerEtablissementDto } from './dto/creer-etablissement.dto';
+import { PorteeSecretariatDto } from './dto/portee-secretariat.dto';
+import { StatutCompteDto } from './dto/statut-compte.dto';
+import { SecretariatService } from './secretariat.service';
 import { ParametreFacturationDto } from './dto/parametre-facturation.dto';
 import { DecisionPropositionDto } from './dto/decision-proposition.dto';
 import { TransitionStatutEtablissementDto } from './dto/transition-statut-etablissement.dto';
@@ -82,6 +85,7 @@ export class AdminController {
     private readonly articlesService: ArticlesService,
     private readonly moderationAvis: ModerationAvisService,
     private readonly photosService: PhotosService,
+    private readonly secretariat: SecretariatService,
     private readonly audit: AuditLectureService,
     private readonly tableauDeBordService: TableauDeBordAdminService,
     private readonly statistiquesService: StatistiquesAdminService,
@@ -293,6 +297,46 @@ export class AdminController {
     @Body() dto: BadgesEtablissementDto,
   ) {
     return this.etablissements.basculerBadges(BigInt(id), dto, utilisateur.userId);
+  }
+
+  @Get('secretariat')
+  @ApiOperation({
+    summary: 'Comptes du secrétariat, leur rattachement et leurs portées (RG05)',
+  })
+  comptesSecretariat() {
+    return this.secretariat.lister();
+  }
+
+  @Patch('secretariat/:id/portee')
+  @ApiOperation({
+    summary: 'Accorder ou révoquer une portée déléguée (RG05)',
+    description: 'La ligne est conservée et datée — une portée se révoque, elle ne s’efface pas.',
+  })
+  @ApiResponse({ status: 404, description: 'Compte de secrétariat inconnu.' })
+  basculerPortee(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: PorteeSecretariatDto,
+  ) {
+    return this.secretariat.basculerPortee(
+      BigInt(id),
+      dto.portee,
+      dto.accordee,
+      utilisateur.userId,
+    );
+  }
+
+  @Patch('secretariat/:id/statut')
+  @ApiOperation({
+    summary: 'Suspendre ou réactiver un compte (RG25)',
+    description: 'La suspension DÉTRUIT les sessions en cours — elle n’attend pas leur expiration.',
+  })
+  basculerStatutCompte(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: StatutCompteDto,
+  ) {
+    return this.secretariat.basculerStatut(BigInt(id), dto.suspendu, utilisateur.userId);
   }
 
   @Get('sponsorings')
