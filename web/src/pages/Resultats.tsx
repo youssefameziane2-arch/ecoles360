@@ -23,23 +23,6 @@ import { useTitrePage } from '@/lib/titre';
 
 const TYPES = Object.keys(LIBELLE_TYPE) as TypeEtablissement[];
 
-/** Centre approximatif des douze villes du lancement, pour cadrer la carte. */
-const CENTRE_VILLE: Record<string, [number, number]> = {
-  casablanca: [33.5731, -7.5898],
-  rabat: [34.0209, -6.8416],
-  fes: [34.0331, -5.0003],
-  marrakech: [31.6295, -7.9811],
-  tanger: [35.7595, -5.834],
-  kenitra: [34.261, -6.5802],
-  agadir: [30.4278, -9.5981],
-  meknes: [33.8935, -5.5473],
-  mohammedia: [33.6866, -7.383],
-  oujda: [34.6814, -1.9086],
-  sale: [34.0531, -6.7985],
-  tetouan: [35.5785, -5.3684],
-};
-const CENTRE_MAROC: [number, number] = [31.7, -7.09];
-
 /**
  * Résultats de recherche — porté de la maquette « Site public écoles360 »
  * (écran résultats), livrable 11 §1, RG05 et RG19.
@@ -62,6 +45,8 @@ const CENTRE_MAROC: [number, number] = [31.7, -7.09];
 export function Resultats() {
   const [params, setParams] = useSearchParams();
   const [filtresOuverts, setFiltresOuverts] = useState(true);
+  // La fiche que le bouton « Carte » d'une carte de résultat a désignée.
+  const [ficheCiblee, setFicheCiblee] = useState<string | null>(null);
 
   const filtres: FiltresRecherche = {
     q: params.get('q') ?? undefined,
@@ -182,12 +167,57 @@ export function Resultats() {
     document.getElementById('resultats-haut')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Centre de la carte : la ville filtrée, sinon le Maroc entier.
+  /**
+   * Situe une fiche sur la carte de droite.
+   *
+   * Le slug est réécrit MÊME S'IL EST DÉJÀ CIBLÉ, via un court passage à
+   * `null` : sans cela, recliquer « Carte » sur la même école ne changerait
+   * pas l'état, l'effet ne se rejouerait pas, et le bouton paraîtrait mort à
+   * qui a entre-temps déplacé la carte.
+   *
+   * Sur écran étroit la colonne passe SOUS la liste : on l'amène à l'écran,
+   * sinon le clic n'a aucun effet visible.
+   */
+  const localiser = (slug: string) => {
+    setFicheCiblee(null);
+    window.setTimeout(() => setFicheCiblee(slug), 0);
+    document.getElementById('carte-resultats')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  /**
+   * La fiche que « Carte » a désignée, si elle est toujours dans les
+   * résultats — un changement de filtre peut l'en avoir sortie.
+   */
+  const ficheOuverte = ficheCiblee
+    ? resultats.data?.data.find((f) => f.slug === ficheCiblee && f.lat && f.lng)
+    : undefined;
+
+  /**
+   * Où « Ouvrir » emmène.
+   *
+   * La fiche désignée en priorité, à sa position EXACTE — c'est ce qu'on veut
+   * quand on a cliqué « Carte » sur une école précise, et c'est de là que
+   * part un itinéraire juste. À défaut, le milieu des résultats localisés,
+   * qui suit les filtres ; et sans aucun, le Maroc.
+   */
+  const lienCarteExterne = (() => {
+    if (ficheOuverte) {
+      return `https://www.google.com/maps/search/?api=1&query=${ficheOuverte.lat},${ficheOuverte.lng}`;
+    }
+
+    const localisees = (resultats.data?.data ?? []).filter((f) => f.lat && f.lng);
+
+    if (localisees.length === 0) {
+      return 'https://www.google.com/maps/search/?api=1&query=31.7917,-7.0926';
+    }
+
+    const lat = localisees.reduce((s, f) => s + Number(f.lat), 0) / localisees.length;
+    const lng = localisees.reduce((s, f) => s + Number(f.lng), 0) / localisees.length;
+
+    return `https://www.google.com/maps/search/?api=1&query=${lat.toFixed(5)},${lng.toFixed(5)}`;
+  })();
+
   const villeCourante = villes.data?.find((v) => v.slug === filtres.ville);
-  const [centreLat, centreLng] = filtres.ville
-    ? (CENTRE_VILLE[filtres.ville] ?? CENTRE_MAROC)
-    : CENTRE_MAROC;
-  const urlCarteExterne = `https://www.google.com/maps/search/?api=1&query=${centreLat},${centreLng}`;
 
   return (
     <div style={{ background: '#FAF8F4', minHeight: '60vh' }}>
@@ -383,7 +413,7 @@ export function Resultats() {
             {meta && meta.total > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {resultats.data?.data.map((fiche) => (
-                  <CarteResultat key={fiche.id} fiche={fiche} />
+                  <CarteResultat key={fiche.id} fiche={fiche} onLocaliser={localiser} />
                 ))}
               </div>
             )}
@@ -393,9 +423,17 @@ export function Resultats() {
             )}
           </div>
 
-          {/* Carte — centrée sur la ville filtrée, sans clé Google Maps
-              (intégration « output=embed », publique et sans quota). */}
-          <div className="e3-mapcol" style={{ position: 'sticky', top: 210, height: 'calc(100vh - 232px)', minHeight: 460, borderRadius: 16, overflow: 'hidden', border: '1px solid #EAE6DE', display: 'flex', flexDirection: 'column', background: '#fff' }}>
+          {/*
+            Carte Leaflet des résultats. « Ouvrir » l'agrandit EN PLACE plutôt
+            que de partir chez un tiers : la colonne fait quatre cents pixels,
+            de quoi situer une école mais pas comparer un quartier. Le plein
+            écran garde les filtres, les épingles et le zoom en cours.
+          */}
+          <div
+            id="carte-resultats"
+            className="e3-mapcol"
+            style={{ position: 'sticky', top: 210, height: 'calc(100vh - 232px)', minHeight: 460, borderRadius: 16, overflow: 'hidden', border: '1px solid #EAE6DE', display: 'flex', flexDirection: 'column', background: '#fff' }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '12px 14px', borderBottom: '1px solid #EAE6DE', flex: 'none' }}>
               <span style={{ width: 34, height: 34, borderRadius: 9, background: '#E7EDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                 <Icon name="map-pin" size={17} color="#1D3557" />
@@ -408,18 +446,31 @@ export function Resultats() {
                   {villeCourante?.nom ?? 'Maroc'}
                 </div>
               </div>
+              {/*
+                « OUVRIR » MÈNE À LA POSITION EXACTE, pas au centre de la
+                ville. Il suit la fiche que « Carte » vient de désigner :
+                c'est elle qu'on veut voir en grand, avec son itinéraire.
+                Sans sélection, il ouvre le cadrage courant des résultats.
+              */}
               <a
-                href={urlCarteExterne}
+                href={lienCarteExterne}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Ouvrir dans Google Maps"
+                title={
+                  ficheOuverte
+                    ? `Ouvrir ${ficheOuverte.nom} dans Google Maps`
+                    : 'Ouvrir dans Google Maps'
+                }
                 style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #D4DAE2', background: '#fff', color: '#1D3557', fontSize: 12.5, fontWeight: 600, padding: '8px 12px', borderRadius: 9, textDecoration: 'none', whiteSpace: 'nowrap' }}
               >
                 Ouvrir
                 <Icon name="external-link" size={13} color="#1D3557" />
               </a>
             </div>
-            <CarteResultats fiches={resultats.data?.data ?? []} />
+            <CarteResultats
+              fiches={resultats.data?.data ?? []}
+              cible={ficheCiblee}
+            />
           </div>
         </div>
       </div>
@@ -428,7 +479,13 @@ export function Resultats() {
 }
 
 /** Carte de résultat — reprend le markup de l'écran résultats de la maquette. */
-function CarteResultat({ fiche }: { fiche: EtablissementListe }) {
+function CarteResultat({
+  fiche,
+  onLocaliser,
+}: {
+  fiche: EtablissementListe;
+  onLocaliser: (slug: string) => void;
+}) {
   const budget =
     fiche.budget_min && fiche.budget_max
       ? `${formaterMad(fiche.budget_min)} – ${formaterMad(fiche.budget_max)}`
@@ -568,17 +625,23 @@ function CarteResultat({ fiche }: { fiche: EtablissementListe }) {
           >
             Voir la fiche
           </Link>
+          {/*
+            « CARTE » VISE LA COLONNE DE DROITE, il n'ouvre plus Google Maps.
+            C'est la raison d'être de cette carte : situer une école SANS
+            quitter ses résultats ni perdre ses filtres. Un lien externe
+            faisait l'inverse — il envoyait le visiteur chez un tiers pour une
+            information affichée à trente centimètres.
+          */}
           {fiche.lat && fiche.lng && (
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${fiche.lat},${fiche.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Localiser sur la carte"
-              style={{ border: '1px solid #D4DAE2', background: '#fff', color: '#5A6472', fontSize: 12.5, fontWeight: 600, padding: '9px 12px', borderRadius: 9, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+            <button
+              type="button"
+              onClick={() => onLocaliser(fiche.slug)}
+              title={`Situer ${fiche.nom} sur la carte`}
+              style={{ border: '1px solid #D4DAE2', background: '#fff', color: '#5A6472', fontSize: 12.5, fontWeight: 600, padding: '9px 12px', borderRadius: 9, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
             >
               <Icon name="map-pin" size={14} color="#5A6472" />
               Carte
-            </a>
+            </button>
           )}
         </div>
       </div>

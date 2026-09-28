@@ -237,6 +237,53 @@ describe('Back-office admin — fiches et galerie (intégration)', () => {
     });
 
     /**
+     * LES COORDONNÉES DÉCIDENT DE LA PRÉSENCE SUR LA CARTE, et une fiche
+     * invisible sur le plan ne se distingue pas d'une fiche absente pour un
+     * parent qui cherche près de chez lui.
+     */
+    it('enregistre les coordonnées, qui rendent la fiche localisable', async () => {
+      const admin = await connecte(ADMIN);
+      const reponse = await admin
+        .post('/admin/etablissements')
+        .send({
+          nom: 'École Localisée',
+          ville_id: await casablanca(),
+          type: 'primaire',
+          lat: 33.5883,
+          lng: -7.6325,
+        })
+        .expect(201);
+
+      const creee = await db.etablissement.findUniqueOrThrow({
+        where: { id: BigInt(reponse.body.data.id) },
+      });
+
+      expect(Number(creee.lat)).toBeCloseTo(33.5883, 4);
+      expect(Number(creee.lng)).toBeCloseTo(-7.6325, 4);
+    });
+
+    /**
+     * L'INVERSION LATITUDE / LONGITUDE EST L'ERREUR DE SAISIE CLASSIQUE, et
+     * elle est silencieuse : les deux valeurs sont des décimaux plausibles.
+     * Les bornes marocaines la transforment en refus plutôt qu'en épingle au
+     * milieu de l'Atlantique.
+     */
+    it('refuse des coordonnées hors du Maroc', async () => {
+      const admin = await connecte(ADMIN);
+
+      await admin
+        .post('/admin/etablissements')
+        .send({
+          nom: 'École Mal Située',
+          ville_id: await casablanca(),
+          type: 'primaire',
+          lat: -7.6325, // longitude mise à la place de la latitude
+          lng: 33.5883,
+        })
+        .expect(422);
+    });
+
+    /**
      * RG27 — les attributs de plateforme ne se demandent pas.
      *
      * Le `ValidationPipe` en `forbidNonWhitelisted` est la garde : elle tient

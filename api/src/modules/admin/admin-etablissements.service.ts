@@ -152,6 +152,8 @@ export class AdminEtablissementsService {
           groupe_id: groupeId,
           adresse: vide(dto.adresse),
           quartier: vide(dto.quartier),
+          lat: dto.lat ?? null,
+          lng: dto.lng ?? null,
           tel: vide(dto.tel),
           whatsapp: vide(dto.whatsapp),
           email: vide(dto.email),

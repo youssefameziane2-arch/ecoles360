@@ -34,6 +34,8 @@ interface Saisie {
   groupe: string;
   adresse: string;
   quartier: string;
+  lat: string;
+  lng: string;
   tel: string;
   whatsapp: string;
   email: string;
@@ -51,6 +53,8 @@ const VIERGE: Saisie = {
   groupe: '',
   adresse: '',
   quartier: '',
+  lat: '',
+  lng: '',
   tel: '',
   whatsapp: '',
   email: '',
@@ -155,6 +159,8 @@ export function FormulaireEtablissement({
       ...texte('site_web', saisie.site_web),
       ...texte('langues', saisie.langues),
       ...texte('description', saisie.description),
+      ...nombre('lat', saisie.lat),
+      ...nombre('lng', saisie.lng),
       ...nombre('budget_min', saisie.budget_min),
       ...nombre('budget_max', saisie.budget_max),
       ...(cochees.size > 0 ? { caracteristiques: [...cochees].map(Number) } : {}),
@@ -242,6 +248,31 @@ export function FormulaireEtablissement({
               erreur={erreurDuChamp('quartier')}
               placeholder="Maârif"
             />
+
+            {/*
+              LES COORDONNÉES FONT APPARAÎTRE LA FICHE SUR LA CARTE des
+              résultats, et son bouton « Carte ». Sans elles, elle existe dans
+              la liste mais nulle part sur le plan — ce qui, pour un parent
+              qui cherche une école près de chez lui, revient à ne pas exister.
+            */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <Champ
+                label="Latitude"
+                valeur={saisie.lat}
+                onChange={modifier('lat')}
+                erreur={erreurDuChamp('lat')}
+                placeholder="33.5883"
+                aide="Clic droit sur Google Maps → le premier nombre."
+              />
+              <Champ
+                label="Longitude"
+                valeur={saisie.lng}
+                onChange={modifier('lng')}
+                erreur={erreurDuChamp('lng')}
+                placeholder="-7.6325"
+                aide="Le second. Négatif au Maroc."
+              />
+            </div>
             <Champ
               label="Téléphone"
               type="tel"

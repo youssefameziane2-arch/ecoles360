@@ -5,6 +5,8 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsLatitude,
+  IsLongitude,
   IsOptional,
   IsPositive,
   IsString,
@@ -61,6 +63,31 @@ export class CreerEtablissementDto {
   @IsString()
   @Length(0, 100)
   quartier?: string;
+
+  /**
+   * Coordonnées — ce qui fait apparaître la fiche sur la carte des résultats.
+   *
+   * SANS ELLES, LA FICHE EST INVISIBLE SUR LA CARTE, et son bouton « Carte »
+   * n'existe pas. Les bornes sont celles du Maroc, à la marge près : une
+   * latitude saisie à la place d'une longitude — l'inversion classique —
+   * tombe alors hors de l'intervalle et se fait refuser, au lieu de poser une
+   * épingle au milieu de l'Atlantique.
+   */
+  @ApiPropertyOptional({ description: 'Latitude — entre 20 et 37 (Maroc).', example: 33.5883 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsLatitude({ message: 'La latitude doit être un nombre décimal.' })
+  @Min(20, { message: 'Cette latitude est hors du Maroc.' })
+  @Max(37, { message: 'Cette latitude est hors du Maroc.' })
+  lat?: number;
+
+  @ApiPropertyOptional({ description: 'Longitude — entre −18 et −1 (Maroc).', example: -7.6325 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsLongitude({ message: 'La longitude doit être un nombre décimal.' })
+  @Min(-18, { message: 'Cette longitude est hors du Maroc.' })
+  @Max(-1, { message: 'Cette longitude est hors du Maroc.' })
+  lng?: number;
 
   @ApiPropertyOptional({ maxLength: 30, example: '05 22 00 00 00' })
   @IsOptional()

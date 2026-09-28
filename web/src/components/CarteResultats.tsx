@@ -52,10 +52,18 @@ function epingle(sponsorise: boolean): L.DivIcon {
   });
 }
 
-export function CarteResultats({ fiches }: { fiches: EtablissementListe[] }) {
+export function CarteResultats({
+  fiches,
+  cible,
+}: {
+  fiches: EtablissementListe[];
+  /** Slug de la fiche à centrer — le bouton « Carte » d'une carte de résultat. */
+  cible?: string | null;
+}) {
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<L.Map | null>(null);
   const couche = useRef<L.LayerGroup | null>(null);
+  const marqueurs = useRef<Map<string, L.Marker>>(new Map());
   const naviguer = useNavigate();
 
   // La carte est créée UNE FOIS et réutilisée : la recréer à chaque
@@ -93,13 +101,14 @@ export function CarteResultats({ fiches }: { fiches: EtablissementListe[] }) {
     }
 
     couche.current.clearLayers();
+    marqueurs.current.clear();
 
     const localisees = fiches.filter((fiche) => fiche.lat && fiche.lng);
 
     for (const fiche of localisees) {
       const position: [number, number] = [Number(fiche.lat), Number(fiche.lng)];
 
-      L.marker(position, { icon: epingle(fiche.sponsorise), title: fiche.nom })
+      const marqueur = L.marker(position, { icon: epingle(fiche.sponsorise), title: fiche.nom })
         .addTo(couche.current)
         .bindPopup(
           `<strong>${echapper(fiche.nom)}</strong><br>` +
@@ -107,6 +116,8 @@ export function CarteResultats({ fiches }: { fiches: EtablissementListe[] }) {
             (fiche.nb_avis > 0 ? `<br>★ ${formaterNote(fiche.note_moy)}` : '') +
             `<br><a href="/etablissements/${fiche.slug}" data-fiche="${fiche.slug}">Voir la fiche</a>`,
         );
+
+      marqueurs.current.set(fiche.slug, marqueur);
     }
 
     // Le cadrage suit les résultats : filtrer sur Rabat doit y emmener la
@@ -120,6 +131,25 @@ export function CarteResultats({ fiches }: { fiches: EtablissementListe[] }) {
       carte.current.setView(CENTRE_MAROC, 5);
     }
   }, [fiches]);
+
+  /**
+   * Le bouton « Carte » d'un résultat amène ICI, il n'ouvre pas Google Maps.
+   *
+   * C'est le sens de cette colonne : voir où se trouve une école SANS quitter
+   * ses résultats ni perdre ses filtres. Un lien externe faisait exactement
+   * l'inverse — il envoyait le visiteur chez un tiers pour une information
+   * déjà affichée à trente centimètres.
+   */
+  useEffect(() => {
+    if (!carte.current || !cible) return;
+
+    const marqueur = marqueurs.current.get(cible);
+    if (!marqueur) return;
+
+    carte.current.flyTo(marqueur.getLatLng(), 15, { duration: 0.8 });
+    marqueur.openPopup();
+  }, [cible, fiches]);
+
 
   /**
    * Le lien de la bulle passe par le routeur, au lieu de recharger le site.
