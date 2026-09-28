@@ -650,3 +650,47 @@ Les deux écrans lisent désormais la même série, `vuesMensuelles()`, sur
 et la tuile est celle des statistiques. `canaux` garde ses trente jours
 glissants, annoncés comme tels à l'écran.
 **Statut :** corrigé.
+
+## B-44 — Privilèges du secrétariat : la règle reçue déborde la RG05
+
+**Reçu du client** (notes manuscrites du 28 septembre 2026) : *« l'admin,
+lorsqu'il ajoute le secrétaire, il lui donne du privilège "les tâches &
+interfaces" qui s'occupe de, et à voir dans son back-office. Il peut lui
+donner tous sauf : Journal d'audit. […] secrétariat et commercial. »*
+
+**Ce que ça change.** La RG05 ne délègue que trois portées — `fiches`,
+`contacts`, `avis` — et elles bornent un secrétariat **rattaché à un
+établissement** : elles ouvrent des écrans de `/mon-espace`, pas du
+back-office d'administration. La règle reçue décrit autre chose : un
+secrétariat **de la plateforme**, dont le back-office est un sous-ensemble
+configurable de celui de l'administration, avec trois écrans hors de portée
+— Journal d'audit (cohérent avec la RG26, qui le veut en lecture seule),
+Secrétariat et Commerciaux (sans quoi un secrétaire s'accorderait lui-même
+ce qu'on lui a refusé).
+
+`/admin/secretariat` pilote aujourd'hui les trois portées de la RG05 et la
+suspension (RG25). Ce n'est pas faux — la RG05 existe et l'écran l'expose
+fidèlement — mais c'est **une autre délégation que celle décrite ici**.
+
+**À confirmer avant d'écrire une ligne**, parce que les deux lectures
+produisent des schémas différents :
+
+1. Les deux délégations **coexistent**-elles — un secrétariat d'établissement
+   (RG05, trois portées) et un secrétariat de plateforme (écrans d'admin) —
+   ou la seconde **remplace**-t-elle la première ?
+2. Le privilège porte-t-il sur un **écran** (« Établissements », « Avis »)
+   ou sur un **acte** (lire / proposer / publier) ? La maquette coche des
+   écrans ; la RG20 sépare proposer et publier. Un privilège « Établissements »
+   qui n'en dirait pas plus laisserait ouverte la question de savoir si le
+   secrétaire **valide** une fiche — ce que la RG14 interdit sans abonnement
+   encaissé.
+3. La phrase « secrétariat et commercial » est raturée et incomplète sur la
+   note : elle se lit comme deux écrans **exclus** du privilège, ce que
+   retient l'analyse ci-dessus. À confirmer : c'est le seul point où une
+   erreur de lecture donnerait à un secrétaire le droit d'en créer d'autres.
+
+**Pourquoi ne pas trancher soi-même :** un privilège trop large ne se voit ni
+au typage, ni au lint, ni aux tests. Il se découvre le jour où un secrétaire
+a publié une fiche non payée, et la RG14 est une clause commerciale.
+
+**Statut :** à confirmer — client.
