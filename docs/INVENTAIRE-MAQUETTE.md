@@ -19,7 +19,7 @@ Légende : ✅ fait · 🟡 partiel · ❌ à faire · ⛔ hors périmètre (dé
 
 ---
 
-## Site public — 10 écrans présents, 6 incomplets
+## Site public — 10 écrans présents, 4 incomplets
 
 **Un écran présent n'est pas un écran fait.** Le détail bloc par bloc est en fin
 de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
@@ -30,7 +30,7 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 | Résultats de recherche | `/etablissements` | 🟡 filtres dynamiques et vue carte manquants |
 | Fiche établissement | `/etablissements/:slug` | 🟡 articles liés et similaires FAITS ; reste l'équipe, qui n'a aucun champ en base |
 | Page ville | `/villes/:slug` | ✅ quartiers populaires compris |
-| À propos | `/a-propos` | 🟡 équipe (aucun champ en base) et bloc contact manquants |
+| À propos | `/a-propos` | 🟡 servie par le CMS (`a-propos`), équipe et bloc contact compris — manquent la bande de chiffres (`trustStats`), l'image de l'histoire, la carte et les réseaux sociaux, qui n'ont aucune source |
 | FAQ | `/faq` | ✅ |
 | Blog | `/blog` | ✅ |
 | Article | `/blog/:slug` | ✅ |
@@ -53,7 +53,7 @@ cookies, CGU — liens présents, contenu absent). Le texte légal relève du cl
 | Blog | `isBlogList` | `/admin/blog` | ✅ |
 | Article (éditeur) | `isBlogDetail` | `/admin/blog` | ✅ |
 | Journal d'audit | `isAdminJournal` | `/admin/journal` | ✅ |
-| Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ seule — manquent les catégories d'articles et la page « À propos » |
+| Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ et page « À propos » (onglets) — manquent les catégories d'articles, qui demandent une migration |
 | Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
 | CRM Clients | `isAdminCrm` | `/admin/crm` | ❌ KPI, prospects, dossiers, étapes |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
@@ -205,8 +205,8 @@ Filières · Équipements · Tarifs · Équipe · Avis.
 | Dépôt d'avis : formulaire étoiles + « Soumettre mon avis » | ✅ |
 | **« Utile (n) » — vote d'utilité sur un avis** | ❌ |
 | `detFaq`, `horaires`, `socialsDark`, `autresProjets` | ✅ |
-| **`ficheEtabArticles` / `ficheSiteArticles` — articles liés** | ❌ |
-| **`similar` — établissements similaires** | ❌ |
+| `ficheEtabArticles` / `ficheSiteArticles` — articles liés | ✅ |
+| `similar` — établissements similaires | ✅ |
 | **`detUnavailable` — fiche indisponible (crédits épuisés)** | ❌ |
 
 ## Page ville (`isVille`)
@@ -216,19 +216,26 @@ Filières · Équipements · Tarifs · Équipe · Avis.
 | H1 « Écoles privées à … » | ✅ |
 | « Par type d'établissement » + `vTypeCounts` | ✅ |
 | « Tous les établissements à … » + `vEstabs` | ✅ |
-| **« Quartiers populaires » + `vQuartiers`** | ❌ |
+| « Quartiers populaires » + `vQuartiers` | ✅ |
 | « Explorez d'autres villes » + `otherCities` | ✅ |
 
 ## À propos (`isAbout`)
 
 | Bloc | État |
 |---|---|
-| « Notre mission » + H1 | ✅ |
-| « Notre histoire » + `trustStats` | ✅ |
-| « Ce qui nous guide / Nos valeurs » + `aboutValues` | ✅ |
-| **« Les visages / L'équipe écoles360 » + `teamAv`** | ❌ |
-| **« Parlons-en / Nous contacter » + `contactCards`, WhatsApp, `contactSocials`** | ❌ |
+| « Notre mission » + H1 | ✅ `accroche`, `mission` |
+| « Notre histoire » | ✅ `histoire` — sans l'image, qui n'a pas de source |
+| **`trustStats` — bande de chiffres** | ❌ aucune source ; les chiffres de la maquette (« 1 200 établissements, 24 villes ») ne sont pas ceux de la base |
+| « Ce qui nous guide / Nos valeurs » + `aboutValues` | ✅ `valeurs` |
+| « Nos engagements » — hors maquette | ✅ `engagements` : le texte de l'ancienne page, relu par le client (sponsoring, avis, loi 09-08) |
+| « Les visages / L'équipe écoles360 » + `teamAv` | ✅ `equipe`, rendu par `TeamMember` ; semé vide, section masquée tant que le back-office ne l'a pas remplie |
+| « Parlons-en / Nous contacter » + `contactCards`, WhatsApp | ✅ `coordonnees` ; la carte WhatsApp n'apparaît que si un numéro est saisi |
+| **`contactSocials` et la carte** | ❌ aucune source |
 | « Vous dirigez un établissement ? » | ✅ |
+
+Relevé en passant : les lignes ✅ « Notre histoire » et « Nos valeurs » étaient
+fausses avant ce lot — l'ancienne page, écrite en dur, n'avait ni l'une ni
+l'autre.
 
 ## Inscription établissement (`isInscription`)
 
