@@ -253,6 +253,11 @@ model Etablissement {
   socials        Json? // {facebook, instagram, …}
   autres_projets Json? // [{type, nom, ville, description}] — autres enseignes du propriétaire
   facilites      Json?
+  /// Équipe pédagogique — [{nom, role, photo}]. Onglet « Équipe » de la fiche.
+  /// Un bloc de contenu comme les six au-dessus, pas un modèle : ces personnes
+  /// n'existent que par leur fiche, ne se connectent jamais, et disparaissent
+  /// avec elle.
+  equipe         Json?
   video_url      String? @db.VarChar(200)
   video_poster   String? @db.VarChar(200)
   gamme_label    String? @db.VarChar(80)

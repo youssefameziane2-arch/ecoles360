@@ -18,7 +18,7 @@ import {
 import { chargerArticles, chargerArticlesEtablissement } from '@/api/articles';
 import { CarteBlog } from './Blog';
 import { AlerteErreur, BoutonPrimaire, Champ, ChoixNote, ZoneTexte } from '@/components/Champs';
-import { Icon, ReviewCard, Tabs } from '@/ds/composants';
+import { Icon, ReviewCard, Tabs, TeamMember } from '@/ds/composants';
 import { formaterDepuis, formaterMad, formaterNombre, formaterNote, rangJour } from '@/lib/formats';
 import { lienTelephone, lienWhatsApp } from '@/lib/telephone';
 import { useTitrePage } from '@/lib/titre';
@@ -330,6 +330,11 @@ function OngletsFiche({ etablissement: e }: { etablissement: EtablissementDetail
           count: e.niveaux.length,
         },
         (e.facilites?.length ?? 0) > 0 && { key: 'equipements', label: 'Équipements' },
+        (e.equipe?.length ?? 0) > 0 && {
+          key: 'equipe',
+          label: 'Équipe',
+          count: e.equipe?.length,
+        },
         e.budget_min && e.budget_max && { key: 'tarifs', label: 'Tarifs' },
         (e.faq?.length ?? 0) > 0 && { key: 'faq', label: 'FAQ', count: e.faq?.length },
       ].filter((onglet): onglet is { key: string; label: string; count?: number } => Boolean(onglet)),
@@ -398,6 +403,32 @@ function OngletsFiche({ etablissement: e }: { etablissement: EtablissementDetail
       {courant === 'equipements' && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {e.facilites?.map((f) => <Puce key={f} texte={f} fond="#F1F3F6" couleur="#2A313B" />)}
+        </div>
+      )}
+
+      {/*
+        L'ÉQUIPE EST UNE PREUVE, PAS UNE DÉCORATION. Un parent qui hésite entre
+        deux écoles veut savoir à qui il confiera son enfant ; des noms et des
+        fonctions valent plus qu'une page de promesses. C'est aussi pourquoi
+        l'onglet n'apparaît pas quand l'établissement n'a rien renseigné :
+        une section vide dirait le contraire de ce qu'elle cherche à dire.
+      */}
+      {courant === 'equipe' && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
+            gap: 12,
+          }}
+        >
+          {e.equipe?.map((membre) => (
+            <TeamMember
+              key={`${membre.nom}-${membre.role}`}
+              name={membre.nom}
+              role={membre.role}
+              photo={membre.photo}
+            />
+          ))}
         </div>
       )}
 

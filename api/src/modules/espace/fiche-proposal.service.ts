@@ -22,6 +22,7 @@ const CHAMPS_PROPOSABLES = [
   'socials',
   'autres_projets',
   'facilites',
+  'equipe',
   'video_url',
   'gamme_label',
   'devis_label',

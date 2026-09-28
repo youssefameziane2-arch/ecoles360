@@ -193,6 +193,49 @@ describe('Espace connecté et administration (intégration)', () => {
       expect(proposition.champs_modifies).toHaveProperty('description');
     });
 
+    /**
+     * L'ÉQUIPE PASSE PAR LA MÊME FILE QUE LE RESTE (RG20).
+     *
+     * Elle nomme des personnes réelles et leur attribue une fonction sur une
+     * page publique : c'est exactement le genre d'affirmation que le circuit
+     * de validation existe pour relire. Rien ne justifierait de l'en
+     * dispenser, contrairement aux photos de la galerie.
+     */
+    it('fait passer l’équipe par la file de propositions (RG20)', async () => {
+      const avant = await sansPropositionEnAttente();
+      const etablissement = await connecte('contact@almassira.ma');
+
+      const equipe = [
+        { nom: 'Mme Karima Idrissi', role: 'Directrice adjointe' },
+        { nom: 'M. Hamza Berrada', role: 'Conseiller d’orientation' },
+      ];
+
+      await etablissement.post('/mon-espace/fiche/propositions').send({ equipe }).expect(201);
+
+      const proposition = await db.propositionFiche.findFirstOrThrow({
+        where: { etablissement_id: avant.id, statut: 'en_attente' },
+      });
+
+      expect(proposition.champs_modifies).toHaveProperty('equipe');
+
+      // La fiche PUBLIQUE ne bouge pas tant que l'administration n'a rien
+      // validé — c'est tout l'objet de la règle.
+      const inchangee = await db.etablissement.findUniqueOrThrow({ where: { id: avant.id } });
+      expect(inchangee.equipe).toEqual(avant.equipe);
+    });
+
+    it('refuse un membre d’équipe sans rôle', async () => {
+      await sansPropositionEnAttente();
+      const etablissement = await connecte('contact@almassira.ma');
+
+      const reponse = await etablissement
+        .post('/mon-espace/fiche/propositions')
+        .send({ equipe: [{ nom: 'Quelqu’un sans fonction' }] })
+        .expect(422);
+
+      expect(reponse.body.code).toBe(ERROR_CODES.VALIDATION_ECHOUEE);
+    });
+
     it('refuse une seconde proposition tant que la première est en attente (RG27)', async () => {
       await sansPropositionEnAttente();
       const etablissement = await connecte('contact@almassira.ma');

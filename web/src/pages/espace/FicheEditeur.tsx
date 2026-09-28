@@ -40,6 +40,7 @@ const LIBELLE_CHAMP: Record<string, string> = {
   socials: 'Réseaux sociaux',
   autres_projets: 'Autres projets',
   facilites: 'Équipements',
+  equipe: 'Équipe',
   video_url: 'Vidéo',
   gamme_label: 'Gamme tarifaire',
   devis_label: 'Mention devis',
@@ -301,6 +302,7 @@ const ONGLETS = [
   { key: 'contact', label: 'Contact' },
   { key: 'tarifs', label: 'Tarifs' },
   { key: 'equipements', label: 'Équipements' },
+  { key: 'equipe', label: 'Équipe' },
 ];
 
 function Formulaire({ fiche, onEnvoye }: { fiche: FicheEspace; onEnvoye: () => void }) {
@@ -422,6 +424,17 @@ function Formulaire({ fiche, onEnvoye }: { fiche: FicheEspace; onEnvoye: () => v
             erreur={messageChamp(erreur, 'facilites')}
           />
         )}
+
+        {onglet === 'equipe' && (
+          <ZoneTexte
+            label="Équipe pédagogique"
+            valeur={brouillon.equipe}
+            onChange={set('equipe')}
+            lignes={6}
+            aide="Une personne par ligne : Nom | Rôle | lien du portrait (facultatif). Sans portrait, ses initiales s’affichent."
+            erreur={messageChamp(erreur, 'equipe')}
+          />
+        )}
       </div>
 
       <div
@@ -476,6 +489,12 @@ function versBrouillon(fiche: FicheEspace) {
     budget_max: fiche.budget_max?.toString() ?? '',
     gamme_label: fiche.gamme_label ?? '',
     facilites: (fiche.facilites ?? []).join('\n'),
+    // « Nom | Rôle | portrait » par ligne — même convention que les
+    // équipements : une ligne par entrée. Le portrait est facultatif et se
+    // reconnaît à sa position.
+    equipe: (fiche.equipe ?? [])
+      .map((membre) => [membre.nom, membre.role, membre.photo].filter(Boolean).join(' | '))
+      .join('\n'),
     langues: fiche.langues ?? '',
     site_web: fiche.site_web ?? '',
     projet_pedagogique: fiche.projet_pedagogique ?? '',
@@ -518,6 +537,24 @@ function diff(fiche: FicheEspace, brouillon: ReturnType<typeof versBrouillon>): 
       .split('\n')
       .map((ligne) => ligne.trim())
       .filter(Boolean);
+  }
+
+  /**
+   * UNE LIGNE SANS RÔLE EST ÉCARTÉE, PAS ENVOYÉE À MOITIÉ. Le DTO exige un nom
+   * ET un rôle ; laisser filer une ligne incomplète ferait refuser la
+   * proposition ENTIÈRE en 422, et l'établissement perdrait les corrections
+   * qu'il venait de faire sur les autres onglets pour une virgule oubliée ici.
+   */
+  if (brouillon.equipe !== reference.equipe) {
+    modifications.equipe = brouillon.equipe
+      .split('\n')
+      .map((ligne) => ligne.split('|').map((morceau) => morceau.trim()))
+      .filter(([nom, role]) => Boolean(nom) && Boolean(role))
+      .map(([nom, role, photo]) => ({
+        nom: nom!,
+        role: role!,
+        ...(photo ? { photo } : {}),
+      }));
   }
 
   return modifications;

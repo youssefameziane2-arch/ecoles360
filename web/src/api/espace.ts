@@ -1,3 +1,4 @@
+import type { MembreEquipe } from './etablissements';
 import { apiFetch, apiFetchPage } from './client';
 import type { TypeEtablissement } from './etablissements';
 
@@ -91,6 +92,7 @@ export interface FicheEspace {
   socials: Record<string, string> | null;
   autres_projets: AutreProjet[] | null;
   facilites: string[] | null;
+  equipe: MembreEquipe[] | null;
   video_url: string | null;
   gamme_label: string | null;
   devis_label: string | null;
@@ -122,6 +124,7 @@ export interface ModificationsFiche {
   socials?: Record<string, string>;
   autres_projets?: AutreProjet[];
   facilites?: string[];
+  equipe?: MembreEquipe[];
   video_url?: string;
   gamme_label?: string;
   devis_label?: string;

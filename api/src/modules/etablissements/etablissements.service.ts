@@ -571,6 +571,7 @@ const SELECTION_DETAIL = {
   socials: true,
   autres_projets: true,
   facilites: true,
+  equipe: true,
   video_url: true,
   video_poster: true,
   gamme_label: true,

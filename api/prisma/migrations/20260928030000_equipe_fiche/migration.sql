@@ -1,0 +1,12 @@
+-- Équipe pédagogique d'un établissement — onglet « Équipe » de la fiche.
+--
+-- UN BLOC DE CONTENU, PAS UN MODÈLE. Ces personnes n'existent que par la fiche
+-- qui les porte : elles ne se connectent jamais, ne sont jamais référencées
+-- ailleurs, et disparaissent avec elle. Une table `membres_equipe` imposerait
+-- une clé étrangère, une cascade et une migration à chaque champ ajouté, pour
+-- un contenu que l'établissement réécrit en bloc depuis son espace.
+--
+-- Additive et nullable : aucune fiche existante n'est touchée, et la colonne
+-- vaut NULL tant que personne ne l'a remplie — ce que l'onglet lit comme
+-- « pas d'équipe publiée » plutôt que comme une équipe vide.
+ALTER TABLE `etablissements` ADD COLUMN `equipe` JSON NULL;

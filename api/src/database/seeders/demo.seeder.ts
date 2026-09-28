@@ -202,6 +202,16 @@ export class DemoSeeder {
           description: 'Espace détente et petit-déjeuner pour parents et étudiants.',
         },
       ],
+      // Équipe de démonstration, SANS PORTRAIT : aucune route ne téléverse
+      // encore de photo pour ce bloc, et `TeamMember` retombe alors sur un
+      // monogramme — plus honnête qu'une silhouette générique répétée quatre
+      // fois.
+      equipe: [
+        { nom: 'Mme Laila Cherkaoui', role: 'Directrice pédagogique' },
+        { nom: 'M. Rachid Benkirane', role: 'Directeur des études' },
+        { nom: 'Mme Nadia Alaoui', role: 'Responsable du collège' },
+        { nom: 'M. Omar Tazi', role: 'Coordinateur des filières scientifiques' },
+      ],
     };
 
     const almassira = await this.db.etablissement.upsert({

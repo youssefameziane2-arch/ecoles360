@@ -10,6 +10,7 @@ import {
   IsUrl,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -43,6 +44,33 @@ export class FaqItemFicheDto {
  * Une autre enseigne du même propriétaire — bloc « Autres projets » de la
  * page profil : type (Restaurant, Café, Hôtel…), nom, ville et description.
  */
+/**
+ * Un membre de l'équipe pédagogique — onglet « Équipe » de la fiche.
+ *
+ * LA PHOTO EST UNE URL, PAS UN TÉLÉVERSEMENT. La galerie de la fiche a son
+ * propre circuit (`/fiche/photos`, volume `storage`) ; un portrait n'a pas
+ * besoin du même. Tant qu'aucune route ne le prend en charge, le champ reste
+ * vide et `TeamMember` retombe sur un monogramme — ce qui vaut mieux qu'une
+ * silhouette générique répétée dix fois.
+ */
+export class MembreEquipeDto {
+  @ApiPropertyOptional({ example: 'Mme Laila Cherkaoui' })
+  @IsString()
+  @MaxLength(120)
+  nom!: string;
+
+  @ApiPropertyOptional({ example: 'Directrice pédagogique' })
+  @IsString()
+  @MaxLength(120)
+  role!: string;
+
+  @ApiPropertyOptional({ description: 'Portrait, facultatif.' })
+  @ValidateIf((_, valeur) => valeur !== undefined && valeur !== '')
+  @IsUrl({ require_protocol: true }, { message: 'Le portrait doit être une URL complète.' })
+  @MaxLength(300)
+  photo?: string;
+}
+
 export class AutreProjetDto {
   @ApiPropertyOptional({ example: 'Restaurant' })
   @IsString()
@@ -175,6 +203,13 @@ export class ProposerFicheDto {
   @IsArray()
   @IsString({ each: true })
   facilites?: string[];
+
+  @ApiPropertyOptional({ type: [MembreEquipeDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MembreEquipeDto)
+  equipe?: MembreEquipeDto[];
 
   @ApiPropertyOptional()
   @IsOptional()

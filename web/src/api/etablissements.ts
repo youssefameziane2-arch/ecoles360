@@ -74,6 +74,13 @@ export interface CycleFrere {
   actif: boolean;
 }
 
+/** Un membre de l'équipe pédagogique — onglet « Équipe » de la fiche. */
+export interface MembreEquipe {
+  nom: string;
+  role: string;
+  photo?: string;
+}
+
 export interface EtablissementDetail extends EtablissementListe {
   /** Cycles frères, dans l'ordre de la scolarité. Vide hors groupe. */
   cycles: CycleFrere[];
@@ -87,6 +94,7 @@ export interface EtablissementDetail extends EtablissementListe {
   socials: Record<string, string> | null;
   autres_projets: { type: string; nom: string; ville?: string; description?: string }[] | null;
   facilites: string[] | null;
+  equipe: MembreEquipe[] | null;
   video_url: string | null;
   /** Vignette de la vidéo — à défaut, celle de YouTube est déduite du lien. */
   video_poster: string | null;
