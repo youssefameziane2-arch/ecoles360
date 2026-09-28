@@ -693,4 +693,21 @@ produisent des schémas différents :
 au typage, ni au lint, ni aux tests. Il se découvre le jour où un secrétaire
 a publié une fiche non payée, et la RG14 est une clause commerciale.
 
-**Statut :** à confirmer — client.
+**Tranché par le client (28 septembre 2026) :**
+
+1. La règle **remplace la RG05**. Plus deux délégations : un seul mécanisme,
+   des privilèges par écran du back-office.
+2. Le privilège porte sur **un écran**, pas sur un acte.
+3. Un secrétaire **ne peut pas en ajouter d'autres** : Secrétariat et
+   Commerciaux restent hors de portée, comme le Journal d'audit.
+
+**Un conflit reste à lever avant d'écrire une ligne.** Remplacer la RG05 met
+en cause les cinq écrans de l'« Espace secrétariat », construits et conformes
+à la maquette : ils servent un secrétaire **rattaché à un établissement**, qui
+travaille dans `/mon-espace`. La règle reçue décrit un secrétaire **de la
+plateforme**, qui travaille dans `/admin`. Si la seconde remplace la première,
+ces cinq écrans perdent leur titulaire — or la maquette les dessine. À
+reposer au client le jour où ce lot sera pris.
+
+**Statut :** tranché sur le principe ; hors du périmètre du lancement vitrine,
+qui ne comprend que le site public et l'administration.

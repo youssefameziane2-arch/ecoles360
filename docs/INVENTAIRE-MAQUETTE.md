@@ -36,9 +36,9 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 | Article | `/blog/:slug` | ✅ |
 | Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité — demandent une route publique de tarifs |
 | Connexion | `/connexion` | ✅ écart assumé : formulaire unique au lieu des 2 étapes |
-| Mentions légales | — | ❌ **aucune route** — texte à fournir par le client |
-| Confidentialité | — | ❌ **aucune route** — exigée par la loi 09-08 (RG09) |
-| Cookies | — | ❌ **aucune route** — texte à fournir par le client |
+| Mentions légales | `/mentions-legales` | 🟡 page servie par le CMS et éditable depuis l'admin — **texte à fournir par le client** |
+| Confidentialité | `/confidentialite` | 🟡 idem — exigée par la loi 09-08 (RG09) ; le plan des rubriques est posé, le texte engage l'éditeur du site |
+| Cookies | `/cookies` | 🟡 idem — **texte à fournir par le client** |
 
 **LES TROIS PAGES LÉGALES N'ONT NI ROUTE NI LIEN.** Le pied de page les omet
 volontairement plutôt que de mener au vide. Ce n'est pas un manque technique :
@@ -64,7 +64,7 @@ appelé mais jamais dessiné).
 | Blog | `isBlogList` | `/admin/blog` | ✅ |
 | Article (éditeur) | `isBlogDetail` | `/admin/blog` | ✅ |
 | Journal d'audit | `isAdminJournal` | `/admin/journal` | ✅ |
-| Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ et page « À propos » (onglets) — manquent les catégories d'articles, qui demandent une migration |
+| Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ, page « À propos » et les **trois pages légales** (onglets) — manquent les catégories d'articles, qui demandent une migration |
 | Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
 | CRM Clients | `isAdminCrm` | `/admin/crm` | ❌ KPI, prospects, dossiers, étapes |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
@@ -138,12 +138,12 @@ route à ce rôle.
 
 | Périmètre | Fait | Reste |
 |---|---|---|
-| Site public | 8 | 3 + 2 partiels — les 3 sont les pages légales, suspendues à un texte du client |
+| Site public | 8 | 0 + 5 partiels — dont les 3 pages légales, en ligne mais suspendues à un texte du client |
 | Administration | 5 | 5 + 5 partiels |
 | Établissement | 5 | 1 + 1 partiel |
 | Secrétariat | 5 | 0 |
 | Commercial | 1 (blog ouvert ; coquille et navigation en place) | 5 |
-| **Total** | **24** | **14 + 8 partiels** |
+| **Total** | **24** | **11 + 11 partiels** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait

@@ -22,10 +22,10 @@ const titreColonneStyle = {
  * du site où un visiteur les trouve, et elles sont exigées par la loi 09-08
  * pour un service qui collecte des coordonnées (RG09).
  *
- * LES PAGES LÉGALES NE SONT PAS ENCORE ÉCRITES : leurs liens manquent donc
- * volontairement plutôt que de mener à une page vide. Le texte (mentions,
- * confidentialité, cookies, CGU) relève du client, pas du développement — il
- * engage l'éditeur du site.
+ * LES TROIS PAGES LÉGALES SONT SERVIES PAR LE CMS, comme « À propos » : le
+ * lien mène à une page réelle, dont le texte se rédige depuis « Contenu du
+ * site » sans livraison. Il reste à l'écrire — il engage l'éditeur du site,
+ * et le semis n'y pose que le plan des rubriques.
  */
 export function PiedDePage() {
   return (
@@ -93,6 +93,15 @@ export function PiedDePage() {
               <a href="mailto:contact@ecoles360.com" style={lienStyle}>
                 Nous contacter
               </a>
+              <Link to="/mentions-legales" style={lienStyle}>
+                Mentions légales
+              </Link>
+              <Link to="/confidentialite" style={lienStyle}>
+                Confidentialité
+              </Link>
+              <Link to="/cookies" style={lienStyle}>
+                Cookies
+              </Link>
             </div>
           </div>
         </div>

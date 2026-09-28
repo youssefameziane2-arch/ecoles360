@@ -223,6 +223,7 @@ export class ReferentielsSeeder {
    */
   async contenuSite(): Promise<void> {
     await this.pageAPropos();
+    await this.pagesLegales();
 
     /**
      * FAQ DE RÉFÉRENCE — reprise mot pour mot de la maquette « Centre d'aide ».
@@ -450,6 +451,84 @@ export class ReferentielsSeeder {
         data: { blocs: { ...completes, ...actuels } as Prisma.InputJsonObject },
       });
       this.logger.log(`Page « À propos » complétée : ${manquantes.join(', ')}`);
+    }
+  }
+
+  /**
+   * Les trois pages légales — loi 09-08 (RG09).
+   *
+   * CE SEMIS POSE LE PLAN, JAMAIS LE TEXTE. Mentions légales, politique de
+   * confidentialité et gestion des cookies engagent l'éditeur du site devant
+   * la loi : les rédiger ici reviendrait à faire prendre à écoles360 des
+   * engagements que personne n'a relus. Ce qui est posé, ce sont les rubriques
+   * que la loi 09-08 impose de traiter, et un marqueur `[à compléter …]` dans
+   * chacune.
+   *
+   * CE MARQUEUR EST LA MOITIÉ UTILE DU TRAVAIL : l'écran « Contenu du site »
+   * s'en sert pour signaler qu'une page n'est pas prête. Sans lui, trois pages
+   * d'apparence normale partiraient en ligne avec des crochets dedans, et
+   * personne ne s'en apercevrait avant un visiteur.
+   *
+   * Idempotent comme le reste : une page déjà rédigée n'est jamais réécrite.
+   */
+  private async pagesLegales(): Promise<void> {
+    const plans: Record<string, { titre: string; rubriques: string[] }> = {
+      'mentions-legales': {
+        titre: 'Mentions légales',
+        rubriques: [
+          'Éditeur du site',
+          'Directeur de la publication',
+          'Hébergement',
+          'Propriété intellectuelle',
+          'Responsabilité',
+          'Contact',
+        ],
+      },
+      confidentialite: {
+        titre: 'Politique de confidentialité',
+        rubriques: [
+          'Données collectées',
+          'Finalités du traitement',
+          'Base légale et consentement',
+          'Destinataires des données',
+          'Durée de conservation',
+          'Vos droits (accès, rectification, opposition)',
+          'Déclaration CNDP',
+          'Sécurité',
+          'Contact du responsable de traitement',
+        ],
+      },
+      cookies: {
+        titre: 'Gestion des cookies',
+        rubriques: [
+          'Ce qu’est un cookie',
+          'Cookies strictement nécessaires',
+          'Cookies de mesure d’audience',
+          'Durée de conservation',
+          'Comment les refuser ou les supprimer',
+        ],
+      },
+    };
+
+    for (const [cle, plan] of Object.entries(plans)) {
+      const existante = await this.db.pageCms.findUnique({ where: { cle }, select: { id: true } });
+
+      if (existante) continue;
+
+      await this.db.pageCms.create({
+        data: {
+          cle,
+          titre: plan.titre,
+          blocs: {
+            sections: plan.rubriques.map((titre) => ({
+              titre,
+              corps: `[à compléter — ${titre.toLowerCase()}]`,
+            })),
+          },
+        },
+      });
+
+      this.logger.log(`Page « ${plan.titre} » créée — plan seul, texte à fournir`);
     }
   }
 }

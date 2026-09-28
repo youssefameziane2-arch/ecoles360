@@ -48,7 +48,8 @@ import { FaqService } from '../contenu/faq.service';
 import { FaqItemDto } from '../contenu/dto/faq-item.dto';
 import { OrdreFaqDto } from '../contenu/dto/ordre-faq.dto';
 import { PageAProposDto } from '../contenu/dto/page-a-propos.dto';
-import { PagesCmsService } from '../contenu/pages-cms.service';
+import { CLES_LEGALES, PagesCmsService, type CleLegale } from '../contenu/pages-cms.service';
+import { PageLegaleDto } from '../contenu/dto/page-legale.dto';
 import { CreerSponsoringDto } from '../sponsorings/dto/creer-sponsoring.dto';
 import { PhotosService } from '../photos/photos.service';
 import { LegendePhotoDto } from '../photos/dto/legende-photo.dto';
@@ -600,6 +601,36 @@ export class AdminController {
     @Body() dto: PageAProposDto,
   ) {
     return this.pagesCms.modifierAPropos(dto, utilisateur.userId);
+  }
+
+  /**
+   * LA CLÉ EST VALIDÉE ICI, PAS DANS UN DTO : elle vient de l'URL, où
+   * `ValidationPipe` ne l'atteint pas. Sans ce contrôle, `a-propos` passerait
+   * par cette route et recevrait des blocs que son écran ne sait pas lire.
+   */
+  @Put('pages/legales/:cle')
+  @ApiOperation({
+    summary: 'Publier une page légale — action journalisée (RG09, RG15)',
+    description:
+      'Clés acceptées : mentions-legales, confidentialite, cookies. ' +
+      'La page entière : les sections absentes du corps disparaissent du site.',
+  })
+  @ApiResponse({ status: 404, description: 'Clé inconnue ou page non semée.' })
+  @ApiResponse({ status: 422, description: 'Section manquante, trop longue ou champ inconnu.' })
+  modifierPageLegale(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('cle') cle: string,
+    @Body() dto: PageLegaleDto,
+  ) {
+    if (!(CLES_LEGALES as readonly string[]).includes(cle)) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ERROR_CODES.RESSOURCE_INTROUVABLE,
+        'Cette page légale n’existe pas.',
+      );
+    }
+
+    return this.pagesCms.modifierPageLegale(cle as CleLegale, dto, utilisateur.userId);
   }
 
   @Get('propositions-fiche')

@@ -60,3 +60,43 @@ export const paragraphes = (texte: string | undefined) =>
     .split(/\n\s*\n/)
     .map((paragraphe) => paragraphe.trim())
     .filter(Boolean);
+
+// -----------------------------------------------------------------------------
+//  Pages légales — loi 09-08 (RG09)
+// -----------------------------------------------------------------------------
+
+export const CLES_LEGALES = ['mentions-legales', 'confidentialite', 'cookies'] as const;
+
+export type CleLegale = (typeof CLES_LEGALES)[number];
+
+export interface SectionLegale {
+  titre: string;
+  corps: string;
+}
+
+export interface PageLegale {
+  cle: CleLegale;
+  titre: string;
+  blocs: { sections?: SectionLegale[] };
+  modifiee_le: string | null;
+}
+
+export const chargerPageLegale = (cle: CleLegale) => apiFetch<PageLegale>(`/contenu/pages/${cle}`);
+
+/** La page entière : une section absente du corps disparaît du site. */
+export const publierPageLegale = (
+  cle: CleLegale,
+  page: { titre: string; sections: SectionLegale[] },
+) =>
+  apiFetch<PageLegale>(`/admin/pages/legales/${cle}`, {
+    method: 'PUT',
+    body: JSON.stringify(page),
+  });
+
+/**
+ * Le semis pose le plan des rubriques, jamais le texte : il marque chaque
+ * section d'un `[à compléter …]`. Ce test dit qu'une page n'est pas prête à
+ * partir en ligne — l'écran d'administration s'en sert pour le signaler.
+ */
+export const aCompleter = (page: PageLegale | undefined) =>
+  (page?.blocs.sections ?? []).some((section) => section.corps.includes('[à compléter'));

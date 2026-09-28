@@ -4,9 +4,27 @@ import { AppException, ERROR_CODES } from '../../common/errors';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, RoleCode } from '../../generated/prisma';
 import type { PageAProposDto } from './dto/page-a-propos.dto';
+import type { PageLegaleDto } from './dto/page-legale.dto';
 
-/** La seule page CMS que le site affiche aujourd'hui. */
 export const CLE_A_PROPOS = 'a-propos';
+
+/**
+ * Les trois pages légales — loi 09-08 (RG09).
+ *
+ * LA LISTE EST CLOSE, et c'est tout l'intérêt de la déclarer ici. La route
+ * d'édition prend la clé dans l'URL : sans cette borne, un `PUT` sur
+ * `/admin/pages/legales/a-propos` écraserait « À propos » avec une forme de
+ * blocs que son écran ne sait pas lire, et la page publique se viderait.
+ */
+export const CLES_LEGALES = ['mentions-legales', 'confidentialite', 'cookies'] as const;
+
+export type CleLegale = (typeof CLES_LEGALES)[number];
+
+export const TITRES_LEGAUX: Record<CleLegale, string> = {
+  'mentions-legales': 'Mentions légales',
+  confidentialite: 'Politique de confidentialité',
+  cookies: 'Gestion des cookies',
+};
 
 /**
  * Pages éditoriales pilotées depuis le back-office — livrable 11 §3.7.
@@ -93,6 +111,56 @@ export class PagesCmsService {
         cibleId: avant.id,
         details: {
           cle: CLE_A_PROPOS,
+          avant: { titre: avant.titre, blocs: avant.blocs },
+          apres: { titre: page.titre, blocs: page.blocs },
+        },
+      });
+
+      return page;
+    });
+  }
+
+  /**
+   * Remplace une page légale — RG09, RG15.
+   *
+   * MÊME TRACE QUE « À PROPOS », ET POUR UNE RAISON PLUS FORTE ENCORE : ces
+   * trois textes engagent l'éditeur du site devant la loi 09-08. Le jour où
+   * l'on demande ce que la politique de confidentialité disait à telle date,
+   * la réponse doit exister — le journal garde l'avant et l'après.
+   */
+  async modifierPageLegale(cle: CleLegale, dto: PageLegaleDto, adminId: bigint) {
+    return this.db.$transaction(async (tx) => {
+      const avant = await tx.pageCms.findUnique({
+        where: { cle },
+        select: { id: true, titre: true, blocs: true },
+      });
+
+      if (!avant) {
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ERROR_CODES.RESSOURCE_INTROUVABLE,
+          'Cette page légale n’existe pas encore : relancez le semis des référentiels.',
+        );
+      }
+
+      const blocs: Prisma.InputJsonObject = {
+        sections: dto.sections.map(({ titre, corps }) => ({ titre, corps })),
+      };
+
+      const page = await tx.pageCms.update({
+        where: { cle },
+        data: { titre: dto.titre, blocs, modifiee_par: adminId, modifiee_le: new Date() },
+        select: { cle: true, titre: true, blocs: true, modifiee_le: true },
+      });
+
+      await this.audit.journaliser(tx, {
+        userId: adminId,
+        roleActeur: RoleCode.superadmin,
+        action: 'page_cms.modifiee',
+        cibleType: 'page_cms',
+        cibleId: avant.id,
+        details: {
+          cle,
           avant: { titre: avant.titre, blocs: avant.blocs },
           apres: { titre: page.titre, blocs: page.blocs },
         },

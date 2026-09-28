@@ -7,6 +7,7 @@ import { Resultats } from './pages/Resultats';
 import { Fiche } from './pages/Fiche';
 import { Ville } from './pages/Ville';
 import { APropos } from './pages/APropos';
+import { PageLegale } from './pages/PageLegale';
 import { Faq } from './pages/Faq';
 import { Blog } from './pages/Blog';
 import { Article } from './pages/Article';
@@ -117,6 +118,39 @@ export function App() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Article />} />
           <Route path="/inscription-etablissement" element={<InscriptionEtablissement />} />
+          {/*
+            Trois routes, un composant : ces pages ne diffèrent que par leur
+            clé CMS. La description sert la balise <meta>, que le CMS ne porte
+            pas — elle décrit le rôle de la page, pas son contenu, et n'a donc
+            pas à changer quand le juriste réécrit le texte.
+          */}
+          <Route
+            path="/mentions-legales"
+            element={
+              <PageLegale
+                cle="mentions-legales"
+                description="Éditeur, hébergement et responsabilité du site écoles360."
+              />
+            }
+          />
+          <Route
+            path="/confidentialite"
+            element={
+              <PageLegale
+                cle="confidentialite"
+                description="Données collectées, finalités, durées de conservation et vos droits (loi 09-08)."
+              />
+            }
+          />
+          <Route
+            path="/cookies"
+            element={
+              <PageLegale
+                cle="cookies"
+                description="Cookies utilisés par écoles360 et moyens de les refuser."
+              />
+            }
+          />
           <Route path="*" element={<Introuvable />} />
         </Routes>
       </main>

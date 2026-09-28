@@ -264,4 +264,129 @@ describe('Pages CMS (intégration)', () => {
       expect(publique.body.data.blocs.equipe).toEqual(PAGE_MODIFIEE.blocs.equipe);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  //  Pages légales — loi 09-08 (RG09)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * CE QUI COMPTE ICI EST LA BORNE SUR LA CLÉ. Elle vient de l'URL, où
+   * `ValidationPipe` ne l'atteint pas : sans contrôle, `a-propos` passerait
+   * par la route des pages légales et recevrait une forme de blocs que son
+   * écran ne sait pas lire — la page publique se viderait, et la seule trace
+   * serait une ligne d'audit que personne ne relit avant le signalement.
+   */
+  describe('pages légales', () => {
+    const CLES = ['mentions-legales', 'confidentialite', 'cookies'] as const;
+
+    let avant: { cle: string; titre: string; blocs: unknown }[];
+
+    beforeAll(async () => {
+      avant = await db.pageCms.findMany({
+        where: { cle: { in: [...CLES] } },
+        select: { cle: true, titre: true, blocs: true },
+      });
+    });
+
+    afterAll(async () => {
+      for (const page of avant) {
+        await db.pageCms.update({
+          where: { cle: page.cle },
+          data: { titre: page.titre, blocs: page.blocs as object, modifiee_par: null },
+        });
+      }
+    });
+
+    it('sert les trois pages sans session', async () => {
+      for (const cle of CLES) {
+        const reponse = await request(app.getHttpServer())
+          .get(`/api/v1/contenu/pages/${cle}`)
+          .expect(200);
+
+        expect(reponse.body.data.cle).toBe(cle);
+        expect(reponse.body.data.blocs.sections.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('refuse l’anonyme et l’établissement', async () => {
+      await request(app.getHttpServer())
+        .put('/api/v1/admin/pages/legales/cookies')
+        .send({ titre: 'x', sections: [{ titre: 'x', corps: 'x' }] })
+        .expect(401);
+
+      const ecole = await connecte('contact@almassira.ma');
+      await ecole
+        .put('/admin/pages/legales/cookies')
+        .send({ titre: 'x', sections: [{ titre: 'x', corps: 'x' }] })
+        .expect(403);
+    });
+
+    it('refuse une clé inconnue', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      await admin
+        .put('/admin/pages/legales/cgu')
+        .send({ titre: 'x', sections: [{ titre: 'x', corps: 'x' }] })
+        .expect(404);
+    });
+
+    it('n’atteint pas « À propos » par la route des pages légales', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+
+      await admin
+        .put('/admin/pages/legales/a-propos')
+        .send({ titre: 'Détourné', sections: [{ titre: 'x', corps: 'x' }] })
+        .expect(404);
+
+      const intacte = await db.pageCms.findUniqueOrThrow({ where: { cle: 'a-propos' } });
+      expect(intacte.titre).not.toBe('Détourné');
+      expect(intacte.blocs).toHaveProperty('mission');
+    });
+
+    it('refuse une page sans section, et un champ non déclaré', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+
+      await admin
+        .put('/admin/pages/legales/cookies')
+        .send({ titre: 'x', sections: [] })
+        .expect(422);
+
+      await admin
+        .put('/admin/pages/legales/cookies')
+        .send({ titre: 'x', sections: [{ titre: 'x', corps: 'x', auteur: 'moi' }] })
+        .expect(422);
+    });
+
+    it('publie, journalise, et le site public le voit', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+
+      const sections = [
+        { titre: 'Ce qu’est un cookie', corps: 'Un petit fichier déposé par le navigateur.' },
+        { titre: 'Comment les refuser', corps: 'Depuis les réglages de votre navigateur.' },
+      ];
+
+      await admin
+        .put('/admin/pages/legales/cookies')
+        .send({ titre: 'Gestion des cookies', sections })
+        .expect(200);
+
+      const publique = await request(app.getHttpServer())
+        .get('/api/v1/contenu/pages/cookies')
+        .expect(200);
+
+      expect(publique.body.data.blocs.sections).toEqual(sections);
+
+      // La page ENTIÈRE : les cinq rubriques du semis ont disparu, elles ne
+      // survivent pas à une publication qui ne les porte pas.
+      expect(publique.body.data.blocs.sections).toHaveLength(2);
+
+      const trace = await db.journalAudit.findFirstOrThrow({
+        where: { action: 'page_cms.modifiee' },
+        orderBy: { id: 'desc' },
+      });
+
+      expect((trace.details as { cle: string }).cle).toBe('cookies');
+      expect(trace.details).toHaveProperty('avant');
+      expect(trace.details).toHaveProperty('apres');
+    });
+  });
 });

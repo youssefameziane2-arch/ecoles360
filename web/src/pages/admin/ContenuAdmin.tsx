@@ -14,6 +14,8 @@ import { AvecIdentite, CoquilleEspace } from '@/components/CoquilleEspace';
 import { Badge, Button, Checkbox, Icon, Input, Tabs, Textarea, Toast } from '@/ds/composants';
 import { useTitrePage } from '@/lib/titre';
 import { PageAProposAdmin } from './PageAProposAdmin';
+import { PageLegaleAdmin } from './PageLegaleAdmin';
+import { CLES_LEGALES, type CleLegale } from '@/api/pages';
 
 /** Rubriques de la maquette, proposées d'abord — la saisie libre reste possible. */
 const RUBRIQUES_MAQUETTE = ['Pour les parents', 'Pour les établissements'];
@@ -60,6 +62,9 @@ export function ContenuAdmin() {
 const ONGLETS = [
   { key: 'faq', label: 'Questions fréquentes' },
   { key: 'a-propos', label: 'Page « À propos »' },
+  { key: 'mentions-legales', label: 'Mentions légales' },
+  { key: 'confidentialite', label: 'Confidentialité' },
+  { key: 'cookies', label: 'Cookies' },
 ];
 
 function Onglets() {
@@ -68,7 +73,17 @@ function Onglets() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <Tabs tabs={ONGLETS} value={onglet} onChange={setOnglet} />
-      {onglet === 'faq' ? <Faq /> : <PageAProposAdmin />}
+      {onglet === 'faq' && <Faq />}
+      {onglet === 'a-propos' && <PageAProposAdmin />}
+      {/*
+        Les trois pages légales partagent un composant : elles ne diffèrent
+        que par leur clé CMS. `key` le remonte pour que React remplace
+        l'instance d'un onglet à l'autre — sans lui, le brouillon d'une page
+        survivrait dans la suivante.
+      */}
+      {CLES_LEGALES.includes(onglet as CleLegale) && (
+        <PageLegaleAdmin key={onglet} cle={onglet as CleLegale} />
+      )}
     </div>
   );
 }
