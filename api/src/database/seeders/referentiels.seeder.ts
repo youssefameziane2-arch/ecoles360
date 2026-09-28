@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { NiveauFiliereCat, RoleCode } from '../../generated/prisma';
+import { NiveauFiliereCat, Prisma, RoleCode } from '../../generated/prisma';
 
 /**
  * Référentiels — livrable 10 §3.
@@ -222,45 +222,7 @@ export class ReferentielsSeeder {
    * modifiables : le site public afficherait des sections vides sans elles.
    */
   async contenuSite(): Promise<void> {
-    await this.db.pageCms.upsert({
-      where: { cle: 'a-propos' },
-      update: {},
-      create: {
-        cle: 'a-propos',
-        titre: 'À propos',
-        blocs: {
-          histoire:
-            "écoles360 est né d'un constat simple : au Maroc, choisir un établissement scolaire privé " +
-            'relève encore du bouche-à-oreille. Les familles comparent des brochures, appellent au hasard, ' +
-            'se déplacent pour découvrir un tarif ou une filière qui ne correspond pas.',
-          mission:
-            'Rassembler en un seul endroit une information fiable, vérifiée et comparable sur les ' +
-            'établissements privés du Royaume — gratuitement pour les parents.',
-          valeurs: [
-            {
-              titre: 'Transparence',
-              texte:
-                "Les fiches sont vérifiées avant publication et les avis modérés, jamais filtrés à l'avantage d'un client.",
-            },
-            {
-              titre: 'Proximité',
-              texte:
-                'Une équipe au Maroc, un service en français et en arabe, des établissements que nous visitons.',
-            },
-            {
-              titre: 'Indépendance',
-              texte:
-                'Une fiche sponsorisée est signalée comme telle et ne prend jamais la place des résultats pertinents.',
-            },
-          ],
-          coordonnees: {
-            email: 'contact@ecoles360.com',
-            telephone: '+212 5 22 00 00 00',
-            adresse: 'Casablanca, Maroc',
-          },
-        },
-      },
-    });
+    await this.pageAPropos();
 
     /**
      * FAQ DE RÉFÉRENCE — reprise mot pour mot de la maquette « Centre d'aide ».
@@ -365,5 +327,129 @@ export class ReferentielsSeeder {
     });
 
     this.logger.log(`Page « À propos » et ${faq.length} questions de FAQ`);
+  }
+
+  /**
+   * Page « À propos ».
+   *
+   * LE TEXTE VIENT DE L'ANCIENNE PAGE CODÉE EN DUR (`APropos.tsx`), repris mot
+   * pour mot : le client l'avait relu, et il porte des engagements publics —
+   * « un établissement ne peut pas acheter une meilleure note », « nous ne
+   * revendons pas vos données ». Le réécrire ici serait les renégocier.
+   *
+   * SUR UNE BASE DÉJÀ SEMÉE, SEULES LES CLÉS ABSENTES SONT AJOUTÉES. Une clé
+   * présente a pu être modifiée depuis le back-office : l'écraser effacerait
+   * une publication. Une clé absente — `equipe`, `engagements`, ajoutées après
+   * le premier semis — laisserait au contraire la page sans sa section.
+   *
+   * `equipe` NAÎT VIDE. La maquette y montre les visages d'une école
+   * (« Directeur », « Responsable du primaire ») : les semer comme l'équipe
+   * d'écoles360 publierait des personnes qui n'existent pas. La section reste
+   * masquée tant que le back-office ne l'a pas remplie.
+   */
+  private async pageAPropos(): Promise<void> {
+    const blocs: Record<string, unknown> = {
+      accroche: 'Aider chaque famille à trouver la bonne école, en toute confiance',
+      mission:
+        'Rassembler en un seul endroit une information fiable, vérifiée et comparable sur les ' +
+        'établissements privés du Royaume — gratuitement pour les parents.',
+      histoire:
+        "écoles360 est né d'un constat simple : au Maroc, choisir un établissement scolaire privé " +
+        'relève encore du bouche-à-oreille. Les familles comparent des brochures, appellent au hasard, ' +
+        'se déplacent pour découvrir un tarif ou une filière qui ne correspond pas.' +
+        '\n\n' +
+        'écoles360 rassemble les crèches, écoles primaires, collèges, lycées, universités et centres ' +
+        'de formation privés du Maroc sur une seule plateforme. Les parents recherchent par ville, par ' +
+        "type et par niveau, comparent les établissements, lisent les avis d'autres familles, et " +
+        'contactent gratuitement celui qui leur convient — sans créer de compte.',
+      valeurs: [
+        {
+          titre: 'Transparence',
+          texte:
+            "Les fiches sont vérifiées avant publication et les avis modérés, jamais filtrés à l'avantage d'un client.",
+        },
+        {
+          titre: 'Proximité',
+          texte:
+            'Une équipe au Maroc, un service en français et en arabe, des établissements que nous visitons.',
+        },
+        {
+          titre: 'Indépendance',
+          texte:
+            'Une fiche sponsorisée est signalée comme telle et ne prend jamais la place des résultats pertinents.',
+        },
+      ],
+      engagements: [
+        {
+          titre: 'Comment nous gagnons notre vie',
+          texte:
+            'Notre service est gratuit pour les parents. Il est financé par les établissements qui ' +
+            'souscrivent un abonnement pour enrichir leur fiche et recevoir les demandes de contact.' +
+            '\n\n' +
+            'Un établissement ne peut pas acheter une meilleure note ni faire retirer un avis. Un ' +
+            'abonnement met une fiche en avant dans les résultats — et dans ce cas seulement, elle ' +
+            'porte la mention « Sponsorisé ». Une mise en avant ne remplace jamais les autres ' +
+            "résultats : elle s'y ajoute, en tête, et reste identifiable.",
+        },
+        {
+          titre: 'Les avis',
+          texte:
+            'Chaque avis est relu avant publication. Nous écartons les contenus injurieux, les propos ' +
+            'hors sujet et les tentatives manifestes de manipulation — dans les deux sens : un ' +
+            "établissement qui s'auto-félicite comme un concurrent qui le dénigre." +
+            '\n\n' +
+            'Un établissement peut répondre publiquement, une fois, à chaque avis le concernant. Cette ' +
+            "réponse s'affiche sous l'avis d'origine, qui n'est ni modifié ni masqué. La note moyenne " +
+            'affichée est recalculée à partir des seuls avis publiés.',
+        },
+        {
+          titre: 'Vos données',
+          texte:
+            'Lorsque vous envoyez une demande de contact, vos coordonnées sont transmises à ' +
+            "l'établissement que vous avez choisi, et à lui seul, afin qu'il vous rappelle. Nous ne les " +
+            'revendons pas et ne les transmettons à aucun autre établissement. Ce traitement ' +
+            "s'effectue avec votre accord explicite, conformément à la loi 09-08 relative à la " +
+            "protection des personnes physiques à l'égard du traitement des données à caractère " +
+            'personnel.' +
+            '\n\n' +
+            'Pour accéder à vos données, les corriger ou en demander la suppression, écrivez-nous à ' +
+            'contact@ecoles360.com.',
+        },
+      ],
+      equipe: [],
+      coordonnees: {
+        email: 'contact@ecoles360.com',
+        telephone: '+212 5 22 00 00 00',
+        adresse: 'Casablanca, Maroc',
+      },
+    };
+
+    const existante = await this.db.pageCms.findUnique({
+      where: { cle: 'a-propos' },
+      select: { blocs: true },
+    });
+
+    if (!existante) {
+      await this.db.pageCms.create({
+        data: { cle: 'a-propos', titre: 'À propos', blocs: blocs as Prisma.InputJsonObject },
+      });
+      return;
+    }
+
+    const actuels =
+      existante.blocs && typeof existante.blocs === 'object' && !Array.isArray(existante.blocs)
+        ? (existante.blocs as Record<string, unknown>)
+        : {};
+    const manquantes = Object.keys(blocs).filter((cle) => !(cle in actuels));
+
+    if (manquantes.length > 0) {
+      const completes = Object.fromEntries(manquantes.map((cle) => [cle, blocs[cle]]));
+
+      await this.db.pageCms.update({
+        where: { cle: 'a-propos' },
+        data: { blocs: { ...completes, ...actuels } as Prisma.InputJsonObject },
+      });
+      this.logger.log(`Page « À propos » complétée : ${manquantes.join(', ')}`);
+    }
   }
 }

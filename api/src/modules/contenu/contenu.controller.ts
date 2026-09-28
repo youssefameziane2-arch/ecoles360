@@ -1,14 +1,15 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators';
 import { FaqService } from './faq.service';
 import { ConseillersService } from './conseillers.service';
+import { PagesCmsService } from './pages-cms.service';
 
 /**
  * Contenu éditorial public — livrable 11 §3.7.
  *
- * Lecture seule et anonyme : la FAQ est une page d'aide, elle doit s'afficher
- * avant toute connexion et sans cookie.
+ * Lecture seule et anonyme : la FAQ et la page « À propos » s'affichent avant
+ * toute connexion et sans cookie.
  */
 @ApiTags('contenu')
 @Public()
@@ -17,6 +18,7 @@ export class ContenuController {
   constructor(
     private readonly faq: FaqService,
     private readonly conseillers: ConseillersService,
+    private readonly pages: PagesCmsService,
   ) {}
 
   @Get('conseillers')
@@ -40,5 +42,15 @@ export class ContenuController {
   @ApiResponse({ status: 200, description: 'Rubriques et questions publiées.' })
   questionsFrequentes() {
     return this.faq.publique();
+  }
+
+  @Get('contenu/pages/:cle')
+  @ApiOperation({
+    summary: 'Page éditoriale — « a-propos » aujourd’hui',
+    description: 'Le contenu tel que le back-office l’a publié, sans l’auteur de la modification.',
+  })
+  @ApiResponse({ status: 404, description: 'Clé de page inconnue.' })
+  page(@Param('cle') cle: string) {
+    return this.pages.lire(cle);
   }
 }

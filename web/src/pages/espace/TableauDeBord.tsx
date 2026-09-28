@@ -74,7 +74,7 @@ function Contenu() {
       <div className="e-kpis">
         <Kpi
           libelle="Vues ce mois"
-          valeur={formaterNombre(d.vues_30j)}
+          valeur={formaterNombre(d.vues_ce_mois)}
           icone="eye"
           teinte="#FDE8EA"
           couleurIcone="#E63946"

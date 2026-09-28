@@ -47,6 +47,8 @@ import { BasculeEnAvantDto } from '../avis/dto/bascule-en-avant.dto';
 import { FaqService } from '../contenu/faq.service';
 import { FaqItemDto } from '../contenu/dto/faq-item.dto';
 import { OrdreFaqDto } from '../contenu/dto/ordre-faq.dto';
+import { PageAProposDto } from '../contenu/dto/page-a-propos.dto';
+import { PagesCmsService } from '../contenu/pages-cms.service';
 import { CreerSponsoringDto } from '../sponsorings/dto/creer-sponsoring.dto';
 import { PhotosService } from '../photos/photos.service';
 import { LegendePhotoDto } from '../photos/dto/legende-photo.dto';
@@ -76,6 +78,7 @@ export class AdminController {
     private readonly parametresFacturation: ParametresFacturationService,
     private readonly sponsoringsService: SponsoringsService,
     private readonly faqService: FaqService,
+    private readonly pagesCms: PagesCmsService,
     private readonly articlesService: ArticlesService,
     private readonly moderationAvis: ModerationAvisService,
     private readonly photosService: PhotosService,
@@ -538,6 +541,21 @@ export class AdminController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     return this.faqService.supprimer(BigInt(id), utilisateur.userId);
+  }
+
+  @Put('pages/a-propos')
+  @ApiOperation({
+    summary: 'Publier la page « À propos » — action journalisée (RG15)',
+    description:
+      'La page entière : les blocs absents du corps disparaissent du site. ' +
+      'La trace d’audit garde le contenu d’avant et d’après.',
+  })
+  @ApiResponse({ status: 422, description: 'Bloc manquant, trop long ou champ inconnu.' })
+  modifierPageAPropos(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Body() dto: PageAProposDto,
+  ) {
+    return this.pagesCms.modifierAPropos(dto, utilisateur.userId);
   }
 
   @Get('propositions-fiche')

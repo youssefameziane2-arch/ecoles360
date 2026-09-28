@@ -63,7 +63,7 @@ export class EspaceController {
   /**
    * SANS `@PorteeEspace`, COMME `dashboard` : un secrétariat rattaché lit ces
    * chiffres quelle que soit sa délégation. Il les lit déjà — le tableau de
-   * bord rend `vues_30j` et `canaux` sans portée — et les lui retirer ici
+   * bord rend `vues_ce_mois` et `canaux` sans portée — et les lui retirer ici
    * créerait une règle que la RG05 ne pose pas : ses trois portées (`fiches`,
    * `contacts`, `avis`) bornent des écritures et des données personnelles,
    * pas l'audience agrégée de la fiche.

@@ -4,6 +4,7 @@ import { Page } from '../../common/interceptors';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AvisStatut, EvenementType } from '../../generated/prisma';
 import {
+  debutDeMois,
   regrouper,
   serieJournaliere,
   TYPES_VUE,
@@ -29,58 +30,69 @@ const MOIS_DE_STATISTIQUES = 6;
 export class EspaceService {
   constructor(private readonly db: PrismaService) {}
 
-  /** KPIs du mois — livrable 11 §3.2. */
+  /**
+   * KPIs du mois — livrable 11 §3.2.
+   *
+   * « VUES CE MOIS » A LA DÉFINITION DES STATISTIQUES (B-43) : mois
+   * calendaire, vues simples et sponsorisées. Le tableau de bord comptait
+   * trente jours glissants et les seules vues simples : l'établissement lisait
+   * sous le même libellé deux nombres différents, selon l'écran.
+   *
+   * `canaux` garde ses trente jours glissants : l'écran les annonce comme tels.
+   */
   async tableauDeBord(etablissementId: bigint) {
-    const depuis = new Date();
+    const maintenant = new Date();
+    const depuis = new Date(maintenant);
     depuis.setDate(depuis.getDate() - 30);
 
-    const [etablissement, vues30j, demandesRecentes, avisRecents, parType] = await Promise.all([
-      this.db.etablissement.findUniqueOrThrow({
-        where: { id: etablissementId },
-        select: { note_moy: true, nb_avis: true },
-      }),
-      this.db.evenementTrace.count({
-        where: {
-          etablissement_id: etablissementId,
-          type: EvenementType.vue,
-          survenu_le: { gte: depuis },
-        },
-      }),
-      this.db.demandeContact.findMany({
-        where: { etablissement_id: etablissementId },
-        orderBy: { recue_le: 'desc' },
-        take: 5,
-        select: {
-          id: true,
-          parent_nom: true,
-          message: true,
-          canal: true,
-          statut: true,
-          recue_le: true,
-        },
-      }),
-      this.db.avis.findMany({
-        where: { etablissement_id: etablissementId, statut: AvisStatut.publie },
-        orderBy: { depose_le: 'desc' },
-        take: 3,
-        select: { id: true, auteur_nom: true, note: true, commentaire: true, depose_le: true },
-      }),
-      this.db.evenementTrace.groupBy({
-        by: ['type'],
-        where: { etablissement_id: etablissementId, survenu_le: { gte: depuis } },
-        _count: { _all: true },
-      }),
-    ]);
-
-    // Séries mensuelles des vues, six derniers mois — alimente le graphique du
-    // tableau de bord (BarChart du design system).
-    const vuesParMois = await this.vuesParMois(etablissementId, 6);
+    const [etablissement, vuesCeMois, vuesParMois, demandesRecentes, avisRecents, parType] =
+      await Promise.all([
+        this.db.etablissement.findUniqueOrThrow({
+          where: { id: etablissementId },
+          select: { note_moy: true, nb_avis: true },
+        }),
+        this.db.evenementTrace.count({
+          where: {
+            etablissement_id: etablissementId,
+            type: { in: TYPES_VUE },
+            survenu_le: { gte: debutDeMois(maintenant) },
+          },
+        }),
+        this.vuesMensuelles(etablissementId, maintenant),
+        this.db.demandeContact.findMany({
+          where: { etablissement_id: etablissementId },
+          orderBy: { recue_le: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            parent_nom: true,
+            message: true,
+            canal: true,
+            statut: true,
+            recue_le: true,
+          },
+        }),
+        this.db.avis.findMany({
+          where: { etablissement_id: etablissementId, statut: AvisStatut.publie },
+          orderBy: { depose_le: 'desc' },
+          take: 3,
+          select: { id: true, auteur_nom: true, note: true, commentaire: true, depose_le: true },
+        }),
+        this.db.evenementTrace.groupBy({
+          by: ['type'],
+          where: { etablissement_id: etablissementId, survenu_le: { gte: depuis } },
+          _count: { _all: true },
+        }),
+      ]);
 
     return {
       note_moy: etablissement.note_moy.toString(),
       nb_avis: etablissement.nb_avis,
-      vues_30j: vues30j,
-      vues_par_mois: vuesParMois,
+      vues_ce_mois: vuesCeMois,
+      vues_par_mois: vuesParMois.map((point) => ({
+        mois: point.debut.slice(0, 7),
+        vues: point.vues,
+      })),
       canaux: parType.map((ligne) => ({ type: ligne.type, total: ligne._count._all })),
       dernieres_demandes: demandesRecentes,
       derniers_avis: avisRecents,
@@ -100,17 +112,14 @@ export class EspaceService {
    */
   async statistiques(etablissementId: bigint) {
     const maintenant = new Date();
-    const annee = maintenant.getUTCFullYear();
-    const mois = maintenant.getUTCMonth();
-
-    const debutMois = new Date(Date.UTC(annee, mois, 1));
-    const debutMoisPrecedent = new Date(Date.UTC(annee, mois - 1, 1));
-    const debutSerie = new Date(Date.UTC(annee, mois - (MOIS_DE_STATISTIQUES - 1), 1));
+    const debutMois = debutDeMois(maintenant);
+    const debutMoisPrecedent = debutDeMois(maintenant, 1);
+    const debutSerie = debutDeMois(maintenant, MOIS_DE_STATISTIQUES - 1);
 
     // Le 31 mars, « un mois plus tôt » déborderait sur le 3 mars : borné au
     // premier du mois, le mois précédent ne mord jamais sur le mois en cours.
     const memeJourPrecedent = new Date(maintenant);
-    memeJourPrecedent.setUTCMonth(mois - 1);
+    memeJourPrecedent.setUTCMonth(maintenant.getUTCMonth() - 1);
     const finPrecedent = memeJourPrecedent < debutMois ? memeJourPrecedent : debutMois;
 
     const compter = (types: EvenementType[], depuis: Date, jusqua?: Date) =>
@@ -130,7 +139,7 @@ export class EspaceService {
       whatsapp,
       whatsappPrecedent,
       totalVues,
-      vuesParJour,
+      vuesParMois,
       origines,
     ] = await Promise.all([
       compter(TYPES_VUE, debutMois),
@@ -141,14 +150,7 @@ export class EspaceService {
       compter([EvenementType.whatsapp], debutMoisPrecedent, finPrecedent),
       compter(TYPES_VUE, debutSerie),
 
-      this.db.$queryRaw<{ jour: Date; total: bigint }[]>`
-        SELECT DATE(survenu_le) AS jour, COUNT(*) AS total
-          FROM evenement_traces
-         WHERE etablissement_id = ${etablissementId}
-           AND \`type\` IN ('vue', 'vue_sponsorisee')
-           AND survenu_le >= ${debutSerie}
-         GROUP BY DATE(survenu_le)
-      `,
+      this.vuesMensuelles(etablissementId, maintenant),
 
       // Un contact, c'est un clic « Appeler » ou « WhatsApp ». La demande par
       // formulaire n'en est pas : elle ne porte pas de source, et la ranger
@@ -176,48 +178,34 @@ export class EspaceService {
         appels: { courant: appels, precedent: appelsPrecedent },
         whatsapp: { courant: whatsapp, precedent: whatsappPrecedent },
       },
-      vues_par_mois: regrouper(serieJournaliere(debutSerie, maintenant, vuesParJour), 'mois'),
+      vues_par_mois: vuesParMois,
       total_vues: totalVues,
       origine_contacts: origineContacts,
       total_contacts: origineContacts.reduce((total, ligne) => total + ligne.contacts, 0),
     };
   }
 
-  private async vuesParMois(etablissementId: bigint, nombreDeMois: number) {
-    const debut = new Date();
-    debut.setDate(1);
-    debut.setMonth(debut.getMonth() - (nombreDeMois - 1));
-    debut.setHours(0, 0, 0, 0);
+  /**
+   * Vues des six derniers mois, en UTC — une seule série pour le tableau de
+   * bord et les statistiques, qui montrent le même graphique : deux calculs
+   * finiraient par dessiner deux barres différentes pour le même mois.
+   *
+   * Comptée au jour en SQL puis regroupée : chaque jour tombe dans un seul
+   * mois, et la dernière barre est exactement la tuile « Vues ce mois ».
+   */
+  private async vuesMensuelles(etablissementId: bigint, maintenant: Date) {
+    const debutSerie = debutDeMois(maintenant, MOIS_DE_STATISTIQUES - 1);
 
-    const evenements = await this.db.evenementTrace.findMany({
-      where: {
-        etablissement_id: etablissementId,
-        type: { in: [EvenementType.vue, EvenementType.vue_sponsorisee] },
-        survenu_le: { gte: debut },
-      },
-      select: { survenu_le: true },
-    });
+    const vuesParJour = await this.db.$queryRaw<{ jour: Date; total: bigint }[]>`
+      SELECT DATE(survenu_le) AS jour, COUNT(*) AS total
+        FROM evenement_traces
+       WHERE etablissement_id = ${etablissementId}
+         AND \`type\` IN ('vue', 'vue_sponsorisee')
+         AND survenu_le >= ${debutSerie}
+       GROUP BY DATE(survenu_le)
+    `;
 
-    const compteurs = new Map<string, number>();
-    const mois: string[] = [];
-    const curseur = new Date(debut);
-
-    for (let i = 0; i < nombreDeMois; i++) {
-      const cle = `${curseur.getFullYear()}-${String(curseur.getMonth() + 1).padStart(2, '0')}`;
-      mois.push(cle);
-      compteurs.set(cle, 0);
-      curseur.setMonth(curseur.getMonth() + 1);
-    }
-
-    for (const evenement of evenements) {
-      const d = evenement.survenu_le;
-      const cle = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      if (compteurs.has(cle)) {
-        compteurs.set(cle, (compteurs.get(cle) ?? 0) + 1);
-      }
-    }
-
-    return mois.map((cle) => ({ mois: cle, vues: compteurs.get(cle) ?? 0 }));
+    return regrouper(serieJournaliere(debutSerie, maintenant, vuesParJour), 'mois');
   }
 
   /** Fiche complète (tous les champs, y compris privés) — c'est le propriétaire. */

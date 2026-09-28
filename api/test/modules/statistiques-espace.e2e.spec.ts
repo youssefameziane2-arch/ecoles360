@@ -123,15 +123,24 @@ describe('Statistiques de l’espace établissement (intégration)', () => {
 
   const somme = (valeurs: number[]) => valeurs.reduce((total, v) => total + v, 0);
 
-  /** Pose une trace datée de maintenant, et la retire en fin de test. */
+  /** Pose une trace — datée de maintenant par défaut — et la retire en fin de test. */
   async function avecTrace<T>(
     slug: string,
-    trace: { type: 'vue' | 'appel' | 'whatsapp'; source?: string },
+    trace: {
+      type: 'vue' | 'vue_sponsorisee' | 'appel' | 'whatsapp';
+      source?: string;
+      survenu_le?: Date;
+    },
     corps: () => Promise<T>,
   ): Promise<T> {
     const etablissement = await db.etablissement.findUniqueOrThrow({ where: { slug } });
     const posee = await db.evenementTrace.create({
-      data: { etablissement_id: etablissement.id, type: trace.type, source: trace.source ?? null },
+      data: {
+        etablissement_id: etablissement.id,
+        type: trace.type,
+        source: trace.source ?? null,
+        ...(trace.survenu_le ? { survenu_le: trace.survenu_le } : {}),
+      },
     });
 
     try {
@@ -273,6 +282,77 @@ describe('Statistiques de l’espace établissement (intégration)', () => {
         expect(stats.total_contacts).toBeGreaterThan(0);
         expect(somme(stats.origine_contacts.map((ligne) => ligne.contacts))).toBe(
           stats.total_contacts,
+        );
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  //  Tableau de bord — même définition que les statistiques (B-43)
+  // ---------------------------------------------------------------------------
+
+  describe('« Vues ce mois » du tableau de bord', () => {
+    interface TableauDeBord {
+      vues_ce_mois: number;
+      vues_par_mois: { mois: string; vues: number }[];
+    }
+
+    async function lireTableauDeBord(
+      compte: Awaited<ReturnType<typeof connecte>>,
+    ): Promise<TableauDeBord> {
+      const reponse = await compte.get('/mon-espace/dashboard').expect(200);
+
+      return reponse.body.data as TableauDeBord;
+    }
+
+    it('compte une vue sponsorisée', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const avant = await lireTableauDeBord(etablissement);
+
+      await avecTrace(SLUG, { type: 'vue_sponsorisee', source: 'resultats' }, async () => {
+        const apres = await lireTableauDeBord(etablissement);
+
+        expect(apres.vues_ce_mois).toBe(avant.vues_ce_mois + 1);
+      });
+    });
+
+    it('ne compte pas une vue du mois précédent, même de moins de trente jours', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const maintenant = new Date();
+      // Une minute avant le premier du mois, en UTC : toujours dans les trente
+      // derniers jours, jamais dans le mois — c'est précisément l'écart corrigé.
+      const veilleDuMois = new Date(
+        Date.UTC(maintenant.getUTCFullYear(), maintenant.getUTCMonth(), 1) - 60_000,
+      );
+      const avant = await lireTableauDeBord(etablissement);
+
+      await avecTrace(
+        SLUG,
+        { type: 'vue', source: 'fiche', survenu_le: veilleDuMois },
+        async () => {
+          const apres = await lireTableauDeBord(etablissement);
+
+          expect(apres.vues_ce_mois).toBe(avant.vues_ce_mois);
+        },
+      );
+    });
+
+    it('affiche le même nombre que les statistiques, et que sa dernière barre', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+
+      // Une vue au moins, pour que l'égalité ne tienne pas à vide.
+      await avecTrace(SLUG, { type: 'vue', source: 'fiche' }, async () => {
+        const [tableau, stats] = await Promise.all([
+          lireTableauDeBord(etablissement),
+          lire(etablissement),
+        ]);
+        const derniere = tableau.vues_par_mois[tableau.vues_par_mois.length - 1]!;
+
+        expect(tableau.vues_ce_mois).toBe(stats.indicateurs.vues.courant);
+        expect(derniere.mois).toBe(stats.mois_courant);
+        expect(derniere.vues).toBe(tableau.vues_ce_mois);
+        expect(tableau.vues_par_mois.map((point) => point.vues)).toEqual(
+          stats.vues_par_mois.map((point) => point.vues),
         );
       });
     });

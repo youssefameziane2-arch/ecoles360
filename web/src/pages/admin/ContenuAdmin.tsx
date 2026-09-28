@@ -11,8 +11,9 @@ import {
   type SaisieQuestionFaq,
 } from '@/api/faq';
 import { AvecIdentite, CoquilleEspace } from '@/components/CoquilleEspace';
-import { Badge, Button, Checkbox, Icon, Input, Textarea, Toast } from '@/ds/composants';
+import { Badge, Button, Checkbox, Icon, Input, Tabs, Textarea, Toast } from '@/ds/composants';
 import { useTitrePage } from '@/lib/titre';
+import { PageAProposAdmin } from './PageAProposAdmin';
 
 /** Rubriques de la maquette, proposées d'abord — la saisie libre reste possible. */
 const RUBRIQUES_MAQUETTE = ['Pour les parents', 'Pour les établissements'];
@@ -20,7 +21,12 @@ const RUBRIQUES_MAQUETTE = ['Pour les parents', 'Pour les établissements'];
 type Message = { tone: 'success' | 'error'; texte: string };
 
 /**
- * Contenu du site — FAQ publique (livrable 11 §3.7).
+ * Contenu du site — FAQ publique et page « À propos » (livrable 11 §3.7).
+ *
+ * DEUX ONGLETS, UN PAR CONTENU PUBLIÉ : chacun a sa propre publication et sa
+ * propre trace au journal ; les empiler sur une page obligerait à défiler
+ * toute la FAQ pour atteindre les coordonnées. Les catégories d'articles de la
+ * maquette attendent une migration, elles n'ont pas d'onglet.
  *
  * ÉCRAN DESSINÉ SANS RÉFÉRENCE : la maquette montre la FAQ côté visiteur, pas
  * son écran de gestion. Il reprend donc les conventions des autres écrans du
@@ -42,16 +48,32 @@ export function ContenuAdmin() {
         <CoquilleEspace
           identite={identite}
           titre="Contenu du site"
-          sousTitre="Questions fréquentes affichées sur l’accueil et sur /faq"
+          sousTitre="Questions fréquentes et page « À propos » du site public"
         >
-          <Contenu />
+          <Onglets />
         </CoquilleEspace>
       )}
     />
   );
 }
 
-function Contenu() {
+const ONGLETS = [
+  { key: 'faq', label: 'Questions fréquentes' },
+  { key: 'a-propos', label: 'Page « À propos »' },
+];
+
+function Onglets() {
+  const [onglet, setOnglet] = useState('faq');
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <Tabs tabs={ONGLETS} value={onglet} onChange={setOnglet} />
+      {onglet === 'faq' ? <Faq /> : <PageAProposAdmin />}
+    </div>
+  );
+}
+
+function Faq() {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<Message | null>(null);
   const [enEdition, setEnEdition] = useState<string | null>(null);
