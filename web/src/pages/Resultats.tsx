@@ -49,11 +49,15 @@ const CENTRE_MAROC: [number, number] = [31.7, -7.09];
  * navigateur. Les noms de paramètres sont ceux du contrat d'API — une
  * interface, pas un détail cosmétique.
  *
- * DEUX ÉCARTS ASSUMÉS avec la maquette, faute de support côté données : pas de
- * bascule « école sponsorisée » (RG19 les met déjà en tête, mais aucun
- * paramètre d'API ne filtre dessus) et pas de bouton « site web » sur les
- * cartes (le schéma ne porte pas cette donnée). Mieux vaut l'absence qu'un
- * bouton qui ne ferait rien.
+ * UN ÉCART ASSUMÉ avec la maquette : pas de bascule « école sponsorisée ».
+ * La RG19 les met déjà en tête, et aucun paramètre d'API ne filtre dessus —
+ * mieux vaut l'absence qu'un bouton qui ne ferait rien.
+ *
+ * (Ce commentaire en annonçait deux. Le second — « pas de bouton site web,
+ * le schéma ne porte pas cette donnée » — a cessé d'être vrai quand la
+ * migration `profil_langues_site_projet` a ajouté le champ, sans que
+ * personne ne revienne le corriger. Un commentaire périmé se lit comme une
+ * décision, et fait renoncer à ce qui est déjà possible.)
  */
 export function Resultats() {
   const [params, setParams] = useSearchParams();

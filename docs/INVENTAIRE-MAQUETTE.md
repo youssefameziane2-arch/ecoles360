@@ -27,7 +27,7 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 | Écran | Route | État |
 |---|---|---|
 | Accueil | `/` | ✅ |
-| Résultats de recherche | `/etablissements` | 🟡 filtres dynamiques et vue carte manquants |
+| Résultats de recherche | `/etablissements` | ✅ carte Leaflet comprise — reste la seule bascule « sponsorisé », qu'aucun paramètre d'API ne sait filtrer |
 | Fiche établissement | `/etablissements/:slug` | ✅ onglet Équipe compris — édité depuis l'espace, via la file de propositions (RG20) |
 | Page ville | `/villes/:slug` | ✅ quartiers populaires compris |
 | À propos | `/a-propos` | 🟡 servie par le CMS (`a-propos`), équipe et bloc contact compris — manquent la bande de chiffres (`trustStats`), l'image de l'histoire, la carte et les réseaux sociaux, qui n'ont aucune source |
@@ -127,7 +127,7 @@ route à ce rôle.
 
 | Périmètre | Fait | Reste |
 |---|---|---|
-| Site public | 10 écrans, 7 complets | 3 écrans à compléter |
+| Site public | 10 écrans, 8 complets | 2 écrans à compléter |
 | Administration | 6 | 6 + 3 partiels |
 | Établissement | 5 | 1 + 1 partiel |
 | Secrétariat | 5 | 0 |
