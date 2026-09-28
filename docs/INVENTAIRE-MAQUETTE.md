@@ -36,10 +36,21 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 | Article | `/blog/:slug` | ✅ |
 | Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité — demandent une route publique de tarifs |
 | Connexion | `/connexion` | ✅ écart assumé : formulaire unique au lieu des 2 étapes |
+| Mentions légales | — | ❌ **aucune route** — texte à fournir par le client |
+| Confidentialité | — | ❌ **aucune route** — exigée par la loi 09-08 (RG09) |
+| Cookies | — | ❌ **aucune route** — texte à fournir par le client |
 
-**Absents de la maquette elle-même** : l'écran de contact (`goContact` est
-appelé mais jamais dessiné) et les pages légales (mentions, confidentialité,
-cookies, CGU — liens présents, contenu absent). Le texte légal relève du client.
+**LES TROIS PAGES LÉGALES N'ONT NI ROUTE NI LIEN.** Le pied de page les omet
+volontairement plutôt que de mener au vide. Ce n'est pas un manque technique :
+leur texte **engage l'éditeur du site**, et la loi 09-08 les exige dès lors que
+le service collecte des coordonnées (RG09).
+
+Elles étaient jusqu'ici reléguées en note sous le tableau, donc invisibles au
+décompte — c'est le client qui a dû les rappeler. Elles y figurent désormais
+comme les autres écrans.
+
+**Absent de la maquette elle-même** : l'écran de contact (`goContact` est
+appelé mais jamais dessiné).
 
 ---
 
@@ -47,7 +58,7 @@ cookies, CGU — liens présents, contenu absent). Le texte légal relève du cl
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
-| Établissements | `isAdminEtab` | `/admin/etablissements` | ✅ création de fiche et galerie photo comprises |
+| Établissements | `isAdminEtab` | `/admin/etablissements` | 🟡 création et galerie ✅ — **aucune suppression ni archivage** : le statut `masquee` existe au schéma et reste inatteignable |
 | Page profil (relecture) | `isAdminPend` | `/admin/propositions` | ✅ |
 | Avis — modération | `isAdminAvisAll` | `/admin/avis` | ✅ |
 | Blog | `isBlogList` | `/admin/blog` | ✅ |
@@ -127,7 +138,7 @@ route à ce rôle.
 
 | Périmètre | Fait | Reste |
 |---|---|---|
-| Site public | 10 écrans, 8 complets | 2 écrans à compléter |
+| Site public | 13 écrans, 8 complets | 1 partiel + 3 pages légales, toutes suspendues à un texte du client |
 | Administration | 6 | 6 + 3 partiels |
 | Établissement | 5 | 1 + 1 partiel |
 | Secrétariat | 5 | 0 |
