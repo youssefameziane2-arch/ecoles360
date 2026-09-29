@@ -1,10 +1,15 @@
-# Contexte de build : la racine du dépôt (voir api/Dockerfile).
+# Contexte de build : la racine du dépôt (voir api/Dockerfile et web/Dockerfile).
 # Tout ce qui est exclu ici n'est jamais envoyé au démon Docker.
+#
+# `web` a longtemps figuré dans cette liste : seule l'image de l'API se
+# construisait, et l'y laisser n'aurait fait qu'alourdir son contexte. Depuis
+# que web/Dockerfile existe, l'exclusion l'empêchait de trouver ses propres
+# sources. Le coût de la garder pour l'API est de 7 Mo de contexte — sans
+# commune mesure avec celui d'un fichier d'exclusion par image.
 
 .git
 .github
 docs
-web
 
 **/node_modules
 **/dist

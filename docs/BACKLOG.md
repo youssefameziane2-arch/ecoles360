@@ -711,3 +711,30 @@ reposer au client le jour où ce lot sera pris.
 
 **Statut :** tranché sur le principe ; hors du périmètre du lancement vitrine,
 qui ne comprend que le site public et l'administration.
+
+## B-45 — Le site public n'a pas de rendu serveur, et c'est un annuaire
+
+**Source :** L14 §2.2 décrit une image web qui sert un rendu SSR (`node
+server.js`, sortie `dist/client` + `dist/server`, Vike). L12 parle de « SSR
+ciblé du site public ».
+
+**Constat :** `vite build` produit une application monopage — un `index.html`
+quasi vide et un paquet JavaScript. `web/Dockerfile` sert donc des fichiers
+statiques par nginx, et le dit.
+
+**Pourquoi ça compte ici plus qu'ailleurs.** Un annuaire vit de la recherche :
+« école privée Casablanca », « collège Rabat ». Un robot d'indexation qui
+reçoit une page vide n'a rien à indexer. Le défaut ne se voit ni au typage, ni
+au lint, ni aux tests, ni à l'écran — il se voit six mois plus tard, dans une
+absence de trafic que personne ne relie au mode de rendu.
+
+**Conséquence sur le calendrier :** ouvrir au public avant la migration, c'est
+perdre les mois de référencement qui comptent le plus. La migration Next.js
+étant déjà décidée (B-36), l'arbitrage n'est pas « si » mais « avant ou
+après l'ouverture ».
+
+**Quand il sera pris :** seul `web/Dockerfile` change. La topologie du
+livrable 14 est déjà respectée — un service `web` derrière le proxy —,
+précisément pour que ce jour-là rien d'autre ne bouge.
+
+**Statut :** à arbitrer — client (avant ou après l'ouverture au public).

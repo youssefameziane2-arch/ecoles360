@@ -1,0 +1,172 @@
+# =============================================================================
+#  écoles360 — production conteneurisée
+#  Livrable 14 §2.1 — VPS Hostinger KVM 2, Ubuntu 24 LTS
+# -----------------------------------------------------------------------------
+#      cd /srv/ecoles360
+#      ./infra/deploy.sh <sha>
+#
+#  CINQ SERVICES, PAS SEPT. Le livrable 14 §2 en décrit sept : `worker`
+#  (consommateurs BullMQ) et `scheduler` (tâches @Cron) partagent l'image de
+#  l'API et n'en diffèrent que par leur commande. NI BULLMQ NI
+#  @nestjs/schedule NE SONT INSTALLÉS : `dist/worker.js` et `dist/scheduler.js`
+#  n'existent pas, et deux conteneurs déclarés ici redémarreraient en boucle
+#  sans que rien ne le signale ailleurs que dans les journaux.
+#
+#  Ce que leur absence coûte, et qu'il faut savoir avant d'ouvrir au public :
+#  les purges de la loi 09-08 (anonymisation des demandes à 12 mois, purge du
+#  journal à 3 ans — livrable 10 §6.3) ne tournent pas, et la sauvegarde de 3 h
+#  n'est pas déclenchée par l'application. La sauvegarde est reprise ici par
+#  une tâche cron de l'hôte (infra/README-DEPLOIEMENT.md) ; les purges, non.
+#  Voir docs/BACKLOG.md, B-09.
+#
+#  LES IMAGES NE SE CONSTRUISENT PAS ICI. Elles viennent de ghcr.io, taguées
+#  par SHA de commit, et n'existent que si leurs tests sont passés (livrable 14
+#  §3). Le VPS ne compile jamais : aucune clé `build:` dans ce fichier, et
+#  jamais `:latest` — un tag mouvant ferait dériver la production en silence.
+# =============================================================================
+
+name: ecoles360
+
+x-api-base: &api-base
+  image: ghcr.io/${GH_ORG}/ecoles360-api:${TAG}
+  # chmod 600, propriétaire `deploy`, HORS DÉPÔT (livrable 14 §6).
+  env_file: [./.env.prod]
+  restart: unless-stopped
+  networks: [ecoles360_net]
+  volumes:
+    # Médias des fiches et des articles (RG16, RG27). Volume NOMMÉ : il
+    # survit à tout remplacement d'image, et c'est la raison pour laquelle la
+    # base ne garde que des chemins (livrable 10 §2.12).
+    - storage:/app/storage
+  depends_on:
+    mysql: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  # ---------------------------------------------------------------------------
+  #  API NestJS 10
+  # ---------------------------------------------------------------------------
+  api:
+    <<: *api-base
+    # `migrate deploy` applique les migrations en attente et rien d'autre :
+    # jamais `reset`, jamais `db:seed` en production (RG14, RG15). Une
+    # migration doit rester compatible avec la version précédente de
+    # l'application — le retour arrière remplace l'image, pas le schéma
+    # (livrable 14 §4.2).
+    command: ['sh', '-c', 'npx prisma migrate deploy && node dist/main.js']
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  #  Front — fichiers statiques servis par nginx (voir web/Dockerfile)
+  # ---------------------------------------------------------------------------
+  web:
+    image: ghcr.io/${GH_ORG}/ecoles360-web:${TAG}
+    restart: unless-stopped
+    networks: [ecoles360_net]
+    # Le front ne parle jamais à l'API depuis le serveur : c'est le navigateur
+    # qui appelle /api, sur la même origine, à travers le proxy. `web` n'a donc
+    # besoin ni de variables, ni d'attendre que l'API soit saine pour servir
+    # ses fichiers.
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1/sante']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  #  MySQL 8 — InnoDB, utf8mb4_unicode_ci (livrable 10 §2.0)
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ecoles360_prod}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_app
+      # PAR FICHIER, PAS PAR VARIABLE (livrable 14 §6) : une variable
+      # d'environnement se lit dans `docker inspect` et dans les journaux du
+      # démon, par quiconque est dans le groupe `docker`.
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root
+    secrets: [mysql_root, mysql_app]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      # JAMAIS AU-DELÀ DE LA BOUCLE LOCALE. Publié pour le dump de sauvegarde
+      # et les interventions en SSH, rien d'autre — le pare-feu n'ouvre de
+      # toute façon que 22, 80 et 443.
+      - '127.0.0.1:3306:3306'
+    restart: unless-stopped
+    networks: [ecoles360_net]
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  #  Redis 7 — sessions, cache, limitation de débit
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7
+    # `appendonly` : les sessions Passport vivent ici. Sans persistance, un
+    # redémarrage du conteneur déconnecterait tout le monde — administrateurs
+    # compris, au pire moment, c'est-à-dire pendant une intervention.
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis_data:/data
+    ports:
+      - '127.0.0.1:6379:6379'
+    restart: unless-stopped
+    networks: [ecoles360_net]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  #  Proxy frontal — TLS, le seul service publié
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      # certbot reste sur l'HÔTE, hors conteneur (livrable 14 §2) : le
+      # renouvellement ne doit pas dépendre d'un conteneur en bonne santé.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./infra/certbot/www:/var/www/certbot:ro
+      # Montés sur l'hôte pour rester lisibles par fail2ban et logrotate.
+      - ./infra/nginx/logs:/var/log/nginx
+    restart: unless-stopped
+    networks: [ecoles360_net]
+    depends_on: [api, web]
+
+volumes:
+  mysql_data:
+  redis_data:
+  storage:
+
+networks:
+  ecoles360_net:
+    driver: bridge
+
+secrets:
+  mysql_root: { file: ./secrets/mysql_root.txt }
+  mysql_app: { file: ./secrets/mysql_app.txt }

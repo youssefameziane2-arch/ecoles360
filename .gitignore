@@ -11,8 +11,15 @@ build/
 .env
 .env.*
 !.env.example
+# Gabarit du VPS : aucune valeur réelle, mais `.env.*` l'aurait ignoré et
+# personne ne se serait demandé où il était passé.
+!.env.prod.example
 .env.tag
 secrets/
+
+# — Production : ce que le serveur écrit, jamais le dépôt —
+infra/nginx/logs/
+infra/certbot/
 
 # — Prisma : client généré (regénéré par `prisma generate`, voir L10 §2.0) —
 api/src/generated/

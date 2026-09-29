@@ -175,3 +175,65 @@ jobs:
 
       - name: Build (tsc --noEmit puis vite build)
         run: pnpm --filter web build
+
+  # ---------------------------------------------------------------------------
+  #  Images — livrable 14 §3, job `images`
+  # ---------------------------------------------------------------------------
+  #
+  #  APRÈS LES TESTS, JAMAIS AVANT. `needs` fait que l'image n'existe que si
+  #  ses tests sont passés : le VPS ne télécharge donc jamais un artefact qui
+  #  n'a pas été éprouvé, et ne compile plus rien lui-même.
+  #
+  #  TAGUÉES PAR SHA, JAMAIS `latest`. Un tag mouvant ferait dériver la
+  #  production en silence, et rendrait le retour arrière impossible à
+  #  désigner — `deploy.sh <sha>` n'a de sens que si un SHA nomme toujours la
+  #  même image (livrable 14 §4.2 et §6).
+  #
+  #  Seulement sur `main` et sur les tags de version : une pull request est
+  #  éprouvée, pas publiée.
+  images:
+    name: Images — construction et publication sur ghcr.io
+    needs: [api, web]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # Jeton de l'exécution, à durée de vie limitée : aucun secret
+          # permanent de publication ne vit dans le dépôt (livrable 14 §3).
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Le contexte est la RACINE pour les deux images : en espace de travail
+      # pnpm, le fichier de verrouillage est unique et vit à la racine
+      # (docs/BACKLOG.md, B-04).
+      - name: Image API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: api/Dockerfile
+          target: runtime
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/ecoles360-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: web/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/ecoles360-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
