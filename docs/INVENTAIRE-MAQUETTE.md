@@ -84,7 +84,7 @@ appelé mais jamais dessiné).
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
-| Établissements | `isAdminEtab` | `/admin/etablissements` | 🟡 création et galerie ✅ — **aucune suppression ni archivage** : le statut `masquee` existe au schéma et reste inatteignable |
+| Établissements | `isAdminEtab` | `/admin/etablissements` | 🟡 création, galerie, essai gratuit (RG13), validation et **suspension** ✅ — une école qui se retire sort donc du site public. Reste 🟡 pour `masquee` : le statut existe au schéma, l'API l'accepte, aucun bouton ne le pose, et **ce qui le distingue de `suspendue` n'est défini nulle part** |
 | Page profil (relecture) | `isAdminPend` | `/admin/propositions` | ✅ |
 | Avis — modération | `isAdminAvisAll` | `/admin/avis` | ✅ |
 | Blog | `isBlogList` | `/admin/blog` | ✅ |
