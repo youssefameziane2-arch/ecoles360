@@ -41,6 +41,7 @@ import { ArticlesService } from '../articles/articles.service';
 import { DecisionArticleDto } from '../articles/dto/decision-article.dto';
 import { BasculeUneDto } from '../articles/dto/bascule-une.dto';
 import { RedigerArticleDto } from '../articles/dto/rediger-article.dto';
+import { RedigerArticleAdminDto } from '../articles/dto/rediger-article-admin.dto';
 import { ModerationAvisService } from '../avis/moderation.service';
 import { DecisionAvisDto } from '../avis/dto/decision-avis.dto';
 import { BasculeEnAvantDto } from '../avis/dto/bascule-en-avant.dto';
@@ -533,9 +534,13 @@ export class AdminController {
   })
   redigerArticle(
     @Utilisateur() utilisateur: UtilisateurAuthentifie,
-    @Body() dto: RedigerArticleDto,
+    @Body() dto: RedigerArticleAdminDto,
   ) {
-    return this.articlesService.creerPourPlateforme(dto, utilisateur.userId);
+    return this.articlesService.creerPourPlateforme(
+      dto,
+      utilisateur.userId,
+      dto.etablissement_id === undefined ? undefined : BigInt(dto.etablissement_id),
+    );
   }
 
   @Put('articles/:id')

@@ -7,11 +7,12 @@ import { RoleCode } from '../generated/prisma';
 
 interface Options {
   nom?: string;
+  role?: string;
+  telephone?: string;
 }
 
 /**
- * `compte:admin <email>` — crée le premier administrateur, ou réinitialise
- * son mot de passe.
+ * `compte:creer <email>` — crée un compte, ou réinitialise son mot de passe.
  *
  * ÉCRITE PARCE QUE LA PRODUCTION N'AVAIT AUCUN MOYEN DE SE CONNECTER. Sous
  * `NODE_ENV=production`, `db:seed` pose les référentiels et s'arrête là :
@@ -24,7 +25,9 @@ interface Options {
  * d'un compte existant, pour ne pas effacer celui qu'un développeur s'est
  * choisi. Cette commande est donc le seul chemin pour en changer.
  *
- *   node dist/cli.js compte:admin direction@ecoles360.com --nom="Direction"
+ *   node dist/cli.js compte:creer direction@ecoles360.com --nom="Direction"
+ *   node dist/cli.js compte:creer jalal@ecoles360.com --role=commercial \
+ *     --nom="Mr. Jalal ELAMRANI" --telephone="+212 661-072777"
  *
  * LE MOT DE PASSE NE SE DONNE PAS EN ARGUMENT : la ligne de commande se
  * retrouve dans l'historique du shell et dans `ps`, lisible par tout autre
@@ -33,9 +36,9 @@ interface Options {
  */
 @Injectable()
 @Command({
-  name: 'compte:admin',
+  name: 'compte:creer',
   arguments: '<email>',
-  description: 'Crée un compte Super Admin, ou réinitialise son mot de passe',
+  description: 'Crée un compte (tout rôle), ou réinitialise son mot de passe',
 })
 export class CompteAdminCommand extends CommandRunner {
   private readonly logger = new Logger('CompteAdmin');
@@ -44,8 +47,30 @@ export class CompteAdminCommand extends CommandRunner {
     super();
   }
 
-  @Option({ flags: '--nom <nom>', description: 'Nom affiché (création seulement)' })
+  @Option({ flags: '--nom <nom>', description: 'Nom affiché' })
   parseNom(valeur: string): string {
+    return valeur;
+  }
+
+  /**
+   * `commercial` sert la bannière d'aide du site public : elle n'affiche que
+   * les comptes commerciaux ACTIFS QUI ONT UN TÉLÉPHONE. Sans cette option, le
+   * seul moyen de poser le conseiller joignable en production aurait été
+   * d'écrire en base à la main.
+   */
+  @Option({
+    flags: '--role <role>',
+    description: 'superadmin (défaut), commercial, secretariat, etablissement',
+  })
+  parseRole(valeur: string): string {
+    return valeur;
+  }
+
+  @Option({
+    flags: '--telephone <telephone>',
+    description: 'Ligne affichée — obligatoire pour qu’un commercial apparaisse au site',
+  })
+  parseTelephone(valeur: string): string {
     return valeur;
   }
 
@@ -67,10 +92,18 @@ export class CompteAdminCommand extends CommandRunner {
     // jour d'une mise en service.
     const motDePasse = fourni || randomBytes(18).toString('base64url');
 
-    const role = await this.db.role.findUnique({ where: { code: RoleCode.superadmin } });
+    const codeRole = (options.role?.trim() || RoleCode.superadmin) as RoleCode;
+
+    if (!Object.values(RoleCode).includes(codeRole)) {
+      throw new Error(
+        `Rôle inconnu : « ${options.role} ». Attendus : ${Object.values(RoleCode).join(', ')}.`,
+      );
+    }
+
+    const role = await this.db.role.findUnique({ where: { code: codeRole } });
 
     if (!role) {
-      throw new Error('Le rôle superadmin n’existe pas : lancez d’abord « db:seed ».');
+      throw new Error(`Le rôle ${codeRole} n’existe pas : lancez d’abord « db:seed ».`);
     }
 
     const passwordHash = await hash(motDePasse, { algorithm: Algorithm.Argon2id });
@@ -83,10 +116,19 @@ export class CompteAdminCommand extends CommandRunner {
       // mot de passe tout neuf.
       await this.db.user.update({
         where: { id: existant.id },
-        data: { passwordHash, role_id: role.id, statut: 'actif' },
+        data: {
+          passwordHash,
+          role_id: role.id,
+          statut: 'actif',
+          // Le nom et le téléphone ne sont écrasés QUE s'ils sont fournis :
+          // réinitialiser un mot de passe ne doit pas effacer la ligne d'un
+          // conseiller au passage.
+          ...(options.nom?.trim() ? { name: options.nom.trim() } : {}),
+          ...(options.telephone?.trim() ? { telephone: options.telephone.trim() } : {}),
+        },
       });
 
-      this.logger.log(`Mot de passe réinitialisé pour ${adresse} (rôle superadmin, actif).`);
+      this.logger.log(`Compte mis à jour : ${adresse} (rôle ${codeRole}, actif).`);
     } else {
       await this.db.user.create({
         data: {
@@ -95,10 +137,11 @@ export class CompteAdminCommand extends CommandRunner {
           role_id: role.id,
           passwordHash,
           statut: 'actif',
+          telephone: options.telephone?.trim() || null,
         },
       });
 
-      this.logger.log(`Compte Super Admin créé : ${adresse}`);
+      this.logger.log(`Compte créé : ${adresse} (rôle ${codeRole})`);
     }
 
     if (fourni) {

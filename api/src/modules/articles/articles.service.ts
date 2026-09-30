@@ -321,7 +321,36 @@ export class ArticlesService {
    * `etablissement_id` reste nul : l'article appartient au site, pas à un
    * client, et ne porte donc aucune signature d'établissement.
    */
-  async creerPourPlateforme(dto: RedigerArticleDto, adminId: bigint) {
+  /**
+   * Publie un article — au nom de la plateforme, ou d'un établissement.
+   *
+   * `etablissementId` REMPLIT LE BLOC « BLOG » D'UNE FICHE. Sans lui, cette
+   * route ne savait écrire que des articles de plateforme
+   * (`etablissement_id` nul) : le blog d'une école ne pouvait être alimenté
+   * que depuis son propre espace, donc jamais tant qu'elle n'a pas de compte.
+   * La fiche affichait alors « n'a pas encore publié » et se rabattait sur les
+   * articles d'écoles360.
+   *
+   * APPROUVÉ D'EMBLÉE, comme un article de plateforme : l'administrateur est
+   * l'autorité éditoriale, et le circuit `brouillon → en_attente → approuve`
+   * existe pour ce qu'il n'a pas écrit lui-même.
+   */
+  async creerPourPlateforme(dto: RedigerArticleDto, adminId: bigint, etablissementId?: bigint) {
+    if (etablissementId !== undefined) {
+      const fiche = await this.db.etablissement.findUnique({
+        where: { id: etablissementId },
+        select: { id: true },
+      });
+
+      if (!fiche) {
+        throw new AppException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          ERROR_CODES.VALIDATION_ECHOUEE,
+          "Cet établissement n'existe pas.",
+        );
+      }
+    }
+
     return this.db.$transaction(async (tx) => {
       const article = await tx.article.create({
         data: {
@@ -329,6 +358,7 @@ export class ArticlesService {
           slug: await this.slugLibre(dto.titre),
           statut: ArticleStatut.approuve,
           auteur_id: adminId,
+          etablissement_id: etablissementId ?? null,
           validee_par: adminId,
           publie_le: new Date(),
         },
@@ -341,7 +371,10 @@ export class ArticlesService {
         action: 'article.publie',
         cibleType: 'article',
         cibleId: article.id,
-        details: { titre: article.titre },
+        details: {
+          titre: article.titre,
+          ...(etablissementId ? { etablissement_id: etablissementId.toString() } : {}),
+        },
       });
 
       return article;

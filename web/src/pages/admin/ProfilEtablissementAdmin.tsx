@@ -7,6 +7,7 @@ import {
   type ProfilEtablissement,
 } from '@/api/admin';
 import { Champ, ZoneTexte } from '@/components/Champs';
+import { ListeEditable } from '@/components/ListeEditable';
 import { Button, Tabs, Toast } from '@/ds/composants';
 
 const ONGLETS = [
@@ -122,6 +123,9 @@ function Formulaire({
   const set = (champ: keyof typeof brouillon) => (valeur: string) =>
     setBrouillon((actuel) => ({ ...actuel, [champ]: valeur }));
 
+  const setListe = (champ: keyof typeof brouillon, valeurs: Record<string, string>[]) =>
+    setBrouillon((actuel) => ({ ...actuel, [champ]: valeurs }));
+
   return (
     <form
       onSubmit={(evenement) => {
@@ -233,13 +237,20 @@ function Formulaire({
               onChange={set('site_web')}
               erreur={champErreur('site_web')}
             />
-            <ZoneTexte
-              label="Réseaux sociaux"
-              valeur={brouillon.socials}
-              onChange={set('socials')}
-              lignes={4}
-              aide="Une par ligne : plateforme | adresse. Exemple : facebook | https://facebook.com/…"
-              erreur={champErreur('socials')}
+            <ListeEditable
+              titre="Réseaux sociaux"
+              libelleAjout="+ Ajouter un réseau"
+              colonnes={[
+                { cle: 'cle', label: 'Plateforme', requise: true, aide: 'facebook' },
+                {
+                  cle: 'valeur',
+                  label: 'Adresse',
+                  requise: true,
+                  aide: 'https://facebook.com/…',
+                },
+              ]}
+              valeurs={brouillon.socials}
+              onChange={(valeurs) => setListe('socials', valeurs)}
             />
           </>
         )}
@@ -285,53 +296,72 @@ function Formulaire({
         )}
 
         {onglet === 'equipe' && (
-          <ZoneTexte
-            label="Membres de l’équipe"
-            valeur={brouillon.equipe}
-            onChange={set('equipe')}
-            lignes={9}
-            aide="Un par ligne : Nom | Rôle | adresse d’une photo (facultative). Une ligne sans rôle est ignorée."
-            erreur={champErreur('equipe')}
+          <ListeEditable
+            titre="Membres de l’équipe"
+            aide="L’onglet « Équipe » de la fiche n’apparaît que s’il y a au moins un membre."
+            libelleAjout="+ Ajouter un membre"
+            colonnes={[
+              { cle: 'nom', label: 'Nom', requise: true, aide: 'Nadia Bennis' },
+              { cle: 'role', label: 'Rôle', requise: true, aide: 'Directrice' },
+              { cle: 'photo', label: 'Photo (adresse, facultative)' },
+            ]}
+            valeurs={brouillon.equipe}
+            onChange={(valeurs) => setListe('equipe', valeurs)}
           />
         )}
 
         {onglet === 'faq' && (
-          <ZoneTexte
-            label="Questions fréquentes"
-            valeur={brouillon.faq}
-            onChange={set('faq')}
-            lignes={9}
-            aide="Une par ligne : Question | Réponse. Une ligne sans réponse est ignorée."
-            erreur={champErreur('faq')}
+          <ListeEditable
+            titre="Questions fréquentes"
+            aide="L’onglet « FAQ » de la fiche n’apparaît que s’il y a au moins une question."
+            libelleAjout="+ Ajouter une question"
+            colonnes={[
+              { cle: 'q', label: 'Question', requise: true, aide: 'Quels sont les horaires ?' },
+              { cle: 'r', label: 'Réponse', requise: true, lignes: 3 },
+            ]}
+            valeurs={brouillon.faq}
+            onChange={(valeurs) => setListe('faq', valeurs)}
           />
         )}
 
         {onglet === 'plus' && (
           <>
-            <ZoneTexte
-              label="Chiffres clés"
-              valeur={brouillon.chiffres}
-              onChange={set('chiffres')}
-              lignes={4}
-              aide="Un par ligne : Libellé | Valeur. Exemple : Élèves | 420"
-              erreur={champErreur('chiffres')}
+            <ListeEditable
+              titre="Chiffres clés"
+              aide="Affichés dans l’onglet « À propos » de la fiche."
+              libelleAjout="+ Ajouter un chiffre"
+              colonnes={[
+                { cle: 'label', label: 'Libellé', requise: true, aide: 'Élèves' },
+                { cle: 'valeur', label: 'Valeur', requise: true, aide: '420' },
+              ]}
+              valeurs={brouillon.chiffres}
+              onChange={(valeurs) => setListe('chiffres', valeurs)}
             />
-            <ZoneTexte
-              label="Horaires"
-              valeur={brouillon.horaires}
-              onChange={set('horaires')}
-              lignes={4}
-              aide="Un par ligne : Libellé | Plage. Exemple : lundi_vendredi | 08:00 – 17:00"
-              erreur={champErreur('horaires')}
+
+            <ListeEditable
+              titre="Horaires"
+              libelleAjout="+ Ajouter un horaire"
+              colonnes={[
+                { cle: 'cle', label: 'Libellé', requise: true, aide: 'Lundi au vendredi' },
+                { cle: 'valeur', label: 'Plage', requise: true, aide: '08:00 – 17:00' },
+              ]}
+              valeurs={brouillon.horaires}
+              onChange={(valeurs) => setListe('horaires', valeurs)}
             />
-            <ZoneTexte
-              label="Autres projets du propriétaire"
-              valeur={brouillon.autres_projets}
-              onChange={set('autres_projets')}
-              lignes={4}
-              aide="Un par ligne : Type | Nom | Ville | Description. Type et nom sont obligatoires."
-              erreur={champErreur('autres_projets')}
+
+            <ListeEditable
+              titre="Autres projets du propriétaire"
+              libelleAjout="+ Ajouter un projet"
+              colonnes={[
+                { cle: 'type', label: 'Type', requise: true, aide: 'Restaurant' },
+                { cle: 'nom', label: 'Nom', requise: true, aide: 'Le Riad Gourmand' },
+                { cle: 'ville', label: 'Ville', aide: 'Casablanca · Maârif' },
+                { cle: 'description', label: 'Description', lignes: 2 },
+              ]}
+              valeurs={brouillon.autres_projets}
+              onChange={(valeurs) => setListe('autres_projets', valeurs)}
             />
+
             <Champ
               label="Vidéo de présentation"
               valeur={brouillon.video_url}
@@ -384,7 +414,14 @@ function Encadre({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Les listes deviennent du texte — une entrée par ligne, champs séparés par « | ». */
+/**
+ * Le profil devient un brouillon éditable.
+ *
+ * LES LISTES SONT DES TABLEAUX DE CHAMPS, plus des lignes de texte séparées
+ * par « | ». Cette syntaxe-là a fait perdre des saisies en silence : une
+ * question tapée sans barre verticale était écartée, et l'écran annonçait
+ * « Enregistré ». Voir `ListeEditable`.
+ */
 function versBrouillon(p: ProfilEtablissement) {
   return {
     nom: p.nom ?? '',
@@ -401,32 +438,31 @@ function versBrouillon(p: ProfilEtablissement) {
     budget_max: p.budget_max?.toString() ?? '',
     gamme_label: p.gamme_label ?? '',
     video_url: p.video_url ?? '',
+    // Liste de valeurs simples : une par ligne reste le plus rapide à saisir,
+    // et rien ne peut y être perdu faute de séparateur.
     facilites: (p.facilites ?? []).join('\n'),
-    equipe: (p.equipe ?? [])
-      .map((m) => [m.nom, m.role, m.photo].filter(Boolean).join(' | '))
-      .join('\n'),
-    faq: (p.faq ?? []).map((item) => `${item.q} | ${item.r}`).join('\n'),
-    chiffres: (p.chiffres ?? []).map((c) => `${c.label} | ${c.valeur}`).join('\n'),
-    horaires: Object.entries(p.horaires ?? {})
-      .map(([cle, valeur]) => `${cle} | ${valeur}`)
-      .join('\n'),
-    socials: Object.entries(p.socials ?? {})
-      .map(([cle, valeur]) => `${cle} | ${valeur}`)
-      .join('\n'),
-    autres_projets: (p.autres_projets ?? [])
-      .map((projet) =>
-        [projet.type, projet.nom, projet.ville, projet.description].filter(Boolean).join(' | '),
-      )
-      .join('\n'),
+    equipe: (p.equipe ?? []).map((m) => ({ nom: m.nom, role: m.role, photo: m.photo ?? '' })),
+    faq: (p.faq ?? []).map((item) => ({ q: item.q, r: item.r })),
+    chiffres: (p.chiffres ?? []).map((c) => ({ label: c.label, valeur: c.valeur })),
+    horaires: Object.entries(p.horaires ?? {}).map(([cle, valeur]) => ({ cle, valeur })),
+    socials: Object.entries(p.socials ?? {}).map(([cle, valeur]) => ({ cle, valeur })),
+    autres_projets: (p.autres_projets ?? []).map((projet) => ({
+      type: projet.type,
+      nom: projet.nom,
+      ville: projet.ville ?? '',
+      description: projet.description ?? '',
+    })),
   };
 }
 
-/** Découpe « a | b | c » par ligne, en ignorant les lignes vides. */
-const lignes = (texte: string): string[][] =>
-  texte
-    .split('\n')
-    .map((ligne) => ligne.split('|').map((morceau) => morceau.trim()))
-    .filter((morceaux) => morceaux.some(Boolean));
+type Ligne = Record<string, string>;
+
+/** Garde les lignes dont tous les champs exigés sont remplis. */
+const completes = (lignes: Ligne[], requis: string[]): Ligne[] =>
+  lignes.filter((ligne) => requis.every((cle) => (ligne[cle] ?? '').trim() !== ''));
+
+/** `null` plutôt qu'un tableau vide : la rubrique disparaît alors de la fiche. */
+const ouRien = <T,>(items: T[]): T[] | null => (items.length === 0 ? null : items);
 
 /**
  * LE PROFIL ENTIER PART À CHAQUE ENREGISTREMENT, jamais un fragment.
@@ -435,25 +471,23 @@ const lignes = (texte: string): string[][] =>
  * vider : on croirait avoir retiré un équipement, et il resterait sur le
  * site. Un champ vidé est donc envoyé à `null`, et effacé pour de bon.
  *
- * UNE LIGNE INCOMPLÈTE EST ÉCARTÉE, PAS ENVOYÉE À MOITIÉ. Le DTO exige un nom
- * ET un rôle pour un membre d'équipe : laisser filer une ligne incomplète
- * ferait refuser l'enregistrement ENTIER en 422, et la saisie des autres
- * onglets serait perdue pour un « | » oublié.
+ * UNE LIGNE INCOMPLÈTE EST ÉCARTÉE — mais elle est désormais SIGNALÉE À
+ * L'ÉCRAN avant l'envoi (`ListeEditable`), et c'est toute la différence. Le
+ * DTO exige un nom ET un rôle pour un membre d'équipe : envoyer la moitié
+ * ferait refuser l'enregistrement entier en 422, et la saisie des autres
+ * onglets serait perdue. L'écarter en silence, comme on le faisait, perdait
+ * la saisie tout autant — sans même le dire.
  */
 function versCharge(b: ReturnType<typeof versBrouillon>): Record<string, unknown> {
   const texte = (valeur: string) => (valeur.trim() === '' ? null : valeur.trim());
   const nombre = (valeur: string) => (valeur.trim() === '' ? null : Number(valeur));
-  const objet = (valeur: string) => {
-    const entrees = lignes(valeur).filter(([cle, v]) => Boolean(cle) && Boolean(v));
 
-    return entrees.length === 0 ? null : Object.fromEntries(entrees.map(([c, v]) => [c!, v!]));
-  };
-  const liste = <T,>(valeur: string, vers: (morceaux: string[]) => T | null) => {
-    const items = lignes(valeur)
-      .map(vers)
-      .filter((item): item is T => item !== null);
+  const paires = (lignes: { cle: string; valeur: string }[]) => {
+    const gardees = completes(lignes as unknown as Ligne[], ['cle', 'valeur']);
 
-    return items.length === 0 ? null : items;
+    return gardees.length === 0
+      ? null
+      : Object.fromEntries(gardees.map((l) => [l.cle!.trim(), l.valeur!.trim()]));
   };
 
   return {
@@ -471,18 +505,46 @@ function versCharge(b: ReturnType<typeof versBrouillon>): Record<string, unknown
     budget_max: nombre(b.budget_max),
     gamme_label: texte(b.gamme_label),
     video_url: texte(b.video_url),
-    facilites: liste(b.facilites, ([valeur]) => valeur || null),
-    equipe: liste(b.equipe, ([nom, role, photo]) =>
-      nom && role ? { nom, role, ...(photo ? { photo } : {}) } : null,
+
+    facilites: ouRien(
+      b.facilites
+        .split('\n')
+        .map((ligne) => ligne.trim())
+        .filter(Boolean),
     ),
-    faq: liste(b.faq, ([q, r]) => (q && r ? { q, r } : null)),
-    chiffres: liste(b.chiffres, ([label, valeur]) => (label && valeur ? { label, valeur } : null)),
-    horaires: objet(b.horaires),
-    socials: objet(b.socials),
-    autres_projets: liste(b.autres_projets, ([type, nom, ville, description]) =>
-      type && nom
-        ? { type, nom, ...(ville ? { ville } : {}), ...(description ? { description } : {}) }
-        : null,
+
+    equipe: ouRien(
+      completes(b.equipe as unknown as Ligne[], ['nom', 'role']).map((m) => ({
+        nom: m.nom!.trim(),
+        role: m.role!.trim(),
+        ...(m.photo?.trim() ? { photo: m.photo.trim() } : {}),
+      })),
+    ),
+
+    faq: ouRien(
+      completes(b.faq as unknown as Ligne[], ['q', 'r']).map((item) => ({
+        q: item.q!.trim(),
+        r: item.r!.trim(),
+      })),
+    ),
+
+    chiffres: ouRien(
+      completes(b.chiffres as unknown as Ligne[], ['label', 'valeur']).map((c) => ({
+        label: c.label!.trim(),
+        valeur: c.valeur!.trim(),
+      })),
+    ),
+
+    horaires: paires(b.horaires),
+    socials: paires(b.socials),
+
+    autres_projets: ouRien(
+      completes(b.autres_projets as unknown as Ligne[], ['type', 'nom']).map((projet) => ({
+        type: projet.type!.trim(),
+        nom: projet.nom!.trim(),
+        ...(projet.ville?.trim() ? { ville: projet.ville.trim() } : {}),
+        ...(projet.description?.trim() ? { description: projet.description.trim() } : {}),
+      })),
     ),
   };
 }

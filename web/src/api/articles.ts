@@ -52,6 +52,15 @@ export interface SaisieArticle {
   categorie: string;
   chapeau?: string;
   contenu?: string;
+  /**
+   * Publier au nom d'un établissement — BACK-OFFICE SEULEMENT.
+   *
+   * L'API ne l'accepte que sur `/admin/articles` : sur la route de l'espace,
+   * l'établissement vient de la session et de nulle part ailleurs, faute de
+   * quoi une école publierait sur la fiche d'une autre. Absent, l'article est
+   * un article de la plateforme, signé écoles360.
+   */
+  etablissement_id?: number;
 }
 
 // --- Public ---------------------------------------------------------------

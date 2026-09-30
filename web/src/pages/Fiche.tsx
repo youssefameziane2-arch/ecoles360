@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { ApiError } from '@/api/client';
 import {
   LIBELLE_TYPE,
@@ -8,7 +8,6 @@ import {
   chargerEtablissement,
   chargerSimilaires,
   deposerAvis,
-  envoyerDemandeContact,
   signalerAvis,
   tracerEvenement,
   type AvisPublic,
@@ -36,15 +35,18 @@ const CADENCE_GALERIE_MS = 5000;
 /**
  * Fiche établissement — livrable 12 §5.
  *
- * LE FORMULAIRE DE CONTACT EST LE CŒUR DU PRODUIT : c'est lui qui transforme
- * un visiteur en lead pour l'établissement (RG09, RG21). Trois choses le
- * gouvernent — le bouton reste inactif sans consentement, une double
- * soumission est impossible, et les erreurs 422 sont re-projetées champ par
- * champ (livrable 13 §3).
+ * LE FORMULAIRE DE DEMANDE A ÉTÉ RETIRÉ à la demande du client. Un parent
+ * joint l'établissement par le téléphone et le bouton WhatsApp, directement.
+ *
+ * Ce que cela change, et qui n'est visible nulle part ailleurs : plus aucune
+ * demande de contact n'entre par le site. Les écrans « Demandes de contact »
+ * de l'espace établissement et les leads du CRM ne reçoivent plus rien de
+ * cette source. Le circuit existe toujours côté API — `POST
+ * /etablissements/:slug/demandes` et sa RG09 — il n'a simplement plus de
+ * porte d'entrée publique.
  */
 export function Fiche() {
   const { slug = '' } = useParams();
-  const queryClient = useQueryClient();
 
   const fiche = useQuery({
     queryKey: ['etablissement', slug],
@@ -293,12 +295,17 @@ export function Fiche() {
             </BlocLateral>
           )}
 
-          <div style={{ marginTop: 16 }}>
-            <FormulaireContact
-              slug={slug}
-              onEnvoye={() => void queryClient.invalidateQueries({ queryKey: ['etablissement', slug] })}
-            />
-          </div>
+          {/*
+            LE FORMULAIRE DE DEMANDE A ÉTÉ RETIRÉ à la demande du client.
+            Un parent joint désormais l'établissement par le téléphone et le
+            bouton WhatsApp affichés plus haut, directement.
+
+            CE QUE CELA CHANGE, et qu'il faut savoir : plus aucune demande de
+            contact n'entre par le site. Les écrans « Demandes de contact » de
+            l'espace établissement et les leads du CRM ne recevront plus rien
+            de cette source — le circuit existe toujours côté API, il n'a
+            simplement plus de porte d'entrée publique.
+          */}
         </aside>
       </div>
 
@@ -533,114 +540,6 @@ function CarteAvis({ avis }: { avis: AvisPublic }) {
         )}
       </div>
     </div>
-  );
-}
-
-/**
- * Formulaire de demande de contact — RG09.
- *
- * Le bouton reste INACTIF tant que le consentement n'est pas coché : la loi
- * 09-08 exige un accord explicite, et l'API refuse la demande sans lui. Mieux
- * vaut empêcher l'envoi que d'afficher un rejet après coup.
- */
-function FormulaireContact({ slug, onEnvoye }: { slug: string; onEnvoye: () => void }) {
-  const [nom, setNom] = useState('');
-  const [tel, setTel] = useState('');
-  const [message, setMessage] = useState('');
-  const [consentement, setConsentement] = useState(false);
-
-  const envoi = useMutation({
-    mutationFn: () =>
-      envoyerDemandeContact(slug, {
-        parent_nom: nom,
-        parent_tel: tel,
-        message: message || undefined,
-        canal: 'formulaire',
-        consentement,
-      }),
-    onSuccess: onEnvoye,
-  });
-
-  const erreur = envoi.error instanceof ApiError ? envoi.error : null;
-
-  if (envoi.isSuccess) {
-    return (
-      <div
-        style={{ background: '#E6F4EC', border: '1px solid #BCE3CC', borderRadius: 14, padding: 20 }}
-        role="status"
-      >
-        <p style={{ font: "700 15px/1.3 'Inter', sans-serif", color: '#1F7A44', margin: '0 0 6px' }}>
-          Demande envoyée
-        </p>
-        <p style={{ font: "400 13px/1.6 'Inter', sans-serif", color: '#2A313B', margin: 0 }}>
-          L&rsquo;établissement vous recontactera au numéro indiqué.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <form
-      onSubmit={(evenement) => {
-        evenement.preventDefault();
-        envoi.mutate();
-      }}
-      style={{ background: '#fff', border: '1px solid #ECEEF1', borderRadius: 14, padding: 20 }}
-    >
-      <p style={{ font: "700 17px/1.3 'Inter', sans-serif", color: '#1A1A1A', margin: '0 0 4px' }}>
-        Demander des informations
-      </p>
-      <p style={{ font: "400 13px/1.5 'Inter', sans-serif", color: '#5A6472', margin: '0 0 16px' }}>
-        Gratuit et sans engagement.
-      </p>
-
-      {erreur && erreur.champs.length === 0 && <AlerteErreur>{erreur.message}</AlerteErreur>}
-
-      <Champ
-        label="Votre nom"
-        valeur={nom}
-        onChange={setNom}
-        requis
-        autoComplete="name"
-        erreur={messageChamp(erreur, 'parent_nom')}
-      />
-      <Champ
-        label="Téléphone"
-        type="tel"
-        valeur={tel}
-        onChange={setTel}
-        requis
-        autoComplete="tel"
-        placeholder="06 12 34 56 78"
-        erreur={messageChamp(erreur, 'parent_tel')}
-      />
-      <ZoneTexte
-        label="Message (facultatif)"
-        valeur={message}
-        onChange={setMessage}
-        lignes={3}
-        erreur={messageChamp(erreur, 'message')}
-      />
-
-      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 16 }}>
-        <input
-          type="checkbox"
-          checked={consentement}
-          onChange={(evenement) => setConsentement(evenement.target.checked)}
-          style={{ marginTop: 3 }}
-        />
-        <span style={{ font: "400 12px/1.5 'Inter', sans-serif", color: '#5A6472' }}>
-          J&rsquo;accepte que mes coordonnées soient transmises à cet établissement afin qu&rsquo;il
-          me recontacte (loi 09-08).
-        </span>
-      </label>
-
-      {/* Inactif sans consentement, et pendant l'envoi : une double soumission
-          créerait deux demandes et deux leads pour le même parent. */}
-      <BoutonPrimaire pleineLargeur desactive={!consentement || envoi.isPending}>
-        {envoi.isPending ? 'Envoi…' : 'Envoyer ma demande'}
-      </BoutonPrimaire>
-    </form>
   );
 }
 

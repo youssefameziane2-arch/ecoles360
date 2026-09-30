@@ -65,7 +65,7 @@ Pour une présentation, taper un mot de passe visiblement factice devant
 l'assistance n'est pas idéal. Posez le vôtre :
 
 ```bash
-cd C:/ecoles360 && docker compose -f docker-compose.dev.yml exec -e COMPTE_MOT_DE_PASSE='VotreMotDePasse2026' api node dist/cli.js compte:admin direction@ecoles360.com
+cd C:/ecoles360 && docker compose -f docker-compose.dev.yml exec -e COMPTE_MOT_DE_PASSE='VotreMotDePasse2026' api node dist/cli.js compte:creer direction@ecoles360.com
 ```
 
 Douze caractères minimum. Le semis ne réécrit **jamais** un mot de passe
@@ -123,7 +123,7 @@ dans des volumes Docker qui survivent à l'arrêt.
 | `docker: command not found`, ou « cannot find the pipe » | Docker Desktop n'est pas lancé. Ouvrez-le, attendez « Engine running ». |
 | `localhost:5173` ne répond pas | Le terminal du site a été fermé. Relancez l'étape 2. |
 | Le site s'affiche mais tout est vide | L'API ne répond pas. Vérifiez l'étape 1 avec `curl`. |
-| « Identifiants incorrects » | Le mot de passe a été changé. Reposez-le avec `compte:admin` ci-dessus. |
+| « Identifiants incorrects » | Le mot de passe a été changé. Reposez-le avec `compte:creer` ci-dessus. |
 | Le site affiche une version périmée après un changement de branche | Arrêtez le site, `rm -rf web/node_modules/.vite`, relancez. |
 
 ---
@@ -134,3 +134,27 @@ Ce n'est pas une mise en production. Pas de sauvegarde, pas de certificat, pas
 de nom de domaine, rien n'est joignable de l'extérieur. Pour ouvrir le site au
 public, voir [`infra/README-DEPLOIEMENT.md`](../infra/README-DEPLOIEMENT.md) —
 qui s'adresse à la personne qui héberge, pas à vous.
+
+---
+
+## Poser le conseiller de la bannière d'aide
+
+La bannière « Besoin d'aide pour choisir ? » du site public affiche les
+comptes **commerciaux actifs qui ont un téléphone**. Un conseiller sans ligne
+n'y paraît pas — afficher un numéro qui ne répond pas est pire que ne rien
+afficher, parce que le visiteur croit avoir essayé.
+
+```bash
+cd C:/ecoles360 && docker compose -f docker-compose.dev.yml exec -e COMPTE_MOT_DE_PASSE='UnMotDePasseSolide' api node dist/cli.js compte:creer jalal.e@ecoles360.com --role=commercial --nom="Mr. Jalal ELAMRANI" --telephone="+212 661-072777"
+```
+
+**Les comptes commerciaux de démonstration ont une ligne eux aussi**, et
+apparaîtraient à côté du vôtre. Leur téléphone a été retiré de la base de
+développement ; un `db:seed` le remettrait. Pour les écarter à nouveau :
+
+```bash
+docker compose -f docker-compose.dev.yml exec mysql mysql -uecoles360 -pmotdepasse_dev ecoles360_dev -e "UPDATE users SET telephone=NULL WHERE email IN ('younes.c@ecoles360.com','karim.o@ecoles360.com');"
+```
+
+En production la question ne se pose pas : le semis de démonstration n'y
+tourne jamais, et seuls les comptes que vous créez existent.

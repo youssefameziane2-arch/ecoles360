@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError } from '@/api/client';
+import { chargerEtablissementsAdmin } from '@/api/admin';
 import {
   basculerBlogEspace,
   chargerArticlesAdmin,
@@ -102,6 +103,19 @@ function Contenu({ admin }: { admin: boolean }) {
     queryKey: ['admin', 'articles'],
     queryFn: () => chargerArticlesAdmin(),
     enabled: admin,
+  });
+
+  /**
+   * Les fiches au nom desquelles l'administrateur peut publier.
+   *
+   * TOUTES, PAS SEULEMENT LES VALIDÉES : on remplit le blog d'une école
+   * pendant qu'on prépare sa fiche, avant de la publier. L'article suivra.
+   */
+  const fiches = useQuery({
+    queryKey: ['admin', 'etablissements'],
+    queryFn: () => chargerEtablissementsAdmin({}),
+    enabled: admin,
+    select: (liste) => liste.map((e) => ({ id: e.id, nom: e.nom })),
   });
 
   const rafraichir = () => {
@@ -350,6 +364,7 @@ function Contenu({ admin }: { admin: boolean }) {
           enCours={redaction.isPending}
           onValider={(saisie) => redaction.mutate({ id: null, saisie })}
           onAnnuler={() => setRedactionOuverte(false)}
+          etablissements={admin ? fiches.data : undefined}
         />
       )}
 
@@ -701,17 +716,21 @@ function Formulaire({
   enCours,
   onValider,
   onAnnuler,
+  etablissements,
 }: {
   intitule: string;
   valeurs?: ArticleGestion;
   enCours: boolean;
   onValider: (saisie: SaisieArticle) => void;
   onAnnuler: () => void;
+  /** Back-office seulement : la liste des fiches au nom desquelles publier. */
+  etablissements?: { id: string; nom: string }[];
 }) {
   const [titre, setTitre] = useState(valeurs?.titre ?? '');
   const [categorie, setCategorie] = useState(valeurs?.categorie ?? CATEGORIES[0] ?? '');
   const [chapeau, setChapeau] = useState(valeurs?.chapeau ?? '');
   const [contenu, setContenu] = useState(valeurs?.contenu ?? '');
+  const [auteur, setAuteur] = useState('');
 
   const complet = titre.trim() !== '' && categorie.trim() !== '';
 
@@ -726,6 +745,7 @@ function Formulaire({
           categorie: categorie.trim(),
           chapeau: chapeau.trim() || undefined,
           contenu: contenu.trim() || undefined,
+          ...(auteur ? { etablissement_id: Number(auteur) } : {}),
         });
       }}
       className="e3-blog-editeur"
@@ -743,6 +763,52 @@ function Formulaire({
         }}
       >
         <div style={{ font: "700 16px/1.3 'Inter', sans-serif" }}>{intitule}</div>
+
+        {/*
+          AU NOM DE QUI — back-office seulement, et à la création seulement.
+          C'est ce qui remplit le bloc « Blog » d'une fiche tant que l'école
+          n'a pas de compte : sans lui, la fiche affiche « n'a pas encore
+          publié » et se rabat sur les articles d'écoles360.
+
+          Absent à la modification : changer l'auteur d'un article déjà publié
+          le ferait disparaître d'une fiche pour apparaître sur une autre, sans
+          que personne ne s'en aperçoive.
+        */}
+        {etablissements && !valeurs && (
+          <label style={{ display: 'block' }}>
+            <span
+              style={{
+                display: 'block',
+                font: "600 12px/1.4 'Inter', sans-serif",
+                color: '#5A6472',
+                marginBottom: 5,
+              }}
+            >
+              Publier au nom de
+            </span>
+            <select
+              value={auteur}
+              onChange={(evenement) => setAuteur(evenement.target.value)}
+              style={{
+                width: '100%',
+                height: 40,
+                padding: '0 11px',
+                font: "400 14px/1.5 'Inter', sans-serif",
+                color: '#1A1A1A',
+                background: '#fff',
+                border: '1px solid #D9DEE5',
+                borderRadius: 9,
+              }}
+            >
+              <option value="">écoles360 — article de la plateforme</option>
+              {etablissements.map((etablissement) => (
+                <option key={etablissement.id} value={etablissement.id}>
+                  {etablissement.nom}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <Input
           label="Titre de l’article"

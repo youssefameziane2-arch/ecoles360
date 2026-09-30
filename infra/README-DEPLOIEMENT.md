@@ -148,7 +148,7 @@ s'affiche, et il n'existe au monde aucun identifiant pour y entrer :
 
 ```bash
 docker compose -f docker-compose.prod.yml exec api \
-  node dist/cli.js compte:admin direction@ecoles360.com --nom="Direction écoles360"
+  node dist/cli.js compte:creer direction@ecoles360.com --nom="Direction écoles360"
 ```
 
 La commande **affiche un mot de passe tiré au sort, une seule fois** — il
@@ -161,7 +161,7 @@ par tout autre compte de la machine.
 
 ```bash
 docker compose -f docker-compose.prod.yml exec \
-  -e COMPTE_MOT_DE_PASSE='…' api node dist/cli.js compte:admin direction@ecoles360.com
+  -e COMPTE_MOT_DE_PASSE='…' api node dist/cli.js compte:creer direction@ecoles360.com
 ```
 
 La même commande sur un compte existant **réinitialise son mot de passe** et
