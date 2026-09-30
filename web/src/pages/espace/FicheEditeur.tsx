@@ -43,7 +43,6 @@ const LIBELLE_CHAMP: Record<string, string> = {
   equipe: 'Équipe',
   video_url: 'Vidéo',
   gamme_label: 'Gamme tarifaire',
-  devis_label: 'Mention devis',
 };
 
 /**

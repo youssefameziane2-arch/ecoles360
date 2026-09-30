@@ -50,6 +50,7 @@ import { OrdreFaqDto } from '../contenu/dto/ordre-faq.dto';
 import { PageAProposDto } from '../contenu/dto/page-a-propos.dto';
 import { CLES_LEGALES, PagesCmsService, type CleLegale } from '../contenu/pages-cms.service';
 import { PageLegaleDto } from '../contenu/dto/page-legale.dto';
+import { ProposerFicheDto } from '../espace/dto/proposer-fiche.dto';
 import { CreerSponsoringDto } from '../sponsorings/dto/creer-sponsoring.dto';
 import { PhotosService } from '../photos/photos.service';
 import { LegendePhotoDto } from '../photos/dto/legende-photo.dto';
@@ -246,6 +247,39 @@ export class AdminController {
       userId: utilisateur.userId,
       role: RoleCode.superadmin,
     });
+  }
+
+  @Get('etablissements/:id/profil')
+  @ApiOperation({ summary: 'Profil complet d’une fiche, pour l’écran d’édition' })
+  profilEtablissement(@Param('id', ParseIntPipe) id: number) {
+    return this.etablissements.profil(BigInt(id));
+  }
+
+  /**
+   * MÊME DTO QUE LA PROPOSITION DE L'ÉTABLISSEMENT, écriture directe.
+   *
+   * La RG20 borne l'établissement — il propose, l'administration publie. Elle
+   * ne dit pas que l'administration doive se proposer des modifications à
+   * elle-même : elle EST l'autorité de validation, et c'est déjà ainsi
+   * qu'elle crée une fiche.
+   */
+  @Put('etablissements/:id/profil')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Écrire le profil complet d’une fiche — action journalisée (RG15)',
+    description:
+      'Équipements, équipe, horaires, chiffres, FAQ, projet pédagogique, autres projets, ' +
+      'réseaux sociaux et vidéo — les blocs que le formulaire de création ne couvre pas, et ' +
+      'dont dépend l’affichage des onglets de la fiche publique.',
+  })
+  @ApiResponse({ status: 204, description: 'Profil écrit.' })
+  @ApiResponse({ status: 422, description: 'Champ inconnu, trop long ou mal formé.' })
+  ecrireProfilEtablissement(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ProposerFicheDto,
+  ) {
+    return this.etablissements.ecrireProfil(BigInt(id), dto, utilisateur.userId);
   }
 
   @Delete('etablissements/:id')

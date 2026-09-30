@@ -24,6 +24,7 @@ import { formaterDate } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
 import { GaleriePhotos } from '@/components/GaleriePhotos';
 import { FormulaireEtablissement } from './FormulaireEtablissement';
+import { ProfilEtablissementAdmin } from './ProfilEtablissementAdmin';
 
 
 const STATUTS: StatutEtablissement[] = ['en_attente', 'validee', 'suspendue', 'masquee'];
@@ -78,6 +79,10 @@ function Contenu() {
    * dans la liste.
    */
   const [galerie, setGalerie] = useState<{ id: string; nom: string } | null>(null);
+
+  // Un seul profil ouvert a la fois : deux formulaires longs cote a cote ne
+  // se comparent pas, ils se confondent.
+  const [profil, setProfil] = useState<string | null>(null);
 
   const etablissements = useQuery({
     queryKey: ['admin', 'etablissements', statut, type],
@@ -186,20 +191,32 @@ function Contenu() {
       )}
 
       {etablissements.data?.map((etablissement) => (
-        <LigneEtablissement
-          key={etablissement.id}
-          etablissement={etablissement}
-          enCours={action.isPending}
-          galerieOuverte={galerie?.id === etablissement.id}
-          onAction={(operation) => action.mutate(operation)}
-          onGalerie={() =>
-            setGalerie(
-              galerie?.id === etablissement.id
-                ? null
-                : { id: etablissement.id, nom: etablissement.nom },
-            )
-          }
-        />
+        <div key={etablissement.id} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <LigneEtablissement
+            etablissement={etablissement}
+            enCours={action.isPending}
+            galerieOuverte={galerie?.id === etablissement.id}
+            profilOuvert={profil === etablissement.id}
+            onAction={(operation) => action.mutate(operation)}
+            onProfil={() => setProfil(profil === etablissement.id ? null : etablissement.id)}
+            onGalerie={() =>
+              setGalerie(
+                galerie?.id === etablissement.id
+                  ? null
+                  : { id: etablissement.id, nom: etablissement.nom },
+              )
+            }
+          />
+
+          {/*
+            Le profil s'ouvre SOUS la ligne, comme la galerie : après avoir
+            rempli les équipements, la première chose qu'on veut voir, c'est le
+            bouton « Valider » de la même ligne.
+          */}
+          {profil === etablissement.id && (
+            <ProfilEtablissementAdmin id={etablissement.id} onFerme={() => setProfil(null)} />
+          )}
+        </div>
       ))}
 
       <p style={{ ...texteDoux, fontSize: 12.5 }}>
@@ -214,14 +231,18 @@ function LigneEtablissement({
   etablissement,
   enCours,
   galerieOuverte,
+  profilOuvert,
   onAction,
   onGalerie,
+  onProfil,
 }: {
   etablissement: EtablissementAdmin;
   enCours: boolean;
   galerieOuverte: boolean;
+  profilOuvert: boolean;
   onAction: (operation: () => Promise<unknown>) => void;
   onGalerie: () => void;
+  onProfil: () => void;
 }) {
   const abonnement = etablissement.abonnements[0];
 
@@ -270,6 +291,22 @@ function LigneEtablissement({
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {/*
+          PREMIER DE LA RANGÉE, AVANT LES PHOTOS. C'est ici que se remplissent
+          les équipements, l'équipe, la FAQ, les tarifs et les horaires — les
+          onglets de la fiche publique, qui ne s'affichent que si leur donnée
+          existe. Sans cet écran, une fiche créée depuis l'administration
+          restait réduite à son état civil.
+        */}
+        <Button
+          variant={profilOuvert ? 'navy' : 'outline'}
+          size="sm"
+          onClick={onProfil}
+          aria-expanded={profilOuvert}
+        >
+          Profil
+        </Button>
+
         <Button
           variant={galerieOuverte ? 'navy' : 'outline'}
           size="sm"

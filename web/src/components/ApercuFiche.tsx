@@ -220,9 +220,13 @@ export function ApercuFiche({ fiche }: { fiche: FicheEspace }) {
                 ) : (
                   <Paragraphe valeur={null} vide="Aucun budget renseigné" />
                 )}
-                {fiche.devis_label && (
-                  <p style={{ margin: '10px 0 0', fontSize: 13.5, color: '#9AA3AF' }}>{fiche.devis_label}</p>
-                )}
+                {/*
+                  La mention « devis » a été retirée à la demande du client.
+                  La colonne `devis_label` reste au schéma et dans le contrat
+                  d'API : la supprimer demanderait une migration, et rien
+                  n'oblige à effacer une donnée qu'on cesse simplement
+                  d'afficher. Plus rien ne l'écrit ni ne la lit côté site.
+                */}
               </div>
             )}
 

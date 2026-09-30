@@ -338,3 +338,52 @@ export const basculerStatutCompte = (id: string, suspendu: boolean) =>
  */
 export const supprimerEtablissement = (id: string) =>
   apiFetch<void>(`/admin/etablissements/${id}`, { method: 'DELETE' });
+
+// -----------------------------------------------------------------------------
+//  Profil complet d'une fiche — les blocs que la création ne couvre pas
+// -----------------------------------------------------------------------------
+
+export interface ProfilEtablissement {
+  id: string;
+  nom: string;
+  slug: string;
+  statut: StatutEtablissement;
+  description: string | null;
+  projet_pedagogique: string | null;
+  adresse: string | null;
+  quartier: string | null;
+  tel: string | null;
+  whatsapp: string | null;
+  email: string | null;
+  site_web: string | null;
+  langues: string | null;
+  budget_min: number | null;
+  budget_max: number | null;
+  gamme_label: string | null;
+  video_url: string | null;
+  facilites: string[] | null;
+  equipe: { nom: string; role: string; photo?: string }[] | null;
+  faq: { q: string; r: string }[] | null;
+  chiffres: { label: string; valeur: string }[] | null;
+  horaires: Record<string, string> | null;
+  socials: Record<string, string> | null;
+  autres_projets: { type: string; nom: string; ville?: string; description?: string }[] | null;
+  ville: { id: string; nom: string; slug: string };
+  photos: { id: string; chemin: string; alt: string | null; ordre: number }[];
+}
+
+export const chargerProfilEtablissement = (id: string) =>
+  apiFetch<ProfilEtablissement>(`/admin/etablissements/${id}/profil`);
+
+/**
+ * Écrit le profil, SANS PASSER PAR UNE PROPOSITION.
+ *
+ * La RG20 borne l'établissement — il propose, l'administration publie. Elle
+ * ne dit pas que l'administration doive se proposer des modifications à
+ * elle-même : elle est l'autorité de validation.
+ */
+export const ecrireProfilEtablissement = (id: string, profil: Record<string, unknown>) =>
+  apiFetch<void>(`/admin/etablissements/${id}/profil`, {
+    method: 'PUT',
+    body: JSON.stringify(profil),
+  });

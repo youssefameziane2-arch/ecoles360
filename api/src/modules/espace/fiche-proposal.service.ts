@@ -5,8 +5,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PropositionStatut, RoleCode, type Prisma } from '../../generated/prisma';
 import type { ProposerFicheDto } from './dto/proposer-fiche.dto';
 
-/** Champs de la fiche qu'une proposition peut porter — miroir de `ProposerFicheDto`. */
-const CHAMPS_PROPOSABLES = [
+/**
+ * Champs de la fiche qu'une proposition peut porter — miroir de
+ * `ProposerFicheDto`.
+ *
+ * EXPORTÉE, ET CE N'EST PAS UNE COMMODITÉ. Le back-office écrit le même
+ * profil directement (`AdminEtablissementsService.ecrireProfil`) : deux
+ * whitelists finiraient par diverger, et c'est celle qu'on oublierait de
+ * mettre à jour qui laisserait passer un attribut de plateforme (RG27).
+ */
+export const CHAMPS_PROPOSABLES = [
   'nom',
   'description',
   'adresse',

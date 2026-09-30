@@ -4,6 +4,8 @@ import { AuditService } from '../../common/audit/audit.service';
 import { slugLibre, versSlug } from '../../common/texte/slug';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StockageService } from '../../common/stockage/stockage.service';
+import { CHAMPS_PROPOSABLES as CHAMPS_PROFIL } from '../espace/fiche-proposal.service';
+import type { ProposerFicheDto } from '../espace/dto/proposer-fiche.dto';
 import {
   AbonnementFormule,
   AbonnementStatut,
@@ -297,6 +299,95 @@ export class AdminEtablissementsService {
     });
 
     return Boolean(facturePayee);
+  }
+
+  /** Le profil complet d'une fiche, tel que l'écran d'édition en a besoin. */
+  async profil(etablissementId: bigint) {
+    const fiche = await this.db.etablissement.findUnique({
+      where: { id: etablissementId },
+      include: {
+        ville: { select: { id: true, nom: true, slug: true } },
+        photos: {
+          select: { id: true, chemin: true, alt: true, ordre: true },
+          orderBy: { ordre: 'asc' },
+        },
+        niveaux: { select: { niveau: { select: { id: true, libelle: true, categorie: true } } } },
+      },
+    });
+
+    if (!fiche) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ERROR_CODES.RESSOURCE_INTROUVABLE,
+        "Cet établissement n'existe pas.",
+      );
+    }
+
+    return fiche;
+  }
+
+  /**
+   * Écrit le profil complet d'une fiche — blocs de l'avenant 3 compris.
+   *
+   * POURQUOI L'ADMINISTRATEUR ÉCRIT DIRECTEMENT, LÀ OÙ L'ÉTABLISSEMENT
+   * PROPOSE. La RG20 borne l'ÉTABLISSEMENT : il propose, l'administration
+   * publie. Elle ne dit pas que l'administration doive se proposer des
+   * modifications à elle-même puis les approuver — elle EST l'autorité de
+   * validation, et c'est déjà ainsi qu'elle crée une fiche.
+   *
+   * CE QUI REND CETTE ROUTE NÉCESSAIRE : le formulaire de création ne couvre
+   * que l'état civil de l'école. Équipements, équipe, horaires, chiffres,
+   * FAQ, projet pédagogique, autres projets, réseaux sociaux et vidéo
+   * n'étaient renseignables que depuis l'espace de l'établissement — donc
+   * jamais, tant qu'une école n'a pas de compte. Les onglets correspondants
+   * de la fiche publique ne s'affichent que si leur donnée existe : ils
+   * restaient invisibles, et rien ne disait pourquoi.
+   *
+   * LA MÊME LISTE DE CHAMPS QUE LA PROPOSITION, et le même DTO : deux
+   * whitelists finiraient par diverger, et c'est celle qu'on oublierait de
+   * mettre à jour qui laisserait passer un attribut de plateforme (RG27).
+   */
+  async ecrireProfil(
+    etablissementId: bigint,
+    dto: ProposerFicheDto,
+    adminId: bigint,
+  ): Promise<void> {
+    const avant = await this.db.etablissement.findUnique({
+      where: { id: etablissementId },
+      select: { id: true, nom: true, slug: true },
+    });
+
+    if (!avant) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ERROR_CODES.RESSOURCE_INTROUVABLE,
+        "Cet établissement n'existe pas.",
+      );
+    }
+
+    // Recopie champ à champ depuis la whitelist, plutôt que d'appliquer le
+    // DTO tel quel : `forbidNonWhitelisted` refuse déjà l'inconnu, mais cette
+    // liste est ce qui garantit qu'aucun attribut de plateforme — `verifie`,
+    // `premium`, `sponsorise`, `note_moy` — ne puisse jamais passer par ici.
+    const donnees: Record<string, unknown> = {};
+    for (const champ of CHAMPS_PROFIL) {
+      if (champ in dto) {
+        donnees[champ] = (dto as unknown as Record<string, unknown>)[champ] ?? null;
+      }
+    }
+
+    await this.db.$transaction(async (tx) => {
+      await tx.etablissement.update({ where: { id: etablissementId }, data: donnees });
+
+      await this.audit.journaliser(tx, {
+        userId: adminId,
+        roleActeur: RoleCode.superadmin,
+        action: 'etablissement.profil.modifie',
+        cibleType: 'etablissement',
+        cibleId: etablissementId,
+        details: { nom: avant.nom, champs: Object.keys(donnees) },
+      });
+    });
   }
 
   /**

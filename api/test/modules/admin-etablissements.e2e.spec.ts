@@ -710,6 +710,100 @@ describe('Back-office admin — fiches et galerie (intégration)', () => {
   });
 
   // ---------------------------------------------------------------------------
+  //  Profil complet écrit depuis le back-office
+  // ---------------------------------------------------------------------------
+
+  /**
+   * CETTE ROUTE ÉCRIT DIRECTEMENT, sans passer par une proposition : la RG20
+   * borne l'établissement, pas l'administration. Ce qui doit être éprouvé,
+   * c'est donc que la porte ouverte reste étroite — les attributs de
+   * plateforme (RG27) ne passent pas, et la fiche paraît bien sur le site.
+   */
+  describe('profil complet', () => {
+    it('écrit les blocs que la création ne couvre pas, et le site les rend', async () => {
+      const { admin, fiche } = await ficheJetable('École Profil Complet');
+
+      await admin
+        .put(`/admin/etablissements/${fiche.id}/profil`)
+        .send({
+          nom: 'École Profil Complet',
+          facilites: ['Bibliothèque', 'Cantine'],
+          equipe: [{ nom: 'Nadia Bennis', role: 'Directrice' }],
+          faq: [{ q: 'Horaires ?', r: 'De 8h à 17h.' }],
+          chiffres: [{ label: 'Élèves', valeur: '420' }],
+          horaires: { lundi_vendredi: '08:00 – 17:00' },
+          budget_min: 18000,
+          budget_max: 32000,
+        })
+        .expect(204);
+
+      const enBase = await db.etablissement.findUniqueOrThrow({
+        where: { id: BigInt(fiche.id) },
+      });
+
+      expect(enBase.facilites).toEqual(['Bibliothèque', 'Cantine']);
+      expect(enBase.equipe).toEqual([{ nom: 'Nadia Bennis', role: 'Directrice' }]);
+      expect(enBase.chiffres).toEqual([{ label: 'Élèves', valeur: '420' }]);
+
+      // LE POINT DE TOUT L'EXERCICE : ces blocs commandent l'affichage des
+      // onglets de la fiche publique. Écrits mais absents de la réponse
+      // publique, ils ne serviraient à rien.
+      await admin.post(`/admin/etablissements/${fiche.id}/essai-gratuit`).expect(204);
+      await admin
+        .patch(`/admin/etablissements/${fiche.id}/statut`)
+        .send({ statut: 'validee' })
+        .expect(204);
+
+      const publique = await request(app.getHttpServer())
+        .get(`/api/v1/etablissements/${fiche.slug}`)
+        .expect(200);
+
+      expect(publique.body.data.facilites).toEqual(['Bibliothèque', 'Cantine']);
+      expect(publique.body.data.faq).toHaveLength(1);
+    });
+
+    /**
+     * RG27 — `verifie`, `premium` et `sponsorise` sont des attributs de
+     * plateforme. Ils ne doivent pas pouvoir entrer par cette route, qui est
+     * la plus large du back-office.
+     */
+    it('refuse un attribut de plateforme (RG27)', async () => {
+      const { admin, fiche } = await ficheJetable('École Attribut Plateforme');
+
+      const reponse = await admin
+        .put(`/admin/etablissements/${fiche.id}/profil`)
+        .send({ nom: 'École Attribut Plateforme', verifie: true, sponsorise: true })
+        .expect(422);
+
+      expect(reponse.body.code).toBe(ERROR_CODES.VALIDATION_ECHOUEE);
+
+      const intacte = await db.etablissement.findUniqueOrThrow({
+        where: { id: BigInt(fiche.id) },
+      });
+
+      expect(intacte.verifie).toBe(false);
+      expect(intacte.sponsorise).toBe(false);
+    });
+
+    it('refuse un compte non administrateur (RG25)', async () => {
+      const ecole = await connecte('contact@almassira.ma');
+      const cible = await db.etablissement.findUniqueOrThrow({ where: { slug: SLUG } });
+
+      await ecole
+        .put(`/admin/etablissements/${cible.id}/profil`)
+        .send({ nom: 'Détournement' })
+        .expect(403);
+    });
+
+    it('répond 404 sur une fiche inexistante', async () => {
+      const admin = await connecte(ADMIN);
+
+      await admin.get('/admin/etablissements/999999/profil').expect(404);
+      await admin.put('/admin/etablissements/999999/profil').send({ nom: 'Fantôme' }).expect(404);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   //  Suppression d'une fiche créée par erreur
   // ---------------------------------------------------------------------------
 
