@@ -46,6 +46,17 @@ WORKDIR /app/web
 # et le rejouer ici ne ferait qu'allonger la chaîne sans rien prouver de neuf.
 RUN pnpm exec vite build
 
+# LES MAQUETTES NE PARTENT PAS EN PRODUCTION. `web/public/_maquette/` porte
+# les deux livrables de conception déballés — 2 Mo utiles pour les ouvrir dans
+# un navigateur pendant le développement. Tout ce qui est dans `public/` est
+# recopié tel quel dans `dist/` : sans cette ligne, le travail de conception du
+# client serait téléchargeable sur ecoles360.com/_maquette/espace.html.
+#
+# Retirées ICI plutôt que du dépôt, pour qu'elles restent à portée en
+# développement. Un `Disallow` dans robots.txt n'y suffirait pas : il demande
+# aux robots de ne pas indexer, il n'empêche personne d'ouvrir l'URL.
+RUN rm -rf dist/_maquette
+
 
 # -----------------------------------------------------------------------------
 FROM nginx:1.27-alpine AS runtime

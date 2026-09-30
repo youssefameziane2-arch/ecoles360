@@ -91,7 +91,11 @@ async function bootstrap(): Promise<void> {
   // Aucune origine n'est autorisée tant qu'aucune n'est nécessaire.
   app.enableCors({ origin: false });
 
-  app.setGlobalPrefix(PREFIXE_API);
+  // `sitemap.xml` est EXCLU du préfixe : les robots le cherchent à la racine
+  // du domaine et nulle part ailleurs. Sous `api/v1`, le fichier existerait
+  // sans que personne ne le lise — une panne qui ne se voit dans aucun
+  // journal (livrable 12, référencement).
+  app.setGlobalPrefix(PREFIXE_API, { exclude: ['sitemap.xml'] });
 
   /**
    * ValidationPipe global — lot 1 §2, livrable 11 §5.

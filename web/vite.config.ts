@@ -31,6 +31,14 @@ export default defineConfig({
         target: process.env.API_URL ?? 'http://127.0.0.1:3000',
         changeOrigin: false,
       },
+      // Le plan de site est produit par l'API, à la RACINE du domaine — les
+      // robots ne le cherchent pas ailleurs. Ce renvoi reproduit en
+      // développement la règle nginx de production, faute de quoi
+      // `/sitemap.xml` tomberait sur le repli monopage et rendrait du HTML.
+      '/sitemap.xml': {
+        target: process.env.API_URL ?? 'http://127.0.0.1:3000',
+        changeOrigin: false,
+      },
     },
   },
   build: {

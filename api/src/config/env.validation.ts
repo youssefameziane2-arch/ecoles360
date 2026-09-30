@@ -48,6 +48,18 @@ export class EnvironmentVariables {
   @IsOptional()
   APP_VERSION = '0.0.0';
 
+  /**
+   * Origine publique du site — sert les URL absolues du plan de site.
+   *
+   * UN PLAN DE SITE NE TOLÈRE QUE DES URL ABSOLUES : un chemin relatif y est
+   * ignoré par les moteurs, et une origine fausse leur ferait indexer un
+   * domaine qui n'est pas le nôtre. La valeur par défaut vaut pour le poste ;
+   * en production, `.env.prod` la porte.
+   */
+  @IsString()
+  @IsOptional()
+  APP_URL = 'http://localhost:5173';
+
   @IsString({ message: 'DATABASE_URL doit être une chaîne de connexion Prisma.' })
   @IsNotEmpty({ message: 'DATABASE_URL est obligatoire (connexion MySQL 8).' })
   DATABASE_URL!: string;

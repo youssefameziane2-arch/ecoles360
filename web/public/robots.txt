@@ -1,0 +1,21 @@
+# écoles360 — annuaire des établissements scolaires privés au Maroc
+#
+# LE SITE PUBLIC EST FAIT POUR ÊTRE INDEXÉ : tout son trafic vient de
+# recherches du type « école privée Casablanca ». Rien ne l'en empêche ici.
+#
+# Les espaces connectés, eux, n'ont rien à y faire. Ils répondent de toute
+# façon 401 à un visiteur anonyme — ces lignes évitent surtout au robot de
+# dépenser son budget d'exploration sur des pages qu'il ne verra jamais.
+
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /espace
+Disallow: /connexion
+
+# Le plan de site est produit par l'API : il énumère les fiches VALIDÉES
+# (RG03), les villes qui en portent, les articles publiés et les pages
+# légales. Il se régénère à chaque appel — une école ajoutée depuis le
+# back-office y entre sans autre intervention.
+Sitemap: https://ecoles360.com/sitemap.xml
