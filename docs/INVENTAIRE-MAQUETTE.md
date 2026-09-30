@@ -19,6 +19,32 @@ Légende : ✅ fait · 🟡 partiel · ❌ à faire · ⛔ hors périmètre (dé
 
 ---
 
+## Périmètre de la mise en ligne — décision client du 30 septembre 2026
+
+Le site ouvre en **vitrine** : **site public + l'administration qui l'alimente**,
+rien d'autre. Les autres rôles se construisent ensuite et se greffent sur un
+site déjà en service.
+
+**Gratuit à l'ouverture.** Aucun paiement, et **pas de facturation non plus
+pour le moment** — la facturation se fera sur le site, plus tard, jamais le
+paiement. Rien n'est à construire pour cela : la RG13 prévoit déjà l'essai
+gratuit, qui lève la condition d'abonnement de la RG14. Le chemin complet
+existe et il est éprouvé : créer la fiche → activer l'essai gratuit → valider →
+elle est publique.
+
+**Catalogue rempli à la main** après mise en ligne, depuis l'écran
+« Établissements ». L'import open data du MEN (B-18) reste en attente d'un
+fichier, et n'est pas sur le chemin de l'ouverture.
+
+| Dans le périmètre | Hors périmètre, jusqu'à nouvel ordre |
+|---|---|
+| Les 13 écrans du site public | CRM Clients · Commerciaux |
+| Établissements · Propositions · Avis · Blog · Article · Contenu du site · Journal d'audit · Sponsoring | Abonnement & facturation · Facture (détail) |
+| Tableau de bord · Statistiques (partiels, lisibles) | Secrétariat (B-44) · Base de données |
+| | Les 6 écrans de l'espace commercial |
+
+---
+
 ## Site public — 13 écrans attendus, 8 complets
 
 **Un écran présent n'est pas un écran fait.** Le détail bloc par bloc est en fin
