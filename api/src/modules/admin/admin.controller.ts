@@ -248,6 +248,24 @@ export class AdminController {
     });
   }
 
+  @Delete('etablissements/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Supprimer une fiche créée par erreur',
+    description:
+      'Refusée en 409 dès que la fiche a été publiée, ou porte un avis, une demande ou un ' +
+      'abonnement : la cascade emporterait des factures que la loi impose de garder (RG14). ' +
+      'Pour retirer une école du site sans rien perdre, utiliser « Suspendre ».',
+  })
+  @ApiResponse({ status: 204, description: 'Fiche supprimée — nom et slug restent au journal.' })
+  @ApiResponse({ status: 409, description: 'La fiche porte un historique.' })
+  supprimerEtablissement(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.etablissements.supprimer(BigInt(id), utilisateur.userId);
+  }
+
   @Delete('etablissements/:id/photos/:photoId')
   @ApiOperation({
     summary: 'Retirer une photo',

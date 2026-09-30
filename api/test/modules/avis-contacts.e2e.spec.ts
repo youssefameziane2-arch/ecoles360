@@ -55,7 +55,23 @@ describe('Site public — avis et contacts (intégration)', () => {
     await referentiels.niveauxFilieres();
 
     const demo = moduleRef.get(DemoSeeder);
-    await demo.donnees(await demo.comptes());
+    const comptes = await demo.comptes();
+    await demo.donnees(comptes);
+
+    /**
+     * LES AVIS EN AVANT NE SORTENT QUE D'UNE FICHE VALIDÉE (RG03), et la base
+     * n'est pas remise à zéro entre les exécutions : la suite du back-office
+     * change les statuts de cette même fiche. Selon l'ordre dans lequel Jest
+     * ordonne les suites — il varie avec leurs durées — celle-ci trouvait la
+     * fiche suspendue et « en avant » rendait une liste vide.
+     *
+     * Fabriquer soi-même la donnée dont on dépend, plutôt que d'espérer
+     * l'ordre : c'est la règle du projet, et elle a été apprise ici.
+     */
+    await db.etablissement.updateMany({
+      where: { slug: 'lycee-al-massira-casablanca' },
+      data: { statut: 'validee' },
+    });
   });
 
   // Les plafonds sont serrés (5 dépôts par heure) : sans ce nettoyage, les

@@ -708,6 +708,86 @@ describe('Back-office admin — fiches et galerie (intégration)', () => {
       await commercial.get('/mon-espace/fiche/photos').expect(403);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  //  Suppression d'une fiche créée par erreur
+  // ---------------------------------------------------------------------------
+
+  /**
+   * LA GARDE EST TOUT L'INTÉRÊT DE CETTE ROUTE. Les relations de
+   * `Etablissement` sont en `onDelete: Cascade` : sans elle, supprimer une
+   * fiche emporterait ses avis, ses demandes et SES FACTURES — que la loi
+   * impose de conserver dix ans (RG14). Rien, côté base, ne signalerait la
+   * perte.
+   */
+  describe('suppression', () => {
+    it('supprime une fiche jamais publiée, et garde son nom au journal (RG15)', async () => {
+      const admin = await connecte(ADMIN);
+
+      const creee = await admin
+        .post('/admin/etablissements')
+        .send({
+          nom: 'École créée par erreur',
+          ville_id: await casablanca(),
+          type: 'primaire',
+        })
+        .expect(201);
+
+      const id = creee.body.data.id as string;
+
+      await admin.delete(`/admin/etablissements/${id}`).expect(204);
+
+      expect(await db.etablissement.findUnique({ where: { id: BigInt(id) } })).toBeNull();
+
+      const trace = await db.journalAudit.findFirstOrThrow({
+        where: { action: 'etablissement.supprime', cible_id: BigInt(id) },
+      });
+
+      // Le nom survit à la fiche : après coup, il n'y aurait plus rien à nommer.
+      expect((trace.details as { nom: string }).nom).toBe('École créée par erreur');
+    });
+
+    it('refuse une fiche qui a été publiée, sans rien effacer', async () => {
+      const admin = await connecte(ADMIN);
+      const fiche = await db.etablissement.findUniqueOrThrow({ where: { slug: SLUG } });
+
+      const reponse = await admin.delete(`/admin/etablissements/${fiche.id}`).expect(409);
+
+      expect(reponse.body.code).toBe(ERROR_CODES.CONFLIT_METIER);
+      expect(reponse.body.message).toContain('Suspendre');
+
+      // LA FICHE ET SON HISTORIQUE SONT INTACTS — c'est l'assertion qui
+      // compte : un refus qui aurait quand même supprimé serait pire que pas
+      // de garde du tout.
+      expect(await db.etablissement.findUnique({ where: { id: fiche.id } })).not.toBeNull();
+      expect(await db.avis.count({ where: { etablissement_id: fiche.id } })).toBeGreaterThan(0);
+    });
+
+    it('refuse une fiche en attente qui porte déjà un abonnement', async () => {
+      const admin = await connecte(ADMIN);
+
+      const creee = await admin
+        .post('/admin/etablissements')
+        .send({ nom: 'École avec essai', ville_id: await casablanca(), type: 'college' })
+        .expect(201);
+
+      const id = creee.body.data.id as string;
+      await admin.post(`/admin/etablissements/${id}/essai-gratuit`).expect(204);
+
+      await admin.delete(`/admin/etablissements/${id}`).expect(409);
+
+      // Nettoyage : la base n'est pas remise à zéro entre les exécutions.
+      await db.abonnement.deleteMany({ where: { etablissement_id: BigInt(id) } });
+      await db.etablissement.delete({ where: { id: BigInt(id) } });
+    });
+
+    it('refuse un compte non administrateur (RG25)', async () => {
+      const ecole = await connecte('contact@almassira.ma');
+      const fiche = await db.etablissement.findUniqueOrThrow({ where: { slug: SLUG } });
+
+      await ecole.delete(`/admin/etablissements/${fiche.id}`).expect(403);
+    });
+  });
 });
 
 /**

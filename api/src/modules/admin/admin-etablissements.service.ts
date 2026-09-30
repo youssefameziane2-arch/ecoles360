@@ -3,6 +3,7 @@ import { AppException, ERROR_CODES } from '../../common/errors';
 import { AuditService } from '../../common/audit/audit.service';
 import { slugLibre, versSlug } from '../../common/texte/slug';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StockageService } from '../../common/stockage/stockage.service';
 import {
   AbonnementFormule,
   AbonnementStatut,
@@ -36,6 +37,7 @@ export class AdminEtablissementsService {
     private readonly db: PrismaService,
     private readonly audit: AuditService,
     private readonly parametres: ParametresFacturationService,
+    private readonly stockage: StockageService,
   ) {}
 
   async lister(filtres: { statut?: EtablissementStatut; type?: EtablissementType }) {
@@ -295,6 +297,84 @@ export class AdminEtablissementsService {
     });
 
     return Boolean(facturePayee);
+  }
+
+  /**
+   * Supprime une fiche CRÉÉE PAR ERREUR — et elle seule.
+   *
+   * POURQUOI CE N'EST PAS UNE SUPPRESSION GÉNÉRALE. Toutes les relations de
+   * `Etablissement` sont en `onDelete: Cascade` : effacer la fiche effacerait
+   * ses avis, ses demandes de contact, ses abonnements et SES FACTURES — que
+   * la loi impose de conserver dix ans (RG14). Un bouton « Supprimer » sans
+   * garde détruirait donc des pièces comptables, sans rien pour le signaler.
+   *
+   * La garde délimite le seul cas sans perte : une fiche JAMAIS VALIDÉE, sans
+   * avis, sans demande et sans abonnement. C'est la faute de frappe du jour
+   * même, pas l'école qui s'en va.
+   *
+   * CE QU'IL FAUT FAIRE D'UNE ÉCOLE QUI SE RETIRE N'EST PAS TRANCHÉ. En
+   * attendant, « Suspendre » la sort du site public (RG03) en gardant tout son
+   * historique — ce qui est de toute façon le comportement souhaitable.
+   */
+  async supprimer(etablissementId: bigint, adminId: bigint): Promise<void> {
+    const fiche = await this.db.etablissement.findUnique({
+      where: { id: etablissementId },
+      select: {
+        id: true,
+        nom: true,
+        slug: true,
+        statut: true,
+        valide_le: true,
+        photos: { select: { chemin: true } },
+        _count: { select: { avis: true, demandes: true, abonnements: true } },
+      },
+    });
+
+    if (!fiche) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ERROR_CODES.RESSOURCE_INTROUVABLE,
+        "Cet établissement n'existe pas.",
+      );
+    }
+
+    // `valide_le` plutôt que le seul statut : une fiche validée puis suspendue
+    // a été publique, et a pu recevoir des avis depuis effacés. Le statut
+    // courant ne dit rien de son passé.
+    const dejaPubliee = fiche.valide_le !== null || fiche.statut === EtablissementStatut.validee;
+    const { avis, demandes, abonnements } = fiche._count;
+
+    if (dejaPubliee || avis > 0 || demandes > 0 || abonnements > 0) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ERROR_CODES.CONFLIT_METIER,
+        'Cette fiche ne peut plus être supprimée : elle a été publiée, ou porte des avis, ' +
+          'des demandes ou un abonnement. Utilisez « Suspendre » pour la retirer du site ' +
+          'tout en conservant son historique.',
+      );
+    }
+
+    await this.db.$transaction(async (tx) => {
+      // JOURNALISÉ AVANT L'EFFACEMENT (RG15) : après, il ne resterait plus
+      // rien à nommer. Le nom et le slug survivent donc à la fiche.
+      await this.audit.journaliser(tx, {
+        userId: adminId,
+        roleActeur: RoleCode.superadmin,
+        action: 'etablissement.supprime',
+        cibleType: 'etablissement',
+        cibleId: etablissementId,
+        details: { nom: fiche.nom, slug: fiche.slug, photos: fiche.photos.length },
+      });
+
+      await tx.etablissement.delete({ where: { id: etablissementId } });
+    });
+
+    // Hors transaction : le disque ne sait pas revenir en arrière. Les lignes
+    // `photo` sont parties en cascade ; sans ceci leurs fichiers resteraient
+    // sur le volume sans que rien ne les référence plus.
+    for (const photo of fiche.photos) {
+      await this.stockage.effacer(photo.chemin);
+    }
   }
 
   /** Active un essai gratuit — RG13 : sans tarif, débloque la validation sans facture. */

@@ -328,3 +328,13 @@ export const basculerStatutCompte = (id: string, suspendu: boolean) =>
     method: 'PATCH',
     body: JSON.stringify({ suspendu }),
   });
+
+/**
+ * Supprime une fiche créée par erreur.
+ *
+ * Refusée en 409 dès qu'elle porte un historique — la cascade emporterait
+ * des factures que la loi impose de garder (RG14). Pour retirer une école du
+ * site sans rien perdre, c'est « Suspendre ».
+ */
+export const supprimerEtablissement = (id: string) =>
+  apiFetch<void>(`/admin/etablissements/${id}`, { method: 'DELETE' });

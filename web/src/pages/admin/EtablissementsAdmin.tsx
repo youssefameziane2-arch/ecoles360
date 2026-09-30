@@ -6,6 +6,7 @@ import {
   ajouterPhotos,
   basculerBadges,
   changerStatutEtablissement,
+  supprimerEtablissement,
   chargerEtablissementsAdmin,
   chargerPhotosAdmin,
   legenderPhoto,
@@ -308,6 +309,28 @@ function LigneEtablissement({
             onClick={() => onAction(() => changerStatutEtablissement(etablissement.id, 'suspendue'))}
           >
             Suspendre
+          </Button>
+        )}
+
+        {/*
+          SUPPRIMER N'EST PROPOSÉ QUE SUR UNE FICHE JAMAIS PUBLIÉE — la faute
+          de frappe du jour même. Dès qu'elle a été validée, ou qu'elle porte
+          un avis, une demande ou un abonnement, l'API refuse en 409 : la
+          cascade emporterait des factures que la loi impose de garder (RG14).
+          Masquer le bouton dans ce cas évite de proposer une action qui ne
+          peut qu'échouer.
+        */}
+        {etablissement.statut === 'en_attente' && !abonnement && (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={enCours}
+            onClick={() => {
+              if (!window.confirm(`Supprimer définitivement « ${etablissement.nom} » ?`)) return;
+              onAction(() => supprimerEtablissement(etablissement.id));
+            }}
+          >
+            Supprimer
           </Button>
         )}
 

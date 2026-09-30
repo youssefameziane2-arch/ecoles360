@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CompteAdminCommand } from './compte-admin.command';
 import { SeedCommand } from './seed.command';
 import { DemoSeeder } from './seeders/demo.seeder';
 import { ReferentielsSeeder } from './seeders/referentiels.seeder';
@@ -12,7 +13,7 @@ import { ReferentielsSeeder } from './seeders/referentiels.seeder';
  * points d'entrée différents (livrable 14 §2).
  */
 @Module({
-  providers: [ReferentielsSeeder, DemoSeeder, SeedCommand],
+  providers: [ReferentielsSeeder, DemoSeeder, SeedCommand, CompteAdminCommand],
   exports: [ReferentielsSeeder, DemoSeeder],
 })
 export class DatabaseModule {}

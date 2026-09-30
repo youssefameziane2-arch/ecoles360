@@ -141,6 +141,33 @@ poser à côté de vraies fiches clientes serait une faille.
 dans la sortie.** Si elle manque, `.env.prod` ne porte pas `NODE_ENV` — et il
 faut vider la base avant d'aller plus loin.
 
+### Créer le premier administrateur — sans quoi personne ne peut entrer
+
+La base porte maintenant les référentiels et **zéro compte**. Le back-office
+s'affiche, et il n'existe au monde aucun identifiant pour y entrer :
+
+```bash
+docker compose -f docker-compose.prod.yml exec api \
+  node dist/cli.js compte:admin direction@ecoles360.com --nom="Direction écoles360"
+```
+
+La commande **affiche un mot de passe tiré au sort, une seule fois** — il
+n'est stocké nulle part en clair, la base n'en garde qu'un hachage Argon2id.
+Notez-le avant de fermer le terminal.
+
+Pour en choisir un, le passer par l'environnement plutôt qu'en argument : la
+ligne de commande se retrouve dans l'historique du shell et dans `ps`, lisible
+par tout autre compte de la machine.
+
+```bash
+docker compose -f docker-compose.prod.yml exec \
+  -e COMPTE_MOT_DE_PASSE='…' api node dist/cli.js compte:admin direction@ecoles360.com
+```
+
+La même commande sur un compte existant **réinitialise son mot de passe** et
+le remet superadmin actif — c'est le recours le jour où plus personne ne peut
+se connecter.
+
 ---
 
 ## 5. Exploitation courante
