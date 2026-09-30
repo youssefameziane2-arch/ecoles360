@@ -54,11 +54,29 @@ export const COULEUR_SEVERITE: Record<Severite, string> = {
  * action inconnue plutôt que de masquer une ligne.
  */
 export const LIBELLE_ACTION: Record<string, string> = {
+  // CES CLÉS ONT ÉTÉ RAPPROCHÉES DES ACTIONS RÉELLEMENT ÉMISES PAR L'API.
+  // Cinq d'entre elles ne correspondaient à rien — `etablissement.suspendu`
+  // quand l'API écrit `etablissement.statut.suspendue`, `etablissement.badges`
+  // pour `etablissement.badges.bascule` — et le journal retombait sur son
+  // repli : « Etablissement statut suspendue ». Lisible, mais c'est l'écran
+  // que l'on montre pour prouver qu'on sait qui a fait quoi.
+  'etablissement.creation': 'Établissement créé',
+  // Émis par le seul semis de démonstration, qui fabrique un journal
+  // vraisemblable. Sans ce libellé, la démonstration afficherait
+  // « Etablissement valide » au milieu de lignes correctement traduites.
   'etablissement.valide': 'Établissement validé',
-  'etablissement.suspendu': 'Établissement suspendu',
-  'etablissement.reactive': 'Établissement réactivé',
-  'etablissement.badges': 'Badges modifiés',
-  'etablissement.essai_gratuit': 'Essai gratuit activé',
+  'etablissement.statut.validee': 'Établissement validé',
+  'etablissement.statut.suspendue': 'Établissement suspendu',
+  'etablissement.statut.masquee': 'Établissement masqué',
+  'etablissement.statut.en_attente': 'Établissement remis en attente',
+  'etablissement.supprime': 'Établissement supprimé',
+  'etablissement.badges.bascule': 'Badges modifiés',
+  'etablissement.essai_gratuit.active': 'Essai gratuit activé',
+  'etablissement.photos.ajout': 'Photos ajoutées',
+  'etablissement.photos.remplacement': 'Photo remplacée',
+  'etablissement.photos.legende': 'Légende de photo modifiée',
+  'etablissement.photos.ordre': 'Galerie réordonnée',
+  'etablissement.photos.suppression': 'Photo retirée',
   'proposition_fiche.creee': 'Modification de fiche proposée',
   'proposition_fiche.approuvee': 'Modification de fiche approuvée',
   'proposition_fiche.refusee': 'Modification de fiche refusée',
@@ -77,7 +95,11 @@ export const LIBELLE_ACTION: Record<string, string> = {
   'faq.modifiee': 'Question modifiée',
   'faq.supprimee': 'Question supprimée',
   'faq.reordonnee': 'FAQ réordonnée',
-  'page_cms.modifiee': 'Page « À propos » publiée',
+  // PAS « Page À propos » : la même action sert désormais les trois pages
+  // légales, et le journal affichait « Page « À propos » publiée — cookies ».
+  // Le détail qui suit porte la clé ; le libellé ne doit donc plus nommer une
+  // page en particulier.
+  'page_cms.modifiee': 'Page publiée',
   'sponsoring.cree': 'Campagne ouverte',
   'sponsoring.arrete': 'Campagne arrêtée',
   'parametre_facturation.modifie': 'Paramètre de facturation modifié',
@@ -88,6 +110,10 @@ export const LIBELLE_ACTION: Record<string, string> = {
   'compte.reactive': 'Compte réactivé',
   'compte.portees': 'Portées déléguées modifiées',
   'compte.motdepasse.reinitialise': 'Mot de passe réinitialisé',
+  'secretariat.portee.accordee': 'Portée déléguée accordée',
+  'secretariat.portee.revoquee': 'Portée déléguée révoquée',
+  'secretariat.compte.suspendu': 'Compte de secrétariat suspendu',
+  'secretariat.compte.reactive': 'Compte de secrétariat réactivé',
   'facture.encaissee': 'Facture encaissée',
   'facture.emise': 'Facture émise',
   'purge.traces': 'Purge des traces',

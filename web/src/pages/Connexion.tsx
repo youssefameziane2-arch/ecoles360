@@ -10,24 +10,21 @@ interface ReponseConnexion {
   csrf: string;
 }
 
-/**
- * Mot de passe commun aux comptes de démonstration.
+/*
+ * CET ÉCRAN A PORTÉ, JUSQU'ICI, LA LISTE DES COMPTES DE DÉMONSTRATION ET LEUR
+ * MOT DE PASSE EN CLAIR.
  *
- * C'est la valeur de repli du semeur (`SEED_*_PASSWORD` absent de `.env`).
- * Elle est AFFICHÉE À L'ÉCRAN parce qu'elle ne protège rien : ces comptes
- * n'existent que sur les bases de développement et de recette. En production,
- * le semeur de démonstration ne tourne pas — seuls les référentiels sont
- * amorcés — et ce bloc ne s'affiche donc devant personne.
+ * Le raisonnement qui le justifiait était faux, et il vaut d'être gardé : on
+ * tenait que ces comptes n'existent qu'en développement, le semeur de
+ * démonstration ne tournant pas en production. C'est vrai des COMPTES. Ça ne
+ * l'était pas du BLOC, rendu sans condition : la page de connexion publique
+ * aurait affiché « Direction (admin) · direction@ecoles360.com » et le mot de
+ * passe juste en dessous, à tout visiteur. Un compte inexistant n'excuse pas
+ * de désigner l'adresse de l'administrateur à qui veut la forcer.
+ *
+ * Les comptes de démonstration sont désormais dans `docs/DEMARRER.md`, lu par
+ * qui développe — pas par qui passe.
  */
-const MOT_DE_PASSE_DEMO = 'motdepasse-de-demonstration';
-
-/** Comptes du jeu de démonstration — repris tels quels de la maquette. */
-const COMPTES_DEMO = [
-  { libelle: 'Direction (admin)', email: 'direction@ecoles360.com', emoji: '🏛', fond: '#E63946' },
-  { libelle: 'Secrétariat', email: 'sara.s@ecoles360.com', emoji: '🗂', fond: '#1D3557' },
-  { libelle: 'Établissement', email: 'contact@almassira.ma', emoji: '🏫', fond: '#2E9E5B' },
-  { libelle: 'Commercial', email: 'younes.c@ecoles360.com', emoji: '💼', fond: '#E9A23B' },
-];
 
 const ARGUMENTS_CONNEXION = [
   'Statistiques de vues et de contacts en temps réel',
@@ -267,71 +264,6 @@ export function Connexion() {
               votre e-mail pour l&rsquo;instant.
             </div>
           )}
-
-          <Separateur espacement="24px 0 16px" gras={false}>
-            Comptes de démonstration
-          </Separateur>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-            {COMPTES_DEMO.map((compte) => (
-              <button
-                key={compte.email}
-                type="button"
-                // REMPLIT LES DEUX CHAMPS, et ne connecte pas tout seul : on voit
-                // ce qui va partir avant de l'envoyer, et le formulaire reste le
-                // seul chemin de connexion.
-                onClick={() => {
-                  setEmail(compte.email);
-                  setMotDePasse(MOT_DE_PASSE_DEMO);
-                  connexion.reset();
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  border: `1px solid ${email === compte.email ? '#1D3557' : '#EAE6DE'}`,
-                  borderRadius: 11,
-                  padding: '11px 14px',
-                  cursor: 'pointer',
-                  background: '#fff',
-                  textAlign: 'left',
-                  width: '100%',
-                  font: 'inherit',
-                }}
-              >
-                <span
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 9,
-                    background: compte.fond,
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 15,
-                    flex: 'none',
-                  }}
-                  aria-hidden
-                >
-                  {compte.emoji}
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>
-                    {compte.libelle}
-                  </span>
-                  <span style={{ display: 'block', fontSize: 12, color: '#9AA3AF' }}>
-                    {compte.email}
-                  </span>
-                </span>
-                <Icon name="chevron-right" size={16} color="#C9CFD8" />
-              </button>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 10, textAlign: 'center', fontSize: 12, color: '#9AA3AF' }}>
-            Mot de passe commun : <code>{MOT_DE_PASSE_DEMO}</code>
-          </div>
 
           <div style={{ marginTop: 22, textAlign: 'center', fontSize: 13.5, color: '#5A6472' }}>
             Pas encore référencé ?{' '}
