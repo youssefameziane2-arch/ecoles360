@@ -25,6 +25,36 @@ passe les tests, et n'est fausse que par rapport à ce que le client voulait.
 
 ---
 
+## Décisions prises par délégation — 6 octobre 2026
+
+Délégation reçue : « décide pour moi s'il y a quelque chose à choisir ».
+
+**Elle ne porte pas sur tout.** Un développeur peut déléguer SES choix — la
+forme d'un écran, le découpage d'un composant, l'ordre d'un lot. Il ne peut pas
+déléguer ceux du client : une règle de gestion, un prix, la rémunération de
+quelqu'un. Inventer l'une de ces règles produit un défaut qui compile, passe
+les tests, et ne se découvre qu'à la recette. La ligne est tracée ici.
+
+### Tranché, et fait
+
+| | |
+|---|---|
+| **`worker` BullMQ abandonné** | Les purges tournent dans `scheduler`. Motif et coût de l'écart : B-09. |
+| **`trustStats` : deux chiffres remplacés** | « Parents par mois » n'est tracé par rien (B-40) ; une note moyenne de tout le catalogue vaudrait, au démarrage, la note de la seule école notée. Remplacés par le nombre de types (RG02) et la gratuité. Afficher les valeurs de la maquette aurait publié des chiffres faux. |
+| **« Villes couvertes »** | Compte les villes portant une fiche validée, non le référentiel. Ce n'était pas un arbitrage mais un défaut : 12 annoncées pour 6 réelles. |
+| **Formules de visibilité sans montants** | Pas une décision non plus, en définitive : **la maquette l'écrit** (« Tarif communiqué par votre conseiller »), et le schéma range le tarif dans le contrat, jamais dans une grille publique. |
+
+### Non tranché, et pourquoi
+
+| | |
+|---|---|
+| **`masquee` vs `suspendue`** | Le statut existe au schéma, l'API l'accepte, aucun bouton ne le pose. Les livrables **ne le définissent nulle part** — seulement la valeur dans l'énumération (L10 §2.3). Deux lectures tiennent : (a) un retrait temporaire à l'initiative de l'école, qui garde son abonnement ; (b) une sanction d'administration plus douce que la suspension. Elles n'ont ni le même acteur, ni le même effet sur la facturation. **Question au client**, pas un choix de développement. En attendant, le statut reste inatteignable — ce qui ne coûte rien, personne ne pouvant le poser. |
+| **Taux de commission** | Reste à 0. Il détermine la paie de personnes réelles. La capacité de le fixer par facture existe déjà (RG18) ; le chiffre appartient à la Direction. |
+| **« Taux de contact » (B-42)** | Numérateur et dénominateur indéfinis, et aucun rapport des nombres de la maquette ne donne son 1,5 %. La tuile reste omise. |
+| **Définition d'une « visite » (B-40)** | Session ou page vue : la maquette ne le dit pas, et le choix change la facturation à la vue (RG12). |
+
+---
+
 ## Ouvert — à arbitrer
 
 ### B-01 · Sonde `/health` : profondeur des cinq files BullMQ
