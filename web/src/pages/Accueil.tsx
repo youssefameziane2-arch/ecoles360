@@ -15,12 +15,13 @@ import {
   type TypeEtablissement,
 } from '@/api/etablissements';
 import { AccordeonFaq } from '@/components/AccordeonFaq';
+import { BandeauChiffres } from '@/components/BandeauChiffres';
 import { HerosAccueil } from '@/components/HerosAccueil';
 import { IconeWhatsApp, useConseillerAffiche } from '@/components/MobilierAssistance';
 import { lienTelephone, lienWhatsApp } from '@/lib/telephone';
 import { CarteBlog } from './Blog';
 import { Button, CityCard, EstablishmentCard, Icon, SkeletonCard } from '@/ds/composants';
-import { formaterDate, formaterMad, formaterNombre, formaterNote } from '@/lib/formats';
+import { formaterDate, formaterMad, formaterNote } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
 
 /**
@@ -692,17 +693,7 @@ export function Accueil() {
 
       {/* ---- Bandeau de confiance --------------------------------------- */}
       <section style={{ maxWidth: 1180, margin: '64px auto 0', padding: '0 32px' }}>
-        <div className="e3-truststats">
-          <Chiffre
-            valeur={aLaUne.data ? formaterNombre(aLaUne.data.meta.total) : '—'}
-            libelle="Établissements référencés"
-          />
-          <Chiffre valeur={villes.data ? String(villes.data.length) : '—'} libelle="Villes couvertes" />
-          {/* Dérivé du référentiel plutôt qu'écrit en dur : un chiffre littéral
-              ne suit pas l'ajout d'un type (RG02), et finit par mentir. */}
-          <Chiffre valeur={String(TYPES.length)} libelle="Types d'établissements" />
-          <Chiffre valeur="0 MAD" libelle="Pour les parents, toujours" />
-        </div>
+        <BandeauChiffres />
       </section>
 
       {/* ---- Établissements à la une ------------------------------------ */}
@@ -1365,15 +1356,6 @@ function EnTeteSection({
           {lien} <span aria-hidden>→</span>
         </button>
       )}
-    </div>
-  );
-}
-
-function Chiffre({ valeur, libelle }: { valeur: string; libelle: string }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, borderLeft: '2px solid rgba(255,255,255,.14)', paddingLeft: 22 }}>
-      <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-1px', color: '#fff' }}>{valeur}</div>
-      <div style={{ fontSize: 13.5, color: 'var(--e360-navy-soft)', fontWeight: 500 }}>{libelle}</div>
     </div>
   );
 }

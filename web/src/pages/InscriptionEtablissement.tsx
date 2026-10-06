@@ -1,9 +1,12 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { FormulesVisibilite } from '@/components/FormulesVisibilite';
+import { useConseillerAffiche } from '@/components/MobilierAssistance';
+import { lienTelephone } from '@/lib/telephone';
 import { useTitrePage } from '@/lib/titre';
 
 /** Adresse de contact commercial — reprise partout où un établissement doit nous joindre. */
 const EMAIL = 'etablissements@ecoles360.com';
-const TEL = '+212 5 22 00 00 00';
 
 /**
  * Inscrire son établissement — livrable 1 (offre) et livrable 12 §5.
@@ -22,8 +25,21 @@ export function InscriptionEtablissement() {
     'Référencez gratuitement votre établissement privé sur écoles360 et recevez les demandes des parents.',
   );
 
+  /**
+   * Le bouton d'une formule mène AU SEUL ENDROIT QUI RÉPOND : le bloc de
+   * contact. Tant qu'aucune route publique n'enregistre une demande, « Choisir
+   * cet abonnement » ne peut rien choisir — l'emmener ailleurs promettrait une
+   * souscription qui n'existe pas.
+   */
+  const blocContact = useRef<HTMLElement>(null);
+
+  // Le même conseiller que la bannière flottante : deux numéros sur une page
+  // laisseraient le directeur choisir celui qui ne répond pas.
+  const { numero: numeroConseiller } = useConseillerAffiche();
+
   return (
-    <div className="conteneur section" style={{ maxWidth: 780 }}>
+    <>
+      <div className="conteneur section" style={{ maxWidth: 780 }}>
       <h1 className="titre-section">Inscrire mon établissement</h1>
       <p className="sous-titre-section">
         Le référencement de base est gratuit. Vous ne payez que si vous voulez aller plus loin.
@@ -59,7 +75,19 @@ export function InscriptionEtablissement() {
         </p>
       </section>
 
-      <section style={{ ...carte, background: '#1D3557', border: 'none' }}>
+      </div>
+
+      {/* Pleine largeur : les trois cartes de la maquette ne tiennent pas dans
+          la colonne de 780 du reste de la page. */}
+      <FormulesVisibilite
+        onChoisir={() => blocContact.current?.scrollIntoView({ behavior: 'smooth' })}
+      />
+
+      <div className="conteneur section" style={{ maxWidth: 780, paddingTop: 0 }}>
+      <section
+        ref={blocContact}
+        style={{ ...carte, background: '#1D3557', border: 'none', marginTop: 24 }}
+      >
         <h2 style={{ ...sousTitre, color: '#fff' }}>Comment s&rsquo;inscrire</h2>
         <p style={{ ...paragraphe, color: '#C6D2E2' }}>
           Écrivez-nous en indiquant le nom de votre établissement, sa ville et un numéro où vous
@@ -78,18 +106,25 @@ export function InscriptionEtablissement() {
           >
             {EMAIL}
           </a>
-          <a
-            href={`tel:${TEL.replace(/[^\d+]/g, '')}`}
-            style={{
-              font: "600 14px/1 'Inter', sans-serif",
-              color: '#fff',
-              border: '1px solid #3C5478',
-              borderRadius: 10,
-              padding: '13px 20px',
-            }}
-          >
-            {TEL}
-          </a>
+          {/* LE NUMÉRO VIENT DES CONSEILLERS, PAS D'UNE CONSTANTE. Il y avait
+              ici « +212 5 22 00 00 00 », qui ne sonne nulle part : un directeur
+              d'établissement l'aurait composé. Sans conseiller en base, le
+              bouton disparaît — mieux vaut un seul canal qui répond que deux
+              dont l'un raccroche. */}
+          {numeroConseiller && (
+            <a
+              href={lienTelephone(numeroConseiller)}
+              style={{
+                font: "600 14px/1 'Inter', sans-serif",
+                color: '#fff',
+                border: '1px solid #3C5478',
+                borderRadius: 10,
+                padding: '13px 20px',
+              }}
+            >
+              {numeroConseiller}
+            </a>
+          )}
         </div>
       </section>
 
@@ -99,7 +134,8 @@ export function InscriptionEtablissement() {
           Connectez-vous à votre espace
         </Link>
       </p>
-    </div>
+      </div>
+    </>
   );
 }
 

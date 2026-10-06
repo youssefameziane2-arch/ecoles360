@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { chargerPageAPropos, paragraphes, type BlocsAPropos } from '@/api/pages';
+import { BandeauChiffres } from '@/components/BandeauChiffres';
 import { Icon, TeamMember } from '@/ds/composants';
 import { lienTelephone, lienWhatsApp } from '@/lib/telephone';
 import { useTitrePage } from '@/lib/titre';
@@ -15,11 +16,14 @@ const ICONES_VALEURS = ['check-circle', 'eye', 'map-pin'];
  * qu'une autre version dormait en base : deux vérités pour la même page, et
  * celle que le client pouvait modifier n'était pas celle qui s'affichait.
  *
- * CE QUI N'EST PAS DESSINÉ, FAUTE DE DONNÉE : la bande de chiffres de la
- * maquette (`trustStats`), l'image de « Notre histoire », la carte et les
- * réseaux sociaux de « Nous contacter ». Aucun n'a de source ; les dessiner
- * vides ou avec les valeurs de la maquette publierait des chiffres et des
- * comptes qui n'existent pas.
+ * CE QUI N'EST PAS DESSINÉ, FAUTE DE DONNÉE : l'image de « Notre histoire »,
+ * la carte et les réseaux sociaux de « Nous contacter ». Aucun n'a de source ;
+ * les dessiner vides ou avec les valeurs de la maquette publierait des comptes
+ * qui n'existent pas.
+ *
+ * LA BANDE DE CHIFFRES (`trustStats`) EST LÀ, avec les chiffres de la base et
+ * non ceux de la maquette — voir `BandeauChiffres`, qui explique pourquoi deux
+ * des quatre sont remplacés plutôt qu'affichés.
  */
 export function APropos() {
   const page = useQuery({ queryKey: ['pages', 'a-propos'], queryFn: chargerPageAPropos });
@@ -71,6 +75,13 @@ export function APropos() {
           ))}
         </Bande>
       )}
+
+      {/* `trustStats` de la maquette — mêmes chiffres que l'accueil, par
+          construction : un composant partagé ne peut pas se contredire d'un
+          écran à l'autre. */}
+      <section style={{ maxWidth: 1180, margin: '48px auto 0', padding: '0 32px' }}>
+        <BandeauChiffres />
+      </section>
 
       {b.valeurs && b.valeurs.length > 0 && (
         <Bande>

@@ -66,7 +66,7 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 | Résultats de recherche | `/etablissements` | ✅ carte Leaflet comprise — reste la seule bascule « sponsorisé », qu'aucun paramètre d'API ne sait filtrer |
 | Fiche établissement | `/etablissements/:slug` | ✅ onglet Équipe compris — édité depuis l'espace, via la file de propositions (RG20) |
 | Page ville | `/villes/:slug` | ✅ quartiers populaires compris |
-| À propos | `/a-propos` | 🟡 servie par le CMS (`a-propos`), équipe et bloc contact compris — manquent la bande de chiffres (`trustStats`), l'image de l'histoire, la carte et les réseaux sociaux, qui n'ont aucune source |
+| À propos | `/a-propos` | 🟡 servie par le CMS (`a-propos`), équipe, bloc contact et bande de chiffres compris — manquent l'image de l'histoire, la carte et les réseaux sociaux, qui n'ont aucune source |
 | FAQ | `/faq` | ✅ |
 | Blog | `/blog` | ✅ |
 | Article | `/blog/:slug` | ✅ |
@@ -275,7 +275,7 @@ Filières · Équipements · Tarifs · Équipe · Avis.
 |---|---|
 | « Notre mission » + H1 | ✅ `accroche`, `mission` |
 | « Notre histoire » | ✅ `histoire` — sans l'image, qui n'a pas de source |
-| **`trustStats` — bande de chiffres** | ❌ aucune source ; les chiffres de la maquette (« 1 200 établissements, 24 villes ») ne sont pas ceux de la base |
+| `trustStats` — bande de chiffres | ✅ `BandeauChiffres`, partagé avec l'accueil. Deux des quatre chiffres de la maquette sont **remplacés, pas inventés** : rien ne trace les « parents par mois » (B-40), et une note moyenne de tout le catalogue vaudrait, au démarrage, la note de la seule école notée. À leur place, le nombre de types (RG02) et la gratuité — vrais le premier jour comme le millième |
 | « Ce qui nous guide / Nos valeurs » + `aboutValues` | ✅ `valeurs` |
 | « Nos engagements » — hors maquette | ✅ `engagements` : le texte de l'ancienne page, relu par le client (sponsoring, avis, loi 09-08) |
 | « Les visages / L'équipe écoles360 » + `teamAv` | ✅ `equipe`, rendu par `TeamMember` ; semé vide, section masquée tant que le back-office ne l'a pas remplie |
@@ -291,12 +291,14 @@ l'autre.
 
 | Bloc | État |
 |---|---|
-| H1 + « Commencer l'inscription » | ✅ |
-| `benefits` | ✅ |
-| **« Formules de visibilité » + `plans`, bascule Mensuel / Annuel −10 %** | ❌ |
-| `insSteps3` — les trois étapes | ✅ |
-| « On s'occupe de tout par téléphone » / « Vous préférez écrire ? » | 🟡 |
-| Formulaire en 2 étapes + « Demande envoyée ! » | ✅ |
+| H1 + « Commencer l'inscription » | 🟡 le H1 y est ; le bouton n'a nulle part où mener tant qu'il n'y a pas de formulaire |
+| `benefits` | ✅ sous deux cartes (« gratuitement » / « ce que l'abonnement ajoute ») |
+| « Formules de visibilité » + `plans`, bascule Mensuel / Annuel −10 % | ✅ `FormulesVisibilite`, trois `PricingCard` du design system. **Sans montants — c'est la maquette qui le veut** : elle écrit « Tarif communiqué par votre conseiller ». La bascule ne calcule rien, elle annonce la remise de 10 % (RG11). Sous-titre et note rendus autour de la carte, faute de fente (CORRECTIFS.md §6) |
+| `insSteps3` — les trois étapes | ❌ **la ligne disait ✅ ; vérifié le 6 octobre 2026 dans le navigateur, elles ne sont nulle part sur la page** |
+| « On s'occupe de tout par téléphone » / « Vous préférez écrire ? » | 🟡 un bloc « Comment s'inscrire » donne les deux canaux, sans les deux titres de la maquette |
+| Formulaire en 2 étapes + « Demande envoyée ! » | ❌ **la ligne disait ✅ ; il n'y a aucun formulaire.** Il lui faut une route publique de création de prospect, qui n'existe pas : `CrmController` est entièrement derrière la session. Avec elle viennent la limitation de débit et le consentement 09-08 |
+| `insTestimonials` — « La parole aux directeurs » | ❌ aucune source ; les témoignages de la maquette sont fictifs |
+| `insFaqItems` — questions fréquentes | ❌ la FAQ du CMS est celle des parents ; celle-ci s'adresse aux directeurs |
 
 ---
 
