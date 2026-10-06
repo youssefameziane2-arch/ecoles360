@@ -202,6 +202,15 @@ export class ReferentielsSeeder {
         valeur: '10',
         libelle: 'Durée légale de conservation des factures',
       },
+      {
+        // À ZÉRO VOLONTAIREMENT : aucun livrable ne fixe ce taux, et l'inventer
+        // reviendrait à décider ce que touche un commercial. Tant qu'il vaut
+        // zéro, l'émission d'une facture ne crée aucune commission (RG18) ; la
+        // Direction pose la valeur depuis l'écran « Paramètres ».
+        cle: 'commission_pct',
+        valeur: '0',
+        libelle: 'Taux de commission du commercial apporteur (RG18) — à fixer par la Direction',
+      },
     ];
 
     for (const parametre of parametres) {

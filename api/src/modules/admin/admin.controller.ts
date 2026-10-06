@@ -25,6 +25,7 @@ import {
   ArticleStatut,
   AvisStatut,
   EtablissementStatut,
+  FactureStatut,
   RoleCode,
   type EtablissementType,
 } from '../../generated/prisma';
@@ -62,6 +63,10 @@ import { CreerEtablissementDto } from './dto/creer-etablissement.dto';
 import { PorteeSecretariatDto } from './dto/portee-secretariat.dto';
 import { StatutCompteDto } from './dto/statut-compte.dto';
 import { SecretariatService } from './secretariat.service';
+import { FacturationService } from '../facturation/facturation.service';
+import { FacturationLectureService } from '../facturation/facturation-lecture.service';
+import { OuvrirAbonnementDto } from '../facturation/dto/ouvrir-abonnement.dto';
+import { EmettreFactureDto } from '../facturation/dto/emettre-facture.dto';
 import { ParametreFacturationDto } from './dto/parametre-facturation.dto';
 import { DecisionPropositionDto } from './dto/decision-proposition.dto';
 import { TransitionStatutEtablissementDto } from './dto/transition-statut-etablissement.dto';
@@ -89,6 +94,8 @@ export class AdminController {
     private readonly moderationAvis: ModerationAvisService,
     private readonly photosService: PhotosService,
     private readonly secretariat: SecretariatService,
+    private readonly facturation: FacturationService,
+    private readonly facturationLecture: FacturationLectureService,
     private readonly audit: AuditLectureService,
     private readonly tableauDeBordService: TableauDeBordAdminService,
     private readonly statistiquesService: StatistiquesAdminService,
@@ -327,6 +334,85 @@ export class AdminController {
     @Body() dto: TransitionStatutEtablissementDto,
   ) {
     return this.etablissements.changerStatut(BigInt(id), dto.statut, utilisateur.userId);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Facturation — RG11, RG14, RG18
+  // ---------------------------------------------------------------------------
+
+  @Get('facturation')
+  @ApiOperation({
+    summary: 'Indicateurs de facturation — encaissé du mois, en attente, échéances',
+    description: 'L’encaissé se compte sur la date de PAIEMENT, pas d’émission.',
+  })
+  indicateursFacturation() {
+    return this.facturationLecture.indicateurs();
+  }
+
+  @Get('factures')
+  @ApiOperation({ summary: 'Historique des factures, filtrable par statut de paiement' })
+  factures(@Query('statut') statut?: FactureStatut) {
+    return this.facturationLecture.factures({ statut });
+  }
+
+  @Get('factures/:id')
+  @ApiOperation({ summary: 'Une facture et sa commission éventuelle' })
+  facture(@Param('id', ParseIntPipe) id: number) {
+    return this.facturationLecture.facture(BigInt(id));
+  }
+
+  @Get('etablissements/:id/abonnements')
+  @ApiOperation({ summary: 'Abonnements d’un établissement et leurs factures' })
+  abonnements(@Param('id', ParseIntPipe) id: number) {
+    return this.facturationLecture.abonnements(BigInt(id));
+  }
+
+  @Post('etablissements/:id/abonnement')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Ouvrir un abonnement payant',
+    description:
+      'Le tarif est propre à chaque client et vient de l’écran : aucun barème ne le fournit. ' +
+      'La remise ne vaut que pour l’annuel (RG11).',
+  })
+  @ApiResponse({ status: 409, description: 'Un abonnement est déjà en cours.' })
+  ouvrirAbonnement(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: OuvrirAbonnementDto,
+  ) {
+    return this.facturation.ouvrirAbonnement(BigInt(id), dto, utilisateur.userId);
+  }
+
+  @Post('abonnements/:id/facture')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Émettre la facture d’un abonnement — numérotation légale sous verrou',
+    description:
+      'Le montant vient de l’abonnement, jamais de la requête. Une commission naît en ' +
+      '« à valider » si un commercial a apporté l’affaire et qu’un taux est fixé (RG18).',
+  })
+  @ApiResponse({ status: 409, description: 'Un essai gratuit ne se facture pas (RG13).' })
+  emettreFacture(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: EmettreFactureDto,
+  ) {
+    return this.facturation.emettreFacture(BigInt(id), utilisateur.userId, dto.commission_pct);
+  }
+
+  @Patch('factures/:id/encaissement')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Marquer une facture encaissée — c’est elle qui lève la condition RG14',
+    description: 'Irréversible : dé-encaisser demande un avoir, pas un retour en arrière.',
+  })
+  @ApiResponse({ status: 409, description: 'Facture déjà encaissée.' })
+  encaisser(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.facturation.encaisser(BigInt(id), utilisateur.userId);
   }
 
   @Post('etablissements/:id/essai-gratuit')

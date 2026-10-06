@@ -14,6 +14,12 @@ const CLES_CONNUES = [
   'remise_annuelle_pct',
   'rappel_echeance_j',
   'conservation_facture_ans',
+  // SEMÉ À ZÉRO, ET CE N'EST PAS UN OUBLI. Le taux de commission relève de la
+  // politique commerciale, qu'aucun livrable ne fixe : l'inventer reviendrait
+  // à décider ce que touche un commercial. À zéro, aucune commission n'est
+  // créée à l'émission d'une facture — la Direction pose le taux depuis son
+  // écran le jour où elle l'a arrêté (RG18).
+  'commission_pct',
 ] as const;
 
 type CleParametre = (typeof CLES_CONNUES)[number];

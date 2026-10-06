@@ -11,6 +11,7 @@ import { AdminEtablissementsService } from './admin-etablissements.service';
 import { ParametresFacturationService } from './parametres-facturation.service';
 import { AuditLectureService } from './audit-lecture.service';
 import { SecretariatService } from './secretariat.service';
+import { FacturationModule } from '../facturation/facturation.module';
 import { TableauDeBordAdminService } from './tableau-de-bord-admin.service';
 import { StatistiquesAdminService } from './statistiques-admin.service';
 
@@ -32,6 +33,8 @@ import { StatistiquesAdminService } from './statistiques-admin.service';
     ArticlesModule,
     AvisModule,
     PhotosModule,
+    // Abonnements payants, factures et commissions (RG11, RG14, RG18).
+    FacturationModule,
   ],
   controllers: [AdminController],
   providers: [
