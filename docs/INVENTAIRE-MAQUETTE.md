@@ -89,7 +89,7 @@ appelé mais jamais dessiné).
 
 ---
 
-## Administration — 15 écrans attendus, 5 complets
+## Administration — 15 écrans attendus, 6 complets
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -101,12 +101,12 @@ appelé mais jamais dessiné).
 | Journal d'audit | `isAdminJournal` | `/admin/journal` | ✅ |
 | Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ, page « À propos » et les **trois pages légales** (onglets) — manquent les catégories d'articles, qui demandent une migration |
 | Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
-| CRM Clients | `isAdminCrm` | `/admin/crm` | ❌ KPI, prospects, dossiers, étapes |
+| CRM Clients | `isAdminCrm` | `/admin/crm` | ✅ indicateurs, pipeline en 6 colonnes (RG17), relances, attribution des dossiers (RG18) |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
 | Abonnement & facturation | `isAdminFact` | `/admin/facturation` | 🟡 indicateurs, historique, encaissement ✅ · ouverture d'abonnement et émission de facture depuis la fiche ✅ — manque le **détail de facture** (`isAdminFactDetail`) |
 | Facture (détail) | `isAdminFactDetail` | — | ❌ formules, essai, remise, reçu |
 | Secrétariat | `isAdminUsers` | `/admin/secretariat` | 🟡 comptes et rattachement, portées déléguées (RG05), suspension qui coupe les sessions (RG25) — manquent la **création de compte** et la **réinitialisation de mot de passe** : qui a le droit de créer un compte et comment le mot de passe parvient à son titulaire ne sont écrits nulle part |
-| Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | ❌ |
+| Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | 🟡 portefeuilles, transformations, taux, relances dues, commissions — manque la **création de compte**, qui se fait par `compte:creer --role=commercial` |
 | Base de données | `isAdminDb` | — | ❌ explorateur lecture seule (pas dans la navigation actuelle) |
 
 **Hors maquette, construits en plus** : Sponsoring (`/admin/sponsorings`) et
@@ -151,7 +151,7 @@ Servi par **les mêmes écrans que l'établissement**, filtrés par portée dél
 
 ---
 
-## Espace commercial — coquille en place, 1 / 6 écrans
+## Espace commercial — 2 / 6 écrans complets
 
 **La navigation et les six routes existent** (`/commercial/…`, thème
 `commercial` de `SidebarNav`) : un commercial se connecte et arrive dans son
@@ -161,10 +161,10 @@ route à ce rôle.
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
-| Tableau de bord | `isCommercialDash` | `/commercial` | ❌ page d'attente — tâches du jour, intérêts, transferts, commission |
-| Agenda & tâches | `isAgenda` | `/commercial/agenda` | ❌ page d'attente — calendrier, tâches, retards, Google Agenda |
-| Mes leads | `isCrm` | `/commercial/leads` | ❌ page d'attente — pipeline, température, relances |
-| Transferts & commissions | `isTransferts` | `/commercial/transferts` | ❌ page d'attente — CA généré, ventes, dossiers transférés |
+| Tableau de bord | `isCommercialDash` | `/commercial` | 🟡 son portefeuille et ses indicateurs — la maquette y met aussi les transferts, qui ne sont pas définis |
+| Agenda & tâches | `isAgenda` | `/commercial/agenda` | 🟡 relances dues, retards signalés, « c’est fait » (RG17) — manquent le calendrier et la synchronisation Google Agenda |
+| Mes leads | `isCrm` | `/commercial/leads` | ✅ pipeline borné à son portefeuille par le serveur, relances comprises |
+| Transferts & commissions | `isTransferts` | `/commercial/transferts` | 🟡 commissions par facture et par statut (RG18) — le **transfert de dossier** entre commerciaux n’est défini nulle part |
 | Statistiques | `isEtabStats` (bloc partagé avec l'établissement) | `/commercial/statistiques` | ❌ page d'attente — la maquette y remet les chiffres d'une fiche ; ce qu'un commercial doit y lire (son portefeuille ?) n'est pas dit |
 | Blog | `isBlogList` | `/commercial/blog` | ✅ écran de l'espace établissement ; articles de plateforme soumis à validation, portée limitée aux siens (B-37) |
 ---
@@ -174,11 +174,11 @@ route à ce rôle.
 | Périmètre | Fait | Reste |
 |---|---|---|
 | Site public | 9 | 0 + 4 partiels — dont 2 pages légales, rédigées mais portant des mentions à compléter |
-| Administration | 5 | 4 + 6 partiels |
+| Administration | 6 | 2 + 7 partiels |
 | Établissement | 5 | 1 + 1 partiel |
 | Secrétariat | 5 | 0 |
-| Commercial | 1 (blog ouvert ; coquille et navigation en place) | 5 |
-| **Total** | **25** | **10 + 11 partiels** |
+| Commercial | 2 | 1 + 3 partiels |
+| **Total** | **27** | **4 + 15 partiels** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait

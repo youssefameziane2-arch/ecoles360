@@ -23,6 +23,14 @@ import { TableauDeBordAdmin } from './pages/admin/TableauDeBordAdmin';
 import { PropositionsAdmin } from './pages/admin/PropositionsAdmin';
 import { ParametresFacturation } from './pages/admin/ParametresFacturation';
 import { FacturationAdmin } from './pages/admin/FacturationAdmin';
+import { CrmAdmin } from './pages/admin/CrmAdmin';
+import { CommerciauxAdmin } from './pages/admin/CommerciauxAdmin';
+import {
+  AgendaCommercial,
+  LeadsCommercial,
+  TableauDeBordCommercial,
+  TransfertsCommercial,
+} from './pages/commercial/EspaceCommercial';
 import { SponsoringsAdmin } from './pages/admin/SponsoringsAdmin';
 import { ContenuAdmin } from './pages/admin/ContenuAdmin';
 import { BlogAdmin, BlogEspace } from './pages/espace/Blog';
@@ -31,16 +39,7 @@ import { JournalAdmin } from './pages/admin/JournalAdmin';
 import { SecretariatAdmin } from './pages/admin/SecretariatAdmin';
 import { StatistiquesAdmin } from './pages/admin/StatistiquesAdmin';
 import { StatistiquesEspace } from './pages/espace/StatistiquesEspace';
-import {
-  AgendaCommercial,
-  CommerciauxAdmin,
-  CrmAdmin,
-  FacturationEspace,
-  LeadsCommercial,
-  StatistiquesCommercial,
-  TableauDeBordCommercial,
-  TransfertsCommercial,
-} from './pages/espace/ModulesAVenir';
+import { FacturationEspace, StatistiquesCommercial } from './pages/espace/ModulesAVenir';
 
 /**
  * Routage — livrable 12 §3.
