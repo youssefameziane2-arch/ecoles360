@@ -63,6 +63,9 @@ import { CreerEtablissementDto } from './dto/creer-etablissement.dto';
 import { PorteeSecretariatDto } from './dto/portee-secretariat.dto';
 import { StatutCompteDto } from './dto/statut-compte.dto';
 import { SecretariatService } from './secretariat.service';
+import { CrmService } from '../crm/crm.service';
+import { CrmLectureService } from '../crm/crm-lecture.service';
+import { AssignerProspectDto } from '../crm/dto/assigner-prospect.dto';
 import { FacturationService } from '../facturation/facturation.service';
 import { FacturationLectureService } from '../facturation/facturation-lecture.service';
 import { OuvrirAbonnementDto } from '../facturation/dto/ouvrir-abonnement.dto';
@@ -94,6 +97,8 @@ export class AdminController {
     private readonly moderationAvis: ModerationAvisService,
     private readonly photosService: PhotosService,
     private readonly secretariat: SecretariatService,
+    private readonly crm: CrmService,
+    private readonly crmLecture: CrmLectureService,
     private readonly facturation: FacturationService,
     private readonly facturationLecture: FacturationLectureService,
     private readonly audit: AuditLectureService,
@@ -334,6 +339,46 @@ export class AdminController {
     @Body() dto: TransitionStatutEtablissementDto,
   ) {
     return this.etablissements.changerStatut(BigInt(id), dto.statut, utilisateur.userId);
+  }
+
+  // ---------------------------------------------------------------------------
+  //  CRM — les deux actes réservés à la Direction (RG18)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * ASSIGNER N'EST PAS UNE ACTION DE COMMERCIAL, et c'est pourquoi cette route
+   * vit ici plutôt que sur `CrmController`. Laisser un vendeur s'attribuer un
+   * prospect reviendrait à le laisser s'attribuer la commission qui en
+   * découlera : c'est une décision de la Direction.
+   */
+  @Patch('crm/prospects/:id/commercial')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Confier un prospect à un commercial, ou le lui retirer',
+    description: '`commercial_id: null` rend le dossier au pot commun — un départ, par exemple.',
+  })
+  @ApiResponse({ status: 422, description: 'Le compte visé n’est pas un commercial.' })
+  assignerProspect(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AssignerProspectDto,
+  ) {
+    return this.crm.assigner(
+      BigInt(id),
+      dto.commercial_id === null ? null : BigInt(dto.commercial_id),
+      utilisateur.userId,
+    );
+  }
+
+  @Get('commerciaux')
+  @ApiOperation({
+    summary: 'Les commerciaux, leur portefeuille et leurs commissions',
+    description:
+      'Les comptes suspendus y figurent : ils gardent leurs dossiers et leurs commissions, et ' +
+      'les masquer ferait disparaître de l’argent dû de la liste des choses à payer.',
+  })
+  commerciaux() {
+    return this.crmLecture.commerciaux();
   }
 
   // ---------------------------------------------------------------------------
