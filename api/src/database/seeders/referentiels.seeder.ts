@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NiveauFiliereCat, Prisma, RoleCode } from '../../generated/prisma';
+import { PAGES_LEGALES } from './pages-legales';
 
 /**
  * Référentiels — livrable 10 §3.
@@ -466,78 +467,32 @@ export class ReferentielsSeeder {
   /**
    * Les trois pages légales — loi 09-08 (RG09).
    *
-   * CE SEMIS POSE LE PLAN, JAMAIS LE TEXTE. Mentions légales, politique de
-   * confidentialité et gestion des cookies engagent l'éditeur du site devant
-   * la loi : les rédiger ici reviendrait à faire prendre à écoles360 des
-   * engagements que personne n'a relus. Ce qui est posé, ce sont les rubriques
-   * que la loi 09-08 impose de traiter, et un marqueur `[à compléter …]` dans
-   * chacune.
+   * LE TEXTE VIT DANS `pages-legales.ts`, pas ici : c'est de la prose
+   * juridique, pas du code, et la mêler au semis la rendrait illisible et
+   * impossible à relire par un juriste.
    *
-   * CE MARQUEUR EST LA MOITIÉ UTILE DU TRAVAIL : l'écran « Contenu du site »
-   * s'en sert pour signaler qu'une page n'est pas prête. Sans lui, trois pages
-   * d'apparence normale partiraient en ligne avec des crochets dedans, et
-   * personne ne s'en apercevrait avant un visiteur.
+   * BASE RÉDIGÉE, PAS TEXTE VALIDÉ. Les passages « [À COMPLÉTER] » portent
+   * des faits que seul l'éditeur connaît, et l'écran « Contenu du site »
+   * signale une page tant qu'il en reste un.
    *
-   * Idempotent comme le reste : une page déjà rédigée n'est jamais réécrite.
+   * Idempotent : une page déjà rédigée n'est JAMAIS réécrite. Sans cette
+   * garde, un `db:seed` de routine écraserait le texte relu par le juriste.
    */
   private async pagesLegales(): Promise<void> {
-    const plans: Record<string, { titre: string; rubriques: string[] }> = {
-      'mentions-legales': {
-        titre: 'Mentions légales',
-        rubriques: [
-          'Éditeur du site',
-          'Directeur de la publication',
-          'Hébergement',
-          'Propriété intellectuelle',
-          'Responsabilité',
-          'Contact',
-        ],
-      },
-      confidentialite: {
-        titre: 'Politique de confidentialité',
-        rubriques: [
-          'Données collectées',
-          'Finalités du traitement',
-          'Base légale et consentement',
-          'Destinataires des données',
-          'Durée de conservation',
-          'Vos droits (accès, rectification, opposition)',
-          'Déclaration CNDP',
-          'Sécurité',
-          'Contact du responsable de traitement',
-        ],
-      },
-      cookies: {
-        titre: 'Gestion des cookies',
-        rubriques: [
-          'Ce qu’est un cookie',
-          'Cookies strictement nécessaires',
-          'Cookies de mesure d’audience',
-          'Durée de conservation',
-          'Comment les refuser ou les supprimer',
-        ],
-      },
-    };
-
-    for (const [cle, plan] of Object.entries(plans)) {
+    for (const [cle, page] of Object.entries(PAGES_LEGALES)) {
       const existante = await this.db.pageCms.findUnique({ where: { cle }, select: { id: true } });
 
       if (existante) continue;
 
       await this.db.pageCms.create({
-        data: {
-          cle,
-          titre: plan.titre,
-          blocs: {
-            sections: plan.rubriques.map((titre) => ({
-              titre,
-              corps: `[à compléter — ${titre.toLowerCase()}]`,
-            })),
-          },
-        },
+        data: { cle, titre: page.titre, blocs: { sections: page.sections } },
       });
 
-      this.logger.log(`Page « ${plan.titre} » créée — plan seul, texte à fournir`);
+      const aCompleter = page.sections.filter((s) => s.corps.includes('[À COMPLÉTER')).length;
+
+      this.logger.log(
+        `Page « ${page.titre} » créée — ${page.sections.length} rubriques, ${aCompleter} à compléter`,
+      );
     }
   }
 }
