@@ -116,7 +116,29 @@ diffèrent que par leur commande : `dist/main.js`, `dist/worker.js`, `dist/sched
 `@nestjs/schedule` sont hors périmètre.
 **Proposition :** ajouter `src/worker.ts` et `src/scheduler.ts` au lot des files.
 Aucune modification du Dockerfile ne sera nécessaire.
-**Statut :** planifié — lot BullMQ.
+
+**Fait pour `scheduler`, abandonné pour `worker`.** `@nestjs/schedule@4` est
+installé (la version 12 exige Nest 11), `src/scheduler.ts` monte un contexte
+sans serveur HTTP, et `docker-compose.prod.yml` déclare le conteneur. Les trois
+purges de la loi 09-08 tournent — 02 h 00, 02 h 30, dimanche 04 h 00, heure de
+Casablanca (voir `infra/README-DEPLOIEMENT.md` §7).
+
+**ÉCART ASSUMÉ AVEC LE LIVRABLE :** il confie ces traitements à une file BullMQ
+`maintenance` consommée par un conteneur `worker`. Ils s'exécutent directement
+dans `scheduler`. Ces purges sont idempotentes, tournent une fois par jour et
+durent quelques secondes : une file ajouterait un conteneur, un état de job
+dans Redis et une mécanique de reprise pour un bénéfice nul à cette échelle.
+Les déplacer dans une file plus tard ne change pas une ligne de
+`PurgesService`. `worker` redeviendra utile le jour où un traitement durera
+assez longtemps pour mériter une reprise — l'envoi d'e-mails en lot, par
+exemple, qui n'existe pas encore.
+
+**Ce que l'écart coûte :** aucune reprise automatique si une purge échoue en
+cours de route. Elle est rejouable sans dommage (totaux écrits en `set`, jamais
+en `increment` ; les lignes déjà anonymisées sont exclues du décompte), donc
+l'exécution suivante rattrape. Ce qui manque, c'est l'alerte : une purge qui
+échoue n'est visible que par l'absence de son entrée au journal d'audit.
+**Statut :** fait pour `scheduler` ; `worker` abandonné, motif ci-dessus.
 
 ### B-10 · Jobs CI `web`, `images` et `e2e`
 **Source :** L14 §3 — quatre jobs : `api` · `web` · `images` · `e2e`.

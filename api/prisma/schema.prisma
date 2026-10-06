@@ -278,6 +278,7 @@ model Etablissement {
   avis              Avis[]
   demandes          DemandeContact[]
   traces            EvenementTrace[]
+  statistiquesJour  StatistiqueJournaliere[]
   abonnements       Abonnement[]
   paiementsVue      PaiementVue[]
   factures          Facture[]
@@ -795,7 +796,10 @@ model JournalAudit {
   role_acteur String         @db.VarChar(20)
   action      String         @db.VarChar(60) // etablissement.valide, avis.rejete…
   cible_type  String         @db.VarChar(60)
-  cible_id    BigInt         @db.UnsignedBigInt
+  /// NULLABLE DEPUIS LES PURGES : une tâche système qui anonymise un lot de
+  /// demandes ne vise aucune ligne en particulier. Y mettre 0 ferait un
+  /// identifiant magique que personne ne saurait relire dans deux ans.
+  cible_id    BigInt?        @db.UnsignedBigInt
   severite    AuditSeverite  @default(info)
   details     Json?
   adresse_ip  String?        @db.VarChar(45)
@@ -1015,4 +1019,37 @@ model PageCms {
   modificateur User? @relation("PageCmsModificateur", fields: [modifiee_par], references: [id], onDelete: SetNull)
 
   @@map("pages_cms")
+}
+
+// =============================================================================
+//  §2.13 — Agrégats d'audience (loi 09-08, livrable 10 §6.3)
+// =============================================================================
+
+/// 25 — StatistiqueJournaliere.
+///
+/// NÉE DE LA PURGE, PAS D'UN BESOIN D'AFFICHAGE. `evenement_traces` est à fort
+/// volume et doit être purgée à 12 mois (RG10) : sans agrégat, purger
+/// effacerait l'historique d'audience d'un établissement — exactement ce qu'il
+/// paie pour voir. La purge agrège donc avant de supprimer, et ce qui reste
+/// est une ligne par fiche, par type et par jour, sans aucune donnée
+/// individuelle.
+///
+/// AUCUNE DONNÉE PERSONNELLE ICI, et c'est le point : `evenement_traces` n'en
+/// portait déjà pas (ni IP ni identifiant de navigateur), l'agrégat encore
+/// moins. La minimisation de la loi 09-08 est satisfaite par construction.
+model StatistiqueJournaliere {
+  id               BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt        @db.UnsignedBigInt
+  type             EvenementType
+  jour             DateTime      @db.Date
+  total            Int           @default(0) @db.UnsignedInt
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+
+  /// L'unicité rend la purge REJOUABLE : une seconde exécution sur la même
+  /// journée met à jour la ligne au lieu d'en créer une seconde, et le total
+  /// ne double pas.
+  @@unique([etablissement_id, type, jour], map: "uq_stat_jour")
+  @@index([jour], map: "idx_stat_jour")
+  @@map("statistiques_journalieres")
 }

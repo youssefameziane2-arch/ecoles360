@@ -5,19 +5,17 @@
 #      cd /srv/ecoles360
 #      ./infra/deploy.sh <sha>
 #
-#  CINQ SERVICES, PAS SEPT. Le livrable 14 §2 en décrit sept : `worker`
+#  SIX SERVICES, PAS SEPT. Le livrable 14 §2 en décrit sept : `worker`
 #  (consommateurs BullMQ) et `scheduler` (tâches @Cron) partagent l'image de
-#  l'API et n'en diffèrent que par leur commande. NI BULLMQ NI
-#  @nestjs/schedule NE SONT INSTALLÉS : `dist/worker.js` et `dist/scheduler.js`
-#  n'existent pas, et deux conteneurs déclarés ici redémarreraient en boucle
-#  sans que rien ne le signale ailleurs que dans les journaux.
+#  l'API et n'en diffèrent que par leur commande. `scheduler` EST LÀ et fait
+#  tourner les purges de la loi 09-08 ; `worker` N'EXISTE PAS, parce que
+#  BullMQ n'est pas installé et que les purges, idempotentes et quotidiennes,
+#  n'ont pas besoin d'une file pour s'exécuter (voir le commentaire de tête de
+#  api/src/modules/maintenance/purges.service.ts).
 #
-#  Ce que leur absence coûte, et qu'il faut savoir avant d'ouvrir au public :
-#  les purges de la loi 09-08 (anonymisation des demandes à 12 mois, purge du
-#  journal à 3 ans — livrable 10 §6.3) ne tournent pas, et la sauvegarde de 3 h
-#  n'est pas déclenchée par l'application. La sauvegarde est reprise ici par
-#  une tâche cron de l'hôte (infra/README-DEPLOIEMENT.md) ; les purges, non.
-#  Voir docs/BACKLOG.md, B-09.
+#  Ce qu'il reste à savoir avant d'ouvrir au public : la sauvegarde de 3 h
+#  n'est pas déclenchée par l'application, mais par une tâche cron de l'hôte
+#  (infra/README-DEPLOIEMENT.md §6). Voir docs/BACKLOG.md, B-09.
 #
 #  LES IMAGES NE SE CONSTRUISENT PAS ICI. Elles viennent de ghcr.io, taguées
 #  par SHA de commit, et n'existent que si leurs tests sont passés (livrable 14
@@ -66,6 +64,34 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  #  Planificateur — purges de la loi 09-08 (livrable 10 §6.3)
+  # ---------------------------------------------------------------------------
+  scheduler:
+    <<: *api-base
+    # MÊME IMAGE QUE L'API, autre point d'entrée : `dist/scheduler.js` monte un
+    # contexte applicatif sans serveur HTTP (voir api/src/scheduler.ts). Une
+    # image distincte pour trois tâches ferait deux chaînes de construction à
+    # tenir alignées, et un jour elles ne le seraient plus.
+    #
+    # PAS DE `migrate deploy` ICI. C'est `api` qui migre, et lui seul : deux
+    # conteneurs lançant la même migration au même démarrage se disputeraient
+    # la table `_prisma_migrations`. Ce conteneur attend donc l'API saine.
+    #
+    # JAMAIS RÉPLIQUÉ. Les purges sont rejouables, mais deux répliques
+    # écriraient deux entrées de journal par exécution — et c'est ce journal
+    # qui sert de preuve que les purges tournent. Un compteur en double rendrait
+    # cette preuve illisible.
+    command: ['node', 'dist/scheduler.js']
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      api: { condition: service_healthy }
+    # PAS DE HEALTHCHECK : ce processus n'écoute aucun port et ne répond à
+    # personne. Ce qui se surveille, c'est la trace qu'il laisse — une entrée
+    # `purge.*` par nuit dans le journal d'audit, visible depuis l'écran
+    # « Journal » de l'administration. Son absence est le seul signal utile.
 
   # ---------------------------------------------------------------------------
   #  Front — fichiers statiques servis par nginx (voir web/Dockerfile)
