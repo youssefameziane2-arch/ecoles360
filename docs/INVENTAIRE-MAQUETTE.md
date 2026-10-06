@@ -19,7 +19,17 @@ Légende : ✅ fait · 🟡 partiel · ❌ à faire · ⛔ hors périmètre (dé
 
 ---
 
-## Périmètre de la mise en ligne — décision client du 30 septembre 2026
+> **PÉRIMÈTRE ÉLARGI LE 6 OCTOBRE 2026.** Le client demande désormais de
+> terminer le projet **complet** — tous les rôles, tous les écrans, les
+> migrations comprises. La section ci-dessous décrit le périmètre réduit de la
+> première mise en ligne ; elle reste valable comme ordre de priorité, pas
+> comme limite.
+>
+> Ordre des lots : **facturation** (fait côté API et back-office) → **CRM** →
+> **secrétariat** (B-44) → **`worker`/`scheduler`** (purges loi 09-08) →
+> finitions.
+
+## Périmètre de la première mise en ligne — décision client du 30 septembre 2026
 
 Le site ouvre en **vitrine** : **site public + l'administration qui l'alimente**,
 rien d'autre. Les autres rôles se construisent ensuite et se greffent sur un
@@ -45,7 +55,7 @@ fichier, et n'est pas sur le chemin de l'ouverture.
 
 ---
 
-## Site public — 13 écrans attendus, 8 complets
+## Site public — 13 écrans attendus, 9 complets
 
 **Un écran présent n'est pas un écran fait.** Le détail bloc par bloc est en fin
 de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
@@ -62,18 +72,17 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 | Article | `/blog/:slug` | ✅ |
 | Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité — demandent une route publique de tarifs |
 | Connexion | `/connexion` | ✅ écart assumé : formulaire unique au lieu des 2 étapes |
-| Mentions légales | `/mentions-legales` | 🟡 page servie par le CMS et éditable depuis l'admin — **texte à fournir par le client** |
-| Confidentialité | `/confidentialite` | 🟡 idem — exigée par la loi 09-08 (RG09) ; le plan des rubriques est posé, le texte engage l'éditeur du site |
-| Cookies | `/cookies` | 🟡 idem — **texte à fournir par le client** |
+| Mentions légales | `/mentions-legales` | 🟡 8 rubriques rédigées et semées — restent 3 `[À COMPLÉTER]` : raison sociale, RC/ICE, directeur de publication, hébergeur |
+| Confidentialité | `/confidentialite` | 🟡 11 rubriques rédigées — restent 2 `[À COMPLÉTER]`, dont le **numéro de déclaration CNDP**, qui suppose une démarche et non une saisie |
+| Cookies | `/cookies` | ✅ 6 rubriques, rien à compléter — le site ne pose que deux cookies, et seulement si l'on se connecte |
 
-**LES TROIS PAGES LÉGALES N'ONT NI ROUTE NI LIEN.** Le pied de page les omet
-volontairement plutôt que de mener au vide. Ce n'est pas un manque technique :
-leur texte **engage l'éditeur du site**, et la loi 09-08 les exige dès lors que
-le service collecte des coordonnées (RG09).
+**LES TROIS PAGES EXISTENT, ONT LEUR ROUTE ET LEUR LIEN AU PIED DE PAGE.** Leur
+texte est rédigé et posé par le semis, donc présent sur une base neuve.
 
-Elles étaient jusqu'ici reléguées en note sous le tableau, donc invisibles au
-décompte — c'est le client qui a dû les rappeler. Elles y figurent désormais
-comme les autres écrans.
+**Ce n'est pas un texte validé pour autant** : c'est une base à faire relire par
+un juriste, et l'écran « Contenu du site » signale une page tant qu'il y reste un
+marqueur `[À COMPLÉTER]`. Le semis ne réécrit jamais une page déjà rédigée — le
+texte relu ne sera pas écrasé par un `db:seed` de routine.
 
 **Absent de la maquette elle-même** : l'écran de contact (`goContact` est
 appelé mais jamais dessiné).
@@ -94,7 +103,7 @@ appelé mais jamais dessiné).
 | Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
 | CRM Clients | `isAdminCrm` | `/admin/crm` | ❌ KPI, prospects, dossiers, étapes |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
-| Abonnement & facturation | `isAdminFact` | `/admin/facturation` | ❌ KPI, tarifs, historique, encaissement |
+| Abonnement & facturation | `isAdminFact` | `/admin/facturation` | 🟡 indicateurs, historique, encaissement ✅ · ouverture d'abonnement et émission de facture depuis la fiche ✅ — manque le **détail de facture** (`isAdminFactDetail`) |
 | Facture (détail) | `isAdminFactDetail` | — | ❌ formules, essai, remise, reçu |
 | Secrétariat | `isAdminUsers` | `/admin/secretariat` | 🟡 comptes et rattachement, portées déléguées (RG05), suspension qui coupe les sessions (RG25) — manquent la **création de compte** et la **réinitialisation de mot de passe** : qui a le droit de créer un compte et comment le mot de passe parvient à son titulaire ne sont écrits nulle part |
 | Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | ❌ |
@@ -164,12 +173,12 @@ route à ce rôle.
 
 | Périmètre | Fait | Reste |
 |---|---|---|
-| Site public | 8 | 0 + 5 partiels — dont les 3 pages légales, en ligne mais suspendues à un texte du client |
-| Administration | 5 | 5 + 5 partiels |
+| Site public | 9 | 0 + 4 partiels — dont 2 pages légales, rédigées mais portant des mentions à compléter |
+| Administration | 5 | 4 + 6 partiels |
 | Établissement | 5 | 1 + 1 partiel |
 | Secrétariat | 5 | 0 |
 | Commercial | 1 (blog ouvert ; coquille et navigation en place) | 5 |
-| **Total** | **24** | **11 + 11 partiels** |
+| **Total** | **25** | **10 + 11 partiels** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait

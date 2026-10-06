@@ -387,3 +387,90 @@ export const ecrireProfilEtablissement = (id: string, profil: Record<string, unk
     method: 'PUT',
     body: JSON.stringify(profil),
   });
+
+// -----------------------------------------------------------------------------
+//  Facturation — RG11, RG14, RG18
+// -----------------------------------------------------------------------------
+
+export type FormuleAbonnement = 'essai_gratuit' | 'mensuel' | 'annuel';
+export type StatutPaiement = 'non_payee' | 'payee';
+export type StatutCommission = 'a_valider' | 'validee' | 'reglee';
+
+export const LIBELLE_FORMULE: Record<FormuleAbonnement, string> = {
+  essai_gratuit: 'Essai gratuit',
+  mensuel: 'Mensuel',
+  annuel: 'Annuel',
+};
+
+export interface IndicateursFacturation {
+  encaisse_ce_mois: string;
+  factures_encaissees_ce_mois: number;
+  en_attente: string;
+  factures_en_attente: number;
+  abonnements_actifs: number;
+  echeances_sous_30_jours: number;
+}
+
+export interface CommissionFacture {
+  id: string;
+  taux_pct: string;
+  montant_mad: string;
+  statut: StatutCommission;
+  commercial: { name: string } | null;
+}
+
+export interface FactureAdmin {
+  id: string;
+  numero: string;
+  objet: string;
+  montant_ht: string;
+  tva: string;
+  total_ttc: string;
+  statut_paiement: StatutPaiement;
+  emise_le: string;
+  payee_le: string | null;
+  etablissement: { id: string; nom: string; slug: string };
+  abonnement: { formule: FormuleAbonnement; debut: string; echeance: string } | null;
+  commissions: CommissionFacture[];
+}
+
+export const chargerIndicateursFacturation = () =>
+  apiFetch<IndicateursFacturation>('/admin/facturation');
+
+export const chargerFactures = (statut?: StatutPaiement) =>
+  apiFetch<FactureAdmin[]>(`/admin/factures${statut ? `?statut=${statut}` : ''}`);
+
+/** Le tarif vient de l'écran : il est propre à chaque client, aucun barème ne le fournit. */
+export const ouvrirAbonnement = (
+  etablissementId: string,
+  saisie: { formule: 'mensuel' | 'annuel'; tarif_mad: number; remise_pct?: number },
+) =>
+  apiFetch<{ id: string }>(`/admin/etablissements/${etablissementId}/abonnement`, {
+    method: 'POST',
+    body: JSON.stringify(saisie),
+  });
+
+/** Le montant vient de l'abonnement, jamais de la requête. */
+export const emettreFacture = (abonnementId: string, commission_pct?: number) =>
+  apiFetch<FactureAdmin>(`/admin/abonnements/${abonnementId}/facture`, {
+    method: 'POST',
+    body: JSON.stringify(commission_pct === undefined ? {} : { commission_pct }),
+  });
+
+/** C'est l'encaissement, et lui seul, qui lève la condition de la RG14. */
+export const encaisserFacture = (factureId: string) =>
+  apiFetch<void>(`/admin/factures/${factureId}/encaissement`, { method: 'PATCH' });
+
+export interface AbonnementAdmin {
+  id: string;
+  formule: FormuleAbonnement;
+  tarif_mad: string | null;
+  remise_pct: string | null;
+  debut: string;
+  echeance: string;
+  statut: 'essai' | 'actif' | 'expire' | 'resilie';
+  factures: { id: string; numero: string; total_ttc: string; statut_paiement: StatutPaiement }[];
+}
+
+export const chargerAbonnements = (etablissementId: string) =>
+  apiFetch<AbonnementAdmin[]>(`/admin/etablissements/${etablissementId}/abonnements`);

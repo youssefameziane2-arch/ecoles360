@@ -25,6 +25,7 @@ import { useTitrePage } from '@/lib/titre';
 import { GaleriePhotos } from '@/components/GaleriePhotos';
 import { FormulaireEtablissement } from './FormulaireEtablissement';
 import { ProfilEtablissementAdmin } from './ProfilEtablissementAdmin';
+import { AbonnementEtablissement } from './AbonnementEtablissement';
 
 
 const STATUTS: StatutEtablissement[] = ['en_attente', 'validee', 'suspendue', 'masquee'];
@@ -83,6 +84,9 @@ function Contenu() {
   // Un seul profil ouvert a la fois : deux formulaires longs cote a cote ne
   // se comparent pas, ils se confondent.
   const [profil, setProfil] = useState<string | null>(null);
+
+  // Le panneau d abonnement : tarif, facture, encaissement (RG11, RG14).
+  const [abonnement, setAbonnement] = useState<{ id: string; nom: string } | null>(null);
 
   const etablissements = useQuery({
     queryKey: ['admin', 'etablissements', statut, type],
@@ -197,6 +201,14 @@ function Contenu() {
             enCours={action.isPending}
             galerieOuverte={galerie?.id === etablissement.id}
             profilOuvert={profil === etablissement.id}
+            abonnementOuvert={abonnement?.id === etablissement.id}
+            onAbonnement={() =>
+              setAbonnement(
+                abonnement?.id === etablissement.id
+                  ? null
+                  : { id: etablissement.id, nom: etablissement.nom },
+              )
+            }
             onAction={(operation) => action.mutate(operation)}
             onProfil={() => setProfil(profil === etablissement.id ? null : etablissement.id)}
             onGalerie={() =>
@@ -216,6 +228,14 @@ function Contenu() {
           {profil === etablissement.id && (
             <ProfilEtablissementAdmin id={etablissement.id} onFerme={() => setProfil(null)} />
           )}
+
+          {abonnement?.id === etablissement.id && (
+            <AbonnementEtablissement
+              etablissementId={etablissement.id}
+              nom={etablissement.nom}
+              onFerme={() => setAbonnement(null)}
+            />
+          )}
         </div>
       ))}
 
@@ -232,17 +252,21 @@ function LigneEtablissement({
   enCours,
   galerieOuverte,
   profilOuvert,
+  abonnementOuvert,
   onAction,
   onGalerie,
   onProfil,
+  onAbonnement,
 }: {
   etablissement: EtablissementAdmin;
   enCours: boolean;
   galerieOuverte: boolean;
   profilOuvert: boolean;
+  abonnementOuvert: boolean;
   onAction: (operation: () => Promise<unknown>) => void;
   onGalerie: () => void;
   onProfil: () => void;
+  onAbonnement: () => void;
 }) {
   const abonnement = etablissement.abonnements[0];
 
@@ -314,6 +338,21 @@ function LigneEtablissement({
           aria-expanded={galerieOuverte}
         >
           Photos
+        </Button>
+
+        {/*
+          C'EST ICI QUE LE TARIF SE SAISIT, et nulle part ailleurs : il est
+          propre à chaque client et n'est jamais public, donc aucune grille ne
+          le fournit. Le panneau enchaîne les trois faits distincts qui mènent
+          à la publication — un accord, une pièce comptable, un règlement reçu.
+        */}
+        <Button
+          variant={abonnementOuvert ? 'navy' : 'outline'}
+          size="sm"
+          onClick={onAbonnement}
+          aria-expanded={abonnementOuvert}
+        >
+          Abonnement
         </Button>
 
         {!abonnement && (

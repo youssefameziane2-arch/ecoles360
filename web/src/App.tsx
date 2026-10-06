@@ -22,6 +22,7 @@ import { EtablissementsAdmin } from './pages/admin/EtablissementsAdmin';
 import { TableauDeBordAdmin } from './pages/admin/TableauDeBordAdmin';
 import { PropositionsAdmin } from './pages/admin/PropositionsAdmin';
 import { ParametresFacturation } from './pages/admin/ParametresFacturation';
+import { FacturationAdmin } from './pages/admin/FacturationAdmin';
 import { SponsoringsAdmin } from './pages/admin/SponsoringsAdmin';
 import { ContenuAdmin } from './pages/admin/ContenuAdmin';
 import { BlogAdmin, BlogEspace } from './pages/espace/Blog';
@@ -34,7 +35,6 @@ import {
   AgendaCommercial,
   CommerciauxAdmin,
   CrmAdmin,
-  FacturationAdmin,
   FacturationEspace,
   LeadsCommercial,
   StatistiquesCommercial,
