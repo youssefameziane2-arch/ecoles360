@@ -66,8 +66,8 @@ export const LIBELLE_ACTION: Record<string, string> = {
   // « Etablissement valide » au milieu de lignes correctement traduites.
   'etablissement.valide': 'Établissement validé',
   'etablissement.statut.validee': 'Établissement validé',
-  'etablissement.statut.suspendue': 'Établissement suspendu',
-  'etablissement.statut.masquee': 'Établissement masqué',
+  'etablissement.statut.suspendue': 'Établissement suspendu du site',
+  'etablissement.statut.masquee': 'Fiche masquée pour mise à jour',
   'etablissement.statut.en_attente': 'Établissement remis en attente',
   'etablissement.supprime': 'Établissement supprimé',
   'etablissement.badges.bascule': 'Badges modifiés',

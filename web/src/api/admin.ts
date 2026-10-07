@@ -7,10 +7,22 @@ import type { ChampsModifies } from './espace';
 
 export type StatutEtablissement = 'en_attente' | 'validee' | 'masquee' | 'suspendue';
 
+/**
+ * DEUX FAÇONS DE NE PAS ÊTRE EN LIGNE, et il ne faut pas les confondre
+ * (tranché par le client, 7 octobre 2026) :
+ *
+ * - `masquee` — la fiche est **en cours de mise à jour**. Elle sort du site le
+ *   temps des travaux et y revient. Ce n'est pas une sanction.
+ * - `suspendue` — l'établissement est **retiré du site jusqu'à réactivation**.
+ *
+ * Les libellés le disent, parce que « Masquée » seul ne dit pas pourquoi, et
+ * qu'un administrateur qui lit sa liste doit distinguer une fiche en travaux
+ * d'une fiche sanctionnée sans avoir à ouvrir le journal.
+ */
 export const LIBELLE_STATUT: Record<StatutEtablissement, string> = {
   en_attente: 'En attente',
   validee: 'Publiée',
-  masquee: 'Masquée',
+  masquee: 'En mise à jour',
   suspendue: 'Suspendue',
 };
 

@@ -296,6 +296,26 @@ function afficher(valeur: unknown): string {
   return JSON.stringify(valeur);
 }
 
+/**
+ * Ce que l'école lit sur sa propre fiche — tranché par le client le
+ * 7 octobre 2026 : `masquee` dit « en cours de mise à jour », `suspendue` dit
+ * « retirée du site jusqu'à réactivation ». Deux situations très différentes
+ * pour elle, et qui méritaient mieux qu'un « Non publiée » commun.
+ */
+const ETAT_FICHE: Record<FicheEspace['statut'], string> = {
+  validee: 'Publiée',
+  en_attente: 'En attente de validation',
+  masquee: 'Hors ligne — mise à jour en cours',
+  suspendue: 'Suspendue — nous contacter',
+};
+
+const COULEUR_ETAT: Record<FicheEspace['statut'], string> = {
+  validee: '#1F7A45',
+  en_attente: '#B57708',
+  masquee: '#5A6472',
+  suspendue: '#C42B38',
+};
+
 const ONGLETS = [
   { key: 'identite', label: 'Identité' },
   { key: 'contact', label: 'Contact' },
@@ -348,8 +368,14 @@ function Formulaire({ fiche, onEnvoye }: { fiche: FicheEspace; onEnvoye: () => v
           Page profil — site public
         </span>
         <span style={{ flex: 1 }} />
-        <span style={{ fontSize: 12, fontWeight: 600, color: fiche.statut === 'validee' ? '#1F7A45' : '#B57708' }}>
-          {fiche.statut === 'validee' ? 'Publiée' : 'Non publiée'}
+        {/*
+          « NON PUBLIÉE » NE DIT PAS POURQUOI, et les trois raisons ne se
+          valent pas pour une école : attendre une validation, être masquée le
+          temps d'une mise à jour, ou être suspendue du site. Elle n'a pas à
+          téléphoner pour l'apprendre.
+        */}
+        <span style={{ fontSize: 12, fontWeight: 600, color: COULEUR_ETAT[fiche.statut] }}>
+          {ETAT_FICHE[fiche.statut]}
         </span>
       </div>
 

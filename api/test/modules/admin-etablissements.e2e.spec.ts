@@ -882,6 +882,78 @@ describe('Back-office admin — fiches et galerie (intégration)', () => {
       await ecole.delete(`/admin/etablissements/${fiche.id}`).expect(403);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  //  `masquee` et `suspendue` — RG03
+  // ---------------------------------------------------------------------------
+
+  /**
+   * DEUX FAÇONS DE NE PAS ÊTRE EN LIGNE, tranchées par le client le 7 octobre
+   * 2026 : `masquee` dit que la fiche est en cours de mise à jour et reviendra,
+   * `suspendue` qu'elle est retirée jusqu'à réactivation.
+   *
+   * CE QUI SE TESTE N'EST PAS LA NUANCE, qui est affaire de libellés, mais ce
+   * qu'elles ont en commun et qui ne doit jamais fléchir : **ni l'une ni
+   * l'autre n'est publique** (RG03), et revenir en ligne repasse par la
+   * vérification d'abonnement (RG14). C'est la tentation inverse qui serait
+   * dangereuse — traiter « c'était juste une mise à jour » comme un
+   * laissez-passer remettrait en ligne une fiche dont l'abonnement a expiré
+   * pendant les travaux.
+   */
+  describe('fiche masquée et fiche suspendue (RG03, RG14)', () => {
+    it.each(['masquee', 'suspendue'] as const)(
+      'répond 404 au public sur une fiche « %s », jamais 403',
+      async (statut) => {
+        const { admin, fiche } = await ficheJetable(`École Hors Ligne ${statut}`);
+
+        await admin.post(`/admin/etablissements/${fiche.id}/essai-gratuit`).expect(204);
+        await admin
+          .patch(`/admin/etablissements/${fiche.id}/statut`)
+          .send({ statut: 'validee' })
+          .expect(204);
+
+        // Publique tant qu'elle est validée — sans quoi le 404 qui suit ne
+        // prouverait rien.
+        await request(app.getHttpServer()).get(`/api/v1/etablissements/${fiche.slug}`).expect(200);
+
+        await admin.patch(`/admin/etablissements/${fiche.id}/statut`).send({ statut }).expect(204);
+
+        // 404 ET NON 403 : confirmer l'existence d'une fiche qu'on n'a pas le
+        // droit de voir révélerait qu'une école est inscrite, et dans quel
+        // état. La règle de lecture du projet ne souffre pas d'exception pour
+        // une fiche simplement en travaux.
+        await request(app.getHttpServer()).get(`/api/v1/etablissements/${fiche.slug}`).expect(404);
+
+        await db.etablissement.delete({ where: { id: BigInt(fiche.id) } });
+      },
+    );
+
+    it('journalise la transition avec son origine et sa cible', async () => {
+      const { admin, fiche } = await ficheJetable('École Journal Masquage');
+
+      await admin.post(`/admin/etablissements/${fiche.id}/essai-gratuit`).expect(204);
+      await admin
+        .patch(`/admin/etablissements/${fiche.id}/statut`)
+        .send({ statut: 'validee' })
+        .expect(204);
+      await admin
+        .patch(`/admin/etablissements/${fiche.id}/statut`)
+        .send({ statut: 'masquee' })
+        .expect(204);
+
+      const trace = await db.journalAudit.findFirstOrThrow({
+        where: { action: 'etablissement.statut.masquee', cible_id: BigInt(fiche.id) },
+        orderBy: { id: 'desc' },
+      });
+
+      // L'ORIGINE COMPTE AUTANT QUE LA CIBLE : masquer une fiche validée et
+      // masquer une fiche déjà suspendue ne racontent pas la même histoire, et
+      // le journal est ce qui restera pour la relire (RG15).
+      expect(trace.details).toMatchObject({ depuis: 'validee', vers: 'masquee' });
+
+      await db.etablissement.delete({ where: { id: BigInt(fiche.id) } });
+    });
+  });
 });
 
 /**

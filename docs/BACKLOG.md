@@ -48,7 +48,7 @@ les tests, et ne se découvre qu'à la recette. La ligne est tracée ici.
 
 | | |
 |---|---|
-| **`masquee` vs `suspendue`** | Le statut existe au schéma, l'API l'accepte, aucun bouton ne le pose. Les livrables **ne le définissent nulle part** — seulement la valeur dans l'énumération (L10 §2.3). Deux lectures tiennent : (a) un retrait temporaire à l'initiative de l'école, qui garde son abonnement ; (b) une sanction d'administration plus douce que la suspension. Elles n'ont ni le même acteur, ni le même effet sur la facturation. **Question au client**, pas un choix de développement. En attendant, le statut reste inatteignable — ce qui ne coûte rien, personne ne pouvant le poser. |
+| **`masquee` vs `suspendue`** | ~~Question posée au client~~ — **tranché le 7 octobre 2026**, voir B-47. |
 | **Taux de commission** | Reste à 0. Il détermine la paie de personnes réelles. La capacité de le fixer par facture existe déjà (RG18) ; le chiffre appartient à la Direction. |
 | **« Taux de contact » (B-42)** | Numérateur et dénominateur indéfinis, et aucun rapport des nombres de la maquette ne donne son 1,5 %. La tuile reste omise. |
 | **Définition d'une « visite » (B-40)** | Session ou page vue : la maquette ne le dit pas, et le choix change la facturation à la vue (RG12). |
@@ -830,3 +830,45 @@ freiner les envois automatisés.
 
 **Statut :** fait pour la route et l'écran ; notification et accusé `à faire`,
 dédoublonnage `à trancher` (le client décide de la règle).
+
+## B-47 — `masquee` et `suspendue` : ce qui les sépare
+
+Le statut `masquee` existait au schéma depuis le livrable 10 (§2.3), l'API
+l'acceptait, et **aucun bouton ne le posait** : rien, nulle part, ne disait ce
+qui le distinguait de `suspendue`. Deux lectures tenaient, sans le même acteur
+ni le même effet sur la facturation ; la question a donc été posée plutôt que
+devinée.
+
+**Tranché par le client, le 7 octobre 2026 :**
+
+| Statut | Ce qu'il veut dire |
+|---|---|
+| `masquee` | la fiche est **en cours de mise à jour**. Elle sort du site le temps des travaux et y revient. Ce n'est pas une sanction. |
+| `suspendue` | l'établissement est **retiré du site jusqu'à réactivation**. |
+
+**Ce qu'ils ont en commun, et qui ne fléchit pas :** ni l'un ni l'autre n'est
+public — une fiche qui n'est pas `validee` répond **404, jamais 403** (RG03).
+Une fiche simplement en travaux ne fait pas exception : confirmer son existence
+révélerait qu'une école est inscrite, et dans quel état.
+
+**Revenir en ligne repasse par RG14.** C'était la tentation à écarter : traiter
+« ce n'était qu'une mise à jour » comme un laissez-passer remettrait en ligne
+une fiche dont l'abonnement a expiré pendant les travaux. Le contrôle
+d'abonnement encaissé s'applique à toute transition vers `validee`, d'où
+qu'elle vienne.
+
+**Ce qui a été construit :** le bouton « Masquer le temps d'une mise à jour »
+côté administration, à côté de « Suspendre » — les deux coexistent, car choisir
+à la place de l'administrateur ferait écrire « suspendu » au journal là où il
+voulait dire « en travaux », et ce journal est la mémoire de ce qui a été
+décidé (RG15). Le bouton de retour se nomme par l'état d'où il vient :
+« Remettre en ligne » ou « Réactiver ». Le libellé de statut devient « En mise
+à jour », et l'espace de l'école remplace son « Non publiée » commun par la
+raison exacte — elle n'a pas à téléphoner pour l'apprendre.
+
+**Resté ouvert :** l'école ne peut pas masquer sa propre fiche. La règle reçue
+dit ce que le statut signifie, pas qui a le droit de le poser, et RG20 veut que
+l'établissement propose et que l'admin publie. Lui donner ce bouton serait une
+écriture directe sur sa fiche — à trancher avec le client si le besoin se
+présente.
+**Statut :** tranché par le client ; construit. Qui peut masquer : `à trancher`.

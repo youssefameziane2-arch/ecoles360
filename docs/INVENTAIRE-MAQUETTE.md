@@ -93,7 +93,7 @@ appelé mais jamais dessiné).
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
-| Établissements | `isAdminEtab` | `/admin/etablissements` | 🟡 création, galerie, essai gratuit (RG13), validation et **suspension** ✅ — une école qui se retire sort donc du site public. Reste 🟡 pour `masquee` : le statut existe au schéma, l'API l'accepte, aucun bouton ne le pose, et **ce qui le distingue de `suspendue` n'est défini nulle part** |
+| Établissements | `isAdminEtab` | `/admin/etablissements` | ✅ création, galerie, essai gratuit (RG13), validation, **masquage** et **suspension**. Le client a tranché le 7 octobre 2026 ce qui sépare les deux (B-47) : `masquee` = fiche en cours de mise à jour, `suspendue` = retrait jusqu'à réactivation. Ni l'une ni l'autre n'est publique — 404, jamais 403 (RG03) — et revenir en ligne repasse par le contrôle d'abonnement (RG14) |
 | Page profil (relecture) | `isAdminPend` | `/admin/propositions` | ✅ |
 | Avis — modération | `isAdminAvisAll` | `/admin/avis` | ✅ |
 | Blog | `isBlogList` | `/admin/blog` | ✅ |
