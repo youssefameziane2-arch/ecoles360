@@ -112,6 +112,9 @@ describe('Secrétariat — portées déléguées (intégration)', () => {
     return {
       get: (url: string) => agent.get(`/api/v1${url}`),
       patch: (url: string) => agent.patch(`/api/v1${url}`).set('x-csrf-token', csrf),
+      // Le jeton CSRF vaut pour toute écriture, `POST` compris : la création
+      // de compte passe par là.
+      post: (url: string) => agent.post(`/api/v1${url}`).set('x-csrf-token', csrf),
     };
   }
 
@@ -305,5 +308,204 @@ describe('Secrétariat — portées déléguées (intégration)', () => {
 
     expect(derniere.action).toBe('secretariat.portee.revoquee');
     expect(derniere.role_acteur).toBe('superadmin');
+  });
+
+  // ---------------------------------------------------------------------------
+  //  Création de compte — RG25
+  // ---------------------------------------------------------------------------
+
+  /**
+   * CE QUI SE JOUE ICI, c'est un compte qui ouvre un accès au back-office. Les
+   * tests portent donc sur ce que la route REFUSE et sur ce qu'elle ne laisse
+   * pas filtrer, davantage que sur le fait qu'elle crée.
+   */
+  describe('création de compte', () => {
+    const jetable = () => `compte.test.${Date.now()}${Math.random().toString(36).slice(2, 6)}@ecoles360.com`;
+
+    async function supprimer(email: string) {
+      const compte = await db.user.findUnique({ where: { email }, select: { id: true } });
+
+      if (compte) {
+        await db.journalAudit.deleteMany({ where: { cible_type: 'user', cible_id: compte.id } });
+        await db.user.delete({ where: { id: compte.id } });
+      }
+    }
+
+    it('crée un secrétariat SANS AUCUNE PORTÉE, et rend le mot de passe une fois', async () => {
+      const admin = await connecte(ADMIN);
+      const email = jetable();
+
+      const reponse = await admin
+        .post('/admin/comptes')
+        .send({ email, nom: 'Secrétaire de test', role: 'secretariat' })
+        .expect(201);
+
+      const motDePasse = reponse.body.data.mot_de_passe as string;
+      expect(typeof motDePasse).toBe('string');
+      expect(motDePasse.length).toBeGreaterThanOrEqual(20);
+
+      const compte = await db.user.findUniqueOrThrow({
+        where: { email },
+        select: { id: true, statut: true, passwordHash: true, permissions: true },
+      });
+
+      expect(compte.statut).toBe('actif');
+
+      // AUCUNE PORTÉE À LA NAISSANCE (RG05) : lui en accorder d'office
+      // déciderait à la place de l'administrateur ce qu'il délègue.
+      expect(compte.permissions).toHaveLength(0);
+
+      // Le mot de passe N'EST PAS stocké en clair.
+      expect(compte.passwordHash).not.toContain(motDePasse);
+      expect(compte.passwordHash.startsWith('$argon2')).toBe(true);
+
+      // …ET N'EST PAS JOURNALISÉ. Le journal garde qui a créé quel compte, pas
+      // le secret — c'est la seule trace qui survivrait à sa transmission.
+      const trace = await db.journalAudit.findFirstOrThrow({
+        where: { action: 'compte.cree', cible_id: compte.id },
+      });
+
+      expect(JSON.stringify(trace.details)).not.toContain(motDePasse);
+
+      // Le compte créé ouvre réellement l'accès : sans quoi l'écran aurait
+      // affiché un mot de passe qui ne sert à rien.
+      const nouveau = request.agent(app.getHttpServer());
+      await nouveau
+        .post('/api/v1/auth/login')
+        .send({ email, mot_de_passe: motDePasse })
+        .expect(200);
+
+      await supprimer(email);
+    });
+
+    it('refuse une adresse déjà prise', async () => {
+      const admin = await connecte(ADMIN);
+
+      await admin
+        .post('/admin/comptes')
+        .send({ email: YASSINE, nom: 'Doublon', role: 'secretariat' })
+        .expect(409);
+    });
+
+    /**
+     * `superadmin` NE SE CRÉE PAS PAR CETTE PORTE. Le compte de recours doit
+     * se poser depuis le serveur, pas depuis un écran joignable par internet.
+     */
+    it.each(['superadmin', 'etablissement'])('refuse le rôle « %s »', async (role) => {
+      const admin = await connecte(ADMIN);
+
+      await admin
+        .post('/admin/comptes')
+        .send({ email: jetable(), nom: 'Rôle interdit', role })
+        .expect(422);
+    });
+
+    it('refuse de rattacher un commercial à un établissement', async () => {
+      const admin = await connecte(ADMIN);
+      const fiche = await db.etablissement.findFirstOrThrow({ select: { id: true } });
+
+      await admin
+        .post('/admin/comptes')
+        .send({
+          email: jetable(),
+          nom: 'Commercial rattaché',
+          role: 'commercial',
+          etablissement_id: fiche.id.toString(),
+        })
+        .expect(422);
+    });
+
+    it('refuse un téléphone qui n’est pas marocain', async () => {
+      const admin = await connecte(ADMIN);
+
+      await admin
+        .post('/admin/comptes')
+        .send({
+          email: jetable(),
+          nom: 'Mauvais numéro',
+          role: 'commercial',
+          telephone: '+33 6 12 34 56 78',
+        })
+        .expect(422);
+    });
+
+    it('n’est pas ouvert à un compte non administrateur (RG25)', async () => {
+      const secretaire = await connecte(YASSINE);
+
+      await secretaire
+        .post('/admin/comptes')
+        .send({ email: jetable(), nom: 'Escalade', role: 'secretariat' })
+        .expect(403);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  //  Réinitialisation de mot de passe — RG25
+  // ---------------------------------------------------------------------------
+
+  describe('réinitialisation du mot de passe', () => {
+    /**
+     * LA SESSION EN COURS TOMBE. Réinitialiser parce qu'un mot de passe a
+     * fuité, puis laisser vivre la session ouverte avec lui, ne protégerait de
+     * rien — c'est la même exigence que la suspension.
+     */
+    it('change le mot de passe et détruit les sessions en cours', async () => {
+      const admin = await connecte(ADMIN);
+      const email = `reinit.${Date.now()}@ecoles360.com`;
+
+      const creation = await admin
+        .post('/admin/comptes')
+        .send({ email, nom: 'À réinitialiser', role: 'commercial' })
+        .expect(201);
+
+      const compte = await db.user.findUniqueOrThrow({ where: { email }, select: { id: true } });
+
+      const session = request.agent(app.getHttpServer());
+      await session
+        .post('/api/v1/auth/login')
+        .send({ email, mot_de_passe: creation.body.data.mot_de_passe })
+        .expect(200);
+      await session.get('/api/v1/auth/me').expect(200);
+
+      const reinit = await admin.post(`/admin/comptes/${compte.id}/mot-de-passe`).expect(201);
+
+      const nouveau = reinit.body.data.mot_de_passe as string;
+      expect(nouveau).not.toBe(creation.body.data.mot_de_passe);
+
+      // La session ouverte est morte, et l'ancien mot de passe ne vaut plus.
+      await session.get('/api/v1/auth/me').expect(401);
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email, mot_de_passe: creation.body.data.mot_de_passe })
+        .expect(401);
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email, mot_de_passe: nouveau })
+        .expect(200);
+
+      await db.journalAudit.deleteMany({ where: { cible_type: 'user', cible_id: compte.id } });
+      await db.user.delete({ where: { id: compte.id } });
+    });
+
+    /**
+     * PAS SUR UN ADMINISTRATEUR. Un administrateur qui pourrait réinitialiser
+     * le mot de passe d'un autre prendrait son compte.
+     */
+    it('refuse de réinitialiser un compte administrateur', async () => {
+      const admin = await connecte(ADMIN);
+      const direction = await db.user.findUniqueOrThrow({
+        where: { email: ADMIN },
+        select: { id: true },
+      });
+
+      await admin.post(`/admin/comptes/${direction.id}/mot-de-passe`).expect(403);
+    });
+
+    it('répond 404 sur un compte inconnu', async () => {
+      const admin = await connecte(ADMIN);
+
+      await admin.post('/admin/comptes/9999999/mot-de-passe').expect(404);
+    });
   });
 });

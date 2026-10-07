@@ -486,3 +486,39 @@ export interface AbonnementAdmin {
 
 export const chargerAbonnements = (etablissementId: string) =>
   apiFetch<AbonnementAdmin[]>(`/admin/etablissements/${etablissementId}/abonnements`);
+
+// ---------------------------------------------------------------------------
+//  Création de compte — RG25
+// ---------------------------------------------------------------------------
+
+export interface CompteCree {
+  id: string;
+  email: string;
+  name: string;
+  /**
+   * RENDU UNE SEULE FOIS, et par le serveur seul. Il n'est stocké nulle part
+   * en clair — ni en base, qui n'en garde qu'un hachage Argon2id, ni au
+   * journal d'audit. Recharger l'écran ne le retrouvera pas : c'est à
+   * l'administrateur de le transmettre à son titulaire.
+   */
+  mot_de_passe: string;
+}
+
+export interface NouveauCompte {
+  email: string;
+  nom: string;
+  role: 'secretariat' | 'commercial';
+  telephone?: string;
+  /** Secrétariat seulement — l'API refuse un commercial rattaché. */
+  etablissement_id?: string;
+}
+
+export const creerCompte = (compte: NouveauCompte) =>
+  apiFetch<CompteCree>('/admin/comptes', { method: 'POST', body: JSON.stringify(compte) });
+
+/** Les sessions en cours du titulaire sont détruites (RG25). */
+export const reinitialiserMotDePasse = (id: string) =>
+  apiFetch<{ id: string; email: string; nom: string; mot_de_passe: string }>(
+    `/admin/comptes/${id}/mot-de-passe`,
+    { method: 'POST' },
+  );

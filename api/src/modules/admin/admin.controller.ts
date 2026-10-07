@@ -36,6 +36,7 @@ import { ParametresFacturationService } from './parametres-facturation.service';
 import { AuditLectureService } from './audit-lecture.service';
 import { TableauDeBordAdminService } from './tableau-de-bord-admin.service';
 import { StatistiquesAdminService } from './statistiques-admin.service';
+import { CreerCompteDto } from './dto/creer-compte.dto';
 import { StatistiquesAdminDto } from './dto/statistiques-admin.dto';
 import { SponsoringsService } from '../sponsorings/sponsorings.service';
 import { ArticlesService } from '../articles/articles.service';
@@ -62,6 +63,7 @@ import { BadgesEtablissementDto } from './dto/badges-etablissement.dto';
 import { CreerEtablissementDto } from './dto/creer-etablissement.dto';
 import { PorteeSecretariatDto } from './dto/portee-secretariat.dto';
 import { StatutCompteDto } from './dto/statut-compte.dto';
+import { ComptesService } from './comptes.service';
 import { SecretariatService } from './secretariat.service';
 import { CrmService } from '../crm/crm.service';
 import { CrmLectureService } from '../crm/crm-lecture.service';
@@ -97,6 +99,7 @@ export class AdminController {
     private readonly moderationAvis: ModerationAvisService,
     private readonly photosService: PhotosService,
     private readonly secretariat: SecretariatService,
+    private readonly comptes: ComptesService,
     private readonly crm: CrmService,
     private readonly crmLecture: CrmLectureService,
     private readonly facturation: FacturationService,
@@ -490,6 +493,47 @@ export class AdminController {
   })
   comptesSecretariat() {
     return this.secretariat.lister();
+  }
+
+  /**
+   * LA RÉPONSE PORTE LE MOT DE PASSE, UNE SEULE FOIS. Il est tiré au sort par
+   * le serveur et n'est stocké nulle part en clair — la base n'en garde qu'un
+   * hachage Argon2id, et le journal d'audit n'en garde rien du tout. C'est
+   * l'administrateur qui le transmet.
+   *
+   * CE N'EST PAS LA MEILLEURE RÉPONSE POSSIBLE : un lien de première connexion
+   * envoyé par courriel vaudrait mieux. Il n'y a aucun envoi d'e-mail dans ce
+   * projet (B-46), et cette convention est celle déjà posée par `compte:creer`
+   * en ligne de commande.
+   */
+  @Post('comptes')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Créer un compte de secrétariat ou de commercial (RG25)',
+    description:
+      'Le mot de passe est tiré au sort et rendu UNE SEULE FOIS. ' +
+      'Un secrétariat naît sans aucune portée déléguée : elles s’accordent ensuite, une par une (RG05).',
+  })
+  @ApiResponse({ status: 201, description: 'Compte créé, mot de passe à transmettre.' })
+  @ApiResponse({ status: 409, description: 'Un compte existe déjà avec cette adresse.' })
+  creerCompte(@Utilisateur() utilisateur: UtilisateurAuthentifie, @Body() dto: CreerCompteDto) {
+    return this.comptes.creer(dto, utilisateur.userId);
+  }
+
+  @Post('comptes/:id/mot-de-passe')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Réinitialiser le mot de passe d’un compte de personnel',
+    description:
+      'Les sessions en cours sont détruites : laisser vivre une session ouverte ' +
+      'avec un mot de passe que l’on réinitialise ne protégerait de rien (RG25).',
+  })
+  @ApiResponse({ status: 403, description: 'Compte administrateur — passer par « compte:creer ».' })
+  reinitialiserMotDePasse(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.comptes.reinitialiser(BigInt(id), utilisateur.userId);
   }
 
   @Patch('secretariat/:id/portee')

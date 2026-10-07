@@ -89,7 +89,7 @@ appelé mais jamais dessiné).
 
 ---
 
-## Administration — 15 écrans attendus, 7 complets
+## Administration — 15 écrans attendus, 9 complets
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -105,8 +105,8 @@ appelé mais jamais dessiné).
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
 | Abonnement & facturation | `isAdminFact` | `/admin/facturation` | 🟡 indicateurs, historique, encaissement ✅ · ouverture d'abonnement et émission de facture depuis la fiche ✅ — manque le **détail de facture** (`isAdminFactDetail`) |
 | Facture (détail) | `isAdminFactDetail` | sous la fiche, dans « Établissements » | 🟡 **formules, essai et remise sont faits** par le panneau `AbonnementEtablissement` — choix de la formule, tarif négocié, remise annuelle (RG11), émission et encaissement. Ne manque que le **reçu**, bloqué : il porte des mentions légales obligatoires (raison sociale, RC/ICE) encore `[À COMPLÉTER]` |
-| Secrétariat | `isAdminUsers` | `/admin/secretariat` | 🟡 comptes et rattachement, portées déléguées (RG05), suspension qui coupe les sessions (RG25) — manquent la **création de compte** et la **réinitialisation de mot de passe** : qui a le droit de créer un compte et comment le mot de passe parvient à son titulaire ne sont écrits nulle part |
-| Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | 🟡 portefeuilles, transformations, taux, relances dues, commissions — manque la **création de compte**, qui se fait par `compte:creer --role=commercial` |
+| Secrétariat | `isAdminUsers` | `/admin/secretariat` | ✅ **création de compte** et **réinitialisation de mot de passe** comprises, avec rattachement, portées déléguées (RG05) et suspension qui coupe les sessions (RG25). Le mot de passe est tiré au sort et affiché **une seule fois** — un lien de première connexion par courriel vaudrait mieux, mais il n'y a aucun envoi d'e-mail dans le projet (B-46) |
+| Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | ✅ **création de compte** comprise, portefeuilles, transformations, taux, relances dues, commissions. Un commercial sans téléphone n'apparaît pas sur la bannière d'aide du site, et l'écran le dit |
 | Base de données | `isAdminDb` | — | ❌ explorateur lecture seule (pas dans la navigation actuelle) |
 
 **Hors maquette, construits en plus** : Sponsoring (`/admin/sponsorings`) et
@@ -175,11 +175,11 @@ qu'un commercial doit lire des chiffres d'une fiche n'est écrit nulle part.
 | Périmètre | Complets | Partiels | Restants |
 |---|---|---|---|
 | Site public (13) | 9 | 4 — dont 2 pages légales en attente de mentions, et la 3ᵉ de l'image, carte et réseaux sociaux | 0 |
-| Administration (15) | 7 | 7 | 1 — l'explorateur de base |
+| Administration (15) | 9 | 5 | 1 — l'explorateur de base |
 | Établissement (7) | 6 | 1 — statistiques | 0 (+1 hors périmètre) |
 | Secrétariat (5) | 5 | 0 | 0 |
 | Commercial (6) | 2 | 3 | 1 — statistiques, en attente de définition |
-| **Total (46)** | **29** | **15** | **2** |
+| **Total (46)** | **31** | **13** | **2** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait

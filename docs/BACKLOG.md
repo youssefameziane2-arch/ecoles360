@@ -920,3 +920,46 @@ Le test de facturation **lit le paramètre** plutôt que d'attendre 8 : figer la
 valeur ferait tomber la suite le jour où la Direction change le taux, et
 ferait croire à une régression là où il n'y aurait qu'une décision de gestion.
 **Statut :** tranché par le client ; construit.
+
+## B-49 — Création de compte : qui crée, et comment le mot de passe arrive
+
+Les écrans « Secrétariat » et « Commerciaux » listaient, suspendaient et
+déléguaient des portées, mais **ne créaient aucun compte**. Deux questions
+sans réponse l'empêchaient, et la seconde reste ouverte.
+
+**Qui a le droit de créer — tranché, et pas par nous.** Les notes manuscrites
+du client du 28 septembre 2026 l'écrivent : *« l'admin, lorsqu'il ajoute le
+secrétaire, il lui donne du privilège »*. C'est l'administration, et elle
+seule.
+
+**Comment le mot de passe atteint son titulaire — toujours pas tranché.** Il
+est tiré au sort par le serveur et **affiché une seule fois** à
+l'administrateur, qui le transmet. Ce n'est pas la bonne réponse : un lien de
+première connexion envoyé par courriel vaudrait mieux. Mais il n'y a aucun
+envoi d'e-mail dans ce projet (B-46), et c'est exactement la convention déjà
+posée par `compte:creer` en ligne de commande. **À reprendre le jour où le
+SMTP existe.**
+
+Ce que la route refuse, et pourquoi :
+
+| Refus | Motif |
+|---|---|
+| rôle `superadmin` | le compte de recours se pose depuis le serveur, pas depuis un écran joignable par internet |
+| rôle `etablissement` | il naît avec la revendication d'une fiche (RG04), qui a ses propres règles |
+| rattacher un commercial à une école | aucune de ses routes ne lit ce champ ; le poser laisserait croire, en relisant la base, qu'un commercial « est » à une école |
+| réinitialiser un `superadmin` | un administrateur qui pourrait réinitialiser un autre administrateur prendrait son compte |
+
+**Un secrétariat naît sans aucune portée** (RG05) : lui en accorder d'office
+déciderait à sa place ce que l'administrateur délègue, alors que c'est
+précisément le geste que l'écran lui demande ensuite, ligne par ligne.
+
+**La réinitialisation détruit les sessions en cours.** Réinitialiser parce
+qu'un mot de passe a fuité, puis laisser vivre la session ouverte avec lui, ne
+protégerait de rien — même exigence que la suspension (RG25).
+
+**Le mot de passe n'est jamais journalisé.** Le journal garde qui a créé quel
+compte, pour quel rôle ; il ne garde pas le secret. Un test le vérifie
+explicitement, parce que c'est le genre de fuite qu'on n'aperçoit jamais en
+relisant un écran.
+**Statut :** construit. Envoi du mot de passe par courriel : `à faire`, bloqué
+par l'absence de SMTP (B-46).

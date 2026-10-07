@@ -4,6 +4,7 @@ import { ApiError } from '@/api/client';
 import {
   basculerPortee,
   basculerStatutCompte,
+  chargerEtablissementsAdmin,
   chargerSecretariat,
   EFFET_PORTEE,
   LIBELLE_PORTEE,
@@ -11,6 +12,7 @@ import {
   type PorteeDeleguee,
 } from '@/api/admin';
 import { AvecIdentite, CoquilleEspace } from '@/components/CoquilleEspace';
+import { CreationCompte } from '@/components/CreationCompte';
 import { Badge, Button, EmptyState, Toast } from '@/ds/composants';
 import { formaterDate } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
@@ -57,6 +59,11 @@ function Contenu() {
 
   const comptes = useQuery({ queryKey: cle, queryFn: chargerSecretariat });
 
+  const etablissements = useQuery({
+    queryKey: ['admin', 'etablissements'],
+    queryFn: () => chargerEtablissementsAdmin({}),
+  });
+
   /**
    * Chaque écriture rend la liste entière : on la pose dans le cache plutôt
    * que de la redemander. Cocher une portée ne doit pas faire clignoter les
@@ -88,6 +95,16 @@ function Contenu() {
           onClose={() => setMessage(null)}
         />
       )}
+
+      {/*
+        LA LISTE DES ÉTABLISSEMENTS N'EST CHARGÉE QUE POUR CE FORMULAIRE, et
+        sans filtre de statut : un secrétariat se rattache aussi bien à une
+        fiche encore en attente qu'à une fiche publiée.
+      */}
+      <CreationCompte
+        role="secretariat"
+        etablissements={(etablissements.data ?? []).map((e) => ({ id: e.id, nom: e.nom }))}
+      />
 
       {comptes.isPending && <p style={texteDoux}>Chargement…</p>}
 
