@@ -70,7 +70,7 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 | FAQ | `/faq` | ✅ |
 | Blog | `/blog` | ✅ |
 | Article | `/blog/:slug` | ✅ |
-| Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité et formulaire en 2 étapes compris, le prospect arrive dans le CRM — manquent les trois étapes `insSteps3`, les témoignages de directeurs et la FAQ qui leur est destinée, qui n'ont pas de source |
+| Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité, trois étapes et formulaire en 2 étapes compris, le prospect arrive dans le CRM — manquent les témoignages de directeurs et la FAQ qui leur est destinée, qui n'ont pas de source |
 | Connexion | `/connexion` | ✅ écart assumé : formulaire unique au lieu des 2 étapes |
 | Mentions légales | `/mentions-legales` | 🟡 8 rubriques rédigées et semées — restent 3 `[À COMPLÉTER]` : raison sociale, RC/ICE, directeur de publication, hébergeur |
 | Confidentialité | `/confidentialite` | 🟡 11 rubriques rédigées — restent 2 `[À COMPLÉTER]`, dont le **numéro de déclaration CNDP**, qui suppose une démarche et non une saisie |
@@ -101,7 +101,7 @@ appelé mais jamais dessiné).
 | Journal d'audit | `isAdminJournal` | `/admin/journal` | ✅ |
 | Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ, page « À propos » et les **trois pages légales** (onglets) — manquent les catégories d'articles, qui demandent une migration |
 | Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
-| CRM Clients | `isAdminCrm` | `/admin/crm` | ✅ indicateurs, pipeline en 6 colonnes (RG17), relances, attribution des dossiers (RG18) |
+| CRM Clients | `isAdminCrm` | `/admin/crm` | ✅ indicateurs, pipeline en 6 colonnes (RG17), relances, attribution des dossiers (RG18), **pastille des prospects jamais ouverts** dans le menu — seul signal qu'une demande du formulaire public est arrivée, faute d'envoi d'e-mail (B-46) |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
 | Abonnement & facturation | `isAdminFact` | `/admin/facturation` | 🟡 indicateurs, historique, encaissement ✅ · ouverture d'abonnement et émission de facture depuis la fiche ✅ — manque le **détail de facture** (`isAdminFactDetail`) |
 | Facture (détail) | `isAdminFactDetail` | — | ❌ formules, essai, remise, reçu |
@@ -125,7 +125,7 @@ référence, à la demande du client.
 | Blog | `isBlogList` | `/espace/blog` | ✅ |
 | Article (éditeur) | `isBlogDetail` | `/espace/blog` | ✅ |
 | Statistiques | `isEtabStats` | `/espace/statistiques` | 🟡 vues du mois, clics « Appeler », contacts WhatsApp (écart au mois précédent à date), vues mensuelles, origine des contacts — manque « Taux de contact », sans définition (B-42) |
-| Abonnement & facturation | `isEtabCredits` | `/espace/facturation` | ❌ formules, factures, conseiller |
+| Abonnement & facturation | `isEtabCredits` | `/espace/facturation` | ✅ formule en cours, vues du mois, les trois formules avec le badge de l'état réel, factures et conseiller. **Lecture seule** — ni souscription ni paiement sur la plateforme. **Refusé au secrétariat** : la RG05 ne délègue que `fiches`, `contacts` et `avis`, et la facturation n'en est pas une |
 | CRM Leads | `isCrm` | — | ⛔ hors périmètre |
 
 **Hors maquette, construit en plus** : Demandes de contact (`/espace/demandes`).
@@ -294,7 +294,7 @@ l'autre.
 | H1 + « Commencer l'inscription » | ✅ les boutons des trois formules mènent au formulaire |
 | `benefits` | ✅ sous deux cartes (« gratuitement » / « ce que l'abonnement ajoute ») |
 | « Formules de visibilité » + `plans`, bascule Mensuel / Annuel −10 % | ✅ `FormulesVisibilite`, trois `PricingCard` du design system. **Sans montants — c'est la maquette qui le veut** : elle écrit « Tarif communiqué par votre conseiller ». La bascule ne calcule rien, elle annonce la remise de 10 % (RG11). Sous-titre et note rendus autour de la carte, faute de fente (CORRECTIFS.md §6) |
-| `insSteps3` — les trois étapes | ❌ **la ligne disait ✅ ; vérifié le 6 octobre 2026 dans le navigateur, elles ne sont nulle part sur la page** |
+| `insSteps3` — les trois étapes | ✅ posées entre les formules et le formulaire, comme la maquette. Les « 48 h » sont un engagement : le même délai est promis par la réponse de `POST /inscriptions`, et les deux doivent changer ensemble |
 | « On s'occupe de tout par téléphone » / « Vous préférez écrire ? » | 🟡 un bloc « Comment s'inscrire » donne les deux canaux, sans les deux titres de la maquette |
 | Formulaire en 2 étapes + « Demande envoyée ! » | ✅ `FormulaireInscription` sur `POST /inscriptions`, route publique d'un module à part — jamais une exception au milieu de `CrmController`, qui est entièrement derrière la session. Le prospect naît « nouveau », sans commercial (RG17) et sans fiche. Consentement 09-08 obligatoire, trois demandes par heure, et le 429 est dit en français. Vérifié de bout en bout : formulaire rempli dans le navigateur, prospect relu en base |
 | `insTestimonials` — « La parole aux directeurs » | ❌ aucune source ; les témoignages de la maquette sont fictifs |

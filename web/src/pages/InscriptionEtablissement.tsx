@@ -79,6 +79,8 @@ export function InscriptionEtablissement() {
         }
       />
 
+      <TroisEtapes />
+
       <FormulaireInscription />
 
       <div className="conteneur section" style={{ maxWidth: 780, paddingTop: 0 }}>
@@ -131,6 +133,74 @@ export function InscriptionEtablissement() {
       </p>
       </div>
     </>
+  );
+}
+
+/**
+ * `insSteps3` de la maquette — ce qui se passe après l'envoi.
+ *
+ * LES QUARANTE-HUIT HEURES SONT UN ENGAGEMENT, pas une décoration. La maquette
+ * les écrit, et la réponse de l'API le répète déjà au demandeur (« un
+ * conseiller vous rappelle sous 48 heures ouvrées ») : les deux doivent dire
+ * la même chose, sans quoi l'un des deux ment. Si le délai change, il change
+ * ici ET dans `InscriptionsService`.
+ */
+function TroisEtapes() {
+  const etapes = [
+    {
+      rang: '1',
+      titre: 'Créez votre fiche',
+      texte: 'Remplissez les informations de votre établissement en quelques minutes.',
+    },
+    {
+      rang: '2',
+      titre: 'Validation sous 48 h',
+      texte: 'Nos équipes vérifient et publient votre fiche rapidement.',
+    },
+    {
+      rang: '3',
+      titre: 'Gagnez en visibilité',
+      texte: 'Recevez vos premiers contacts de parents qualifiés.',
+    },
+  ];
+
+  return (
+    <section style={{ maxWidth: 1180, margin: '64px auto 0', padding: '0 32px' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 18,
+        }}
+      >
+        {etapes.map((etape) => (
+          <div key={etape.rang} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <span
+              style={{
+                flex: 'none',
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                background: '#1D3557',
+                color: '#fff',
+                display: 'grid',
+                placeItems: 'center',
+                font: "800 16px/1 'Inter', sans-serif",
+              }}
+              aria-hidden
+            >
+              {etape.rang}
+            </span>
+            <div>
+              <h3 style={{ margin: 0, font: "700 17px/1.3 'Inter', sans-serif" }}>{etape.titre}</h3>
+              <p style={{ ...paragraphe, fontSize: 14.5, margin: '7px 0 0', color: '#5A6472' }}>
+                {etape.texte}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

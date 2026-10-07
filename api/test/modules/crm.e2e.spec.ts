@@ -316,6 +316,36 @@ describe('CRM commercial (intégration)', () => {
   // ---------------------------------------------------------------------------
 
   /**
+   * `nouveaux` EST LE SEUL SIGNAL QU'UNE DEMANDE EST ARRIVÉE (B-46). Le
+   * formulaire public dépose un prospect en « nouveau » et aucun courriel ne
+   * prévient personne ; c'est ce compteur qui allume la pastille du menu
+   * « CRM Clients ». S'il cessait de bouger, une demande pourrait dormir des
+   * jours sans que rien ne le montre — et rien ne casserait pour autant.
+   */
+  it('compte les prospects jamais ouverts, et les décompte dès qu’ils avancent', async () => {
+    const { id } = await commercialDemo();
+    const commercial = await connecte(COMMERCIAL);
+
+    const avant = (await commercial.get('/crm/indicateurs').expect(200)).body.data
+      .nouveaux as number;
+
+    const prospect = await prospectJetable(id);
+
+    const pendant = (await commercial.get('/crm/indicateurs').expect(200)).body.data
+      .nouveaux as number;
+    expect(pendant).toBe(avant + 1);
+
+    await commercial
+      .patch(`/crm/prospects/${prospect.id}/statut`)
+      .send({ statut: 'a_contacter' })
+      .expect(204);
+
+    const apres = (await commercial.get('/crm/indicateurs').expect(200)).body.data
+      .nouveaux as number;
+    expect(apres).toBe(avant);
+  });
+
+  /**
    * UN TAUX DE 0 % AFFIRMERAIT UN ÉCHEC là où il n'y a encore aucune mesure.
    * `null` dit « pas de dossier clos », ce qui est la vérité.
    */

@@ -166,6 +166,76 @@ describe('Espace connecté et administration (intégration)', () => {
       await etablissement.get('/mon-espace/avis').expect(200);
       await etablissement.get('/mon-espace/demandes').expect(200);
     });
+
+    /**
+     * LA FACTURATION N'EST PAS UNE PORTÉE DÉLÉGUÉE. La RG05 n'en connaît que
+     * trois — `fiches`, `contacts`, `avis` — et une secrétaire à qui l'on a
+     * confié la boîte de contacts n'a pas à lire ce que son école paie.
+     *
+     * Ce n'est donc PAS un 403 de portée manquante : il n'existe aucune portée
+     * à accorder. C'est le rôle qui tranche, et le `@Roles` de la méthode
+     * surcharge celui de la classe. Sans cette surcharge, le contrôleur étant
+     * déclaré `@Roles(etablissement, secretariat)`, la route serait ouverte aux
+     * deux — et rien à l'écran ne l'aurait signalé.
+     */
+    it('refuse la facturation à un compte secrétariat, même largement doté (RG05)', async () => {
+      const sara = await connecte('sara.s@ecoles360.com');
+
+      await sara.get('/mon-espace/demandes').expect(200);
+      await sara.get('/mon-espace/facturation').expect(403);
+    });
+
+    it('sert la facturation au compte établissement', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+
+      const reponse = await etablissement.get('/mon-espace/facturation').expect(200);
+
+      expect(reponse.body.data).toHaveProperty('abonnement');
+      expect(reponse.body.data).toHaveProperty('essai');
+      expect(Array.isArray(reponse.body.data.factures)).toBe(true);
+    });
+
+    /**
+     * LES MONTANTS SONT DES CHAÎNES, comme les identifiants. Un `Decimal(10,2)`
+     * rendu en nombre JavaScript perd des centimes sur les grands montants, et
+     * une facture est exactement l'endroit où cela se verrait.
+     */
+    it('rend les montants en chaînes, jamais en nombres', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const reponse = await etablissement.get('/mon-espace/facturation').expect(200);
+
+      for (const facture of reponse.body.data.factures) {
+        expect(typeof facture.total_ttc).toBe('string');
+        expect(typeof facture.montant_ht).toBe('string');
+        expect(typeof facture.id).toBe('string');
+      }
+
+      // `?.` NE SUFFIT PAS ICI : sans abonnement, `abonnement?.tarif_mad` vaut
+      // `undefined`, qui est bien `!== null` — la condition passait et le test
+      // déréférençait un nul. La base n'étant pas remise à zéro, une autre
+      // suite peut très bien avoir expiré cet abonnement entre-temps.
+      const tarif = reponse.body.data.abonnement?.tarif_mad;
+
+      if (tarif !== null && tarif !== undefined) {
+        expect(typeof tarif).toBe('string');
+      }
+    });
+
+    /** Chaque école ne voit que SES factures — la portée vient de la session. */
+    it('ne rend que les factures de l’établissement de la session', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const fiche = await db.etablissement.findUniqueOrThrow({ where: { slug: SLUG } });
+
+      const reponse = await etablissement.get('/mon-espace/facturation').expect(200);
+      const numeros = reponse.body.data.factures.map((f: { numero: string }) => f.numero);
+
+      const siennes = await db.facture.findMany({
+        where: { etablissement_id: fiche.id },
+        select: { numero: true },
+      });
+
+      expect(new Set(numeros)).toEqual(new Set(siennes.map((f) => f.numero)));
+    });
   });
 
   // ---------------------------------------------------------------------------

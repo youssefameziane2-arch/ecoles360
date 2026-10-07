@@ -77,6 +77,8 @@ export interface IndicateursCrm {
   perdus: number;
   /** `null` tant qu'aucun dossier n'est clos — 0 % affirmerait un échec. */
   taux_transformation: number | null;
+  /** Prospects jamais ouverts — la pastille du menu « CRM Clients » (B-46). */
+  nouveaux: number;
   relances_dues: number;
   commissions_a_valider: string;
   commissions_validees: string;

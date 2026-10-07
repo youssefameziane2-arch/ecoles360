@@ -26,6 +26,7 @@ import { POIDS_MAX_OCTETS, type FichierTeleverse } from '../../common/stockage/s
 import { PermissionPortee, RoleCode } from '../../generated/prisma';
 import type { UtilisateurAuthentifie } from '../auth/session.types';
 import { EspaceService } from './espace.service';
+import { FacturationEspaceService } from './facturation-espace.service';
 import { FicheProposalService } from './fiche-proposal.service';
 import { ProposerFicheDto } from './dto/proposer-fiche.dto';
 import { RepondreAvisDto } from './dto/repondre-avis.dto';
@@ -52,6 +53,7 @@ export class EspaceController {
     private readonly espace: EspaceService,
     private readonly propositions: FicheProposalService,
     private readonly photos: PhotosService,
+    private readonly facturationEspace: FacturationEspaceService,
   ) {}
 
   @Get('dashboard')
@@ -287,6 +289,32 @@ export class EspaceController {
       utilisateur.userId,
       dto,
     );
+  }
+
+  /**
+   * Abonnement et factures — maquette `isEtabCredits`.
+   *
+   * RÉSERVÉ AU COMPTE ÉTABLISSEMENT, PAS AU SECRÉTARIAT. La RG05 ne délègue
+   * que trois portées — `fiches`, `contacts`, `avis` — et la facturation n'en
+   * fait pas partie. Un `@PorteeEspace` ne conviendrait donc pas : il n'existe
+   * aucune portée à exiger. Le `@Roles` de la méthode surcharge celui de la
+   * classe (`getAllAndOverride`), et un secrétariat reçoit 403.
+   *
+   * Ce qui se jouerait autrement : une secrétaire à qui l'on a confié la
+   * boîte de contacts lirait les montants que son école paie.
+   */
+  @Get('facturation')
+  @Roles(RoleCode.etablissement)
+  @ApiOperation({
+    summary: 'Abonnement courant, essai consommé et historique des factures',
+    description:
+      'Lecture seule : aucune souscription ni paiement sur la plateforme. ' +
+      'Réservé au compte établissement — la facturation n’est pas une portée déléguée (RG05).',
+  })
+  @ApiResponse({ status: 200, description: 'Abonnement et factures.' })
+  @ApiResponse({ status: 403, description: 'Compte secrétariat.' })
+  facturation(@Utilisateur() utilisateur: UtilisateurAuthentifie) {
+    return this.facturationEspace.pourEtablissement(this.etablissementIdOuRefuse(utilisateur));
   }
 
   /**

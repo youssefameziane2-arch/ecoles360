@@ -816,11 +816,18 @@ freiner les envois automatisés.
 
 **Ce qui reste ouvert :**
 
-1. **Personne n'est prévenu.** Un prospect atterrit dans la colonne
-   « Nouveaux » du CRM, et il y reste jusqu'à ce qu'un commercial ouvre
-   l'écran. Aucune notification, aucun courriel : il n'y a pas d'envoi d'e-mail
-   dans le projet. C'est le manque le plus coûteux à l'ouverture — une demande
-   déposée un vendredi soir attend le lundi sans que personne ne le sache.
+1. **Personne n'est prévenu — atténué, pas réglé.** Il n'y a toujours aucun
+   envoi d'e-mail dans le projet. Ce qui existe désormais : l'entrée « CRM
+   Clients » du menu porte une **pastille comptant les prospects jamais
+   ouverts** (`indicateurs.nouveaux`), visible depuis n'importe quel écran de
+   l'administration ou de l'espace commercial. Une demande déposée un vendredi
+   soir se voit donc dès la première connexion, au lieu d'attendre que
+   quelqu'un pense à ouvrir le CRM.
+
+   **Ce que cela ne remplace pas :** il faut toujours se connecter pour la
+   voir. Un courriel — au conseiller attribué, et un accusé au demandeur —
+   reste le vrai besoin, et demande une configuration SMTP, donc des secrets et
+   une décision d'hébergement.
 2. **Aucun accusé n'est envoyé au demandeur.** Il voit « Demande envoyée ! » à
    l'écran, et plus rien ensuite. Même cause.
 3. **Les doublons ne sont pas détectés.** Un directeur qui s'y reprend à deux

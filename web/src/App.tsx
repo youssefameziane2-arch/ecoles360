@@ -39,7 +39,8 @@ import { JournalAdmin } from './pages/admin/JournalAdmin';
 import { SecretariatAdmin } from './pages/admin/SecretariatAdmin';
 import { StatistiquesAdmin } from './pages/admin/StatistiquesAdmin';
 import { StatistiquesEspace } from './pages/espace/StatistiquesEspace';
-import { FacturationEspace, StatistiquesCommercial } from './pages/espace/ModulesAVenir';
+import { FacturationEspace } from './pages/espace/FacturationEspace';
+import { StatistiquesCommercial } from './pages/espace/ModulesAVenir';
 
 /**
  * Routage — livrable 12 §3.

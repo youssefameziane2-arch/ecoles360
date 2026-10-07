@@ -4,6 +4,7 @@ import { apiFetch } from '@/api/client';
 import { chargerPropositionsAdmin } from '@/api/admin';
 import { chargerAvisModeration } from '@/api/moderation';
 import { chargerTableauDeBord } from '@/api/espace';
+import { chargerIndicateursCrm } from '@/api/crm';
 import { Icon, SidebarNav } from '@/ds/composants';
 
 /** Réponse de `GET /auth/me` — livrable 11 §2. */
@@ -29,7 +30,7 @@ interface EntreeNav {
   /** Portée exigée — secrétariat seulement (RG05). */
   portee?: 'fiches' | 'contacts' | 'avis';
   /** Source du compteur affiché en pastille. */
-  compteur?: 'avis' | 'demandes' | 'propositions';
+  compteur?: 'avis' | 'demandes' | 'propositions' | 'prospects';
 }
 
 /** Navigation de l'espace établissement — ordre et libellés de la maquette. */
@@ -50,7 +51,7 @@ const NAV_ADMIN: EntreeNav[] = [
   { key: '/admin/propositions', label: 'Modifications de fiche', icone: 'pencil', compteur: 'propositions' },
   { key: '/admin/secretariat', label: 'Secrétariat', icone: 'users' },
   { key: '/admin/commerciaux', label: 'Commerciaux', icone: 'briefcase' },
-  { key: '/admin/crm', label: 'CRM Clients', icone: 'flag' },
+  { key: '/admin/crm', label: 'CRM Clients', icone: 'flag', compteur: 'prospects' },
   { key: '/admin/facturation', label: 'Abonnement & facturation', icone: 'credit-card' },
   { key: '/admin/sponsorings', label: 'Sponsoring', icone: 'star' },
   { key: '/admin/avis', label: 'Avis', icone: 'heart', compteur: 'avis' },
@@ -65,7 +66,7 @@ const NAV_ADMIN: EntreeNav[] = [
 const NAV_COMMERCIAL: EntreeNav[] = [
   { key: '/commercial', label: 'Tableau de bord', icone: 'layout-grid' },
   { key: '/commercial/agenda', label: 'Agenda & tâches', icone: 'calendar' },
-  { key: '/commercial/leads', label: 'Mes leads', icone: 'flag' },
+  { key: '/commercial/leads', label: 'Mes leads', icone: 'flag', compteur: 'prospects' },
   { key: '/commercial/transferts', label: 'Transferts & commissions', icone: 'credit-card' },
   { key: '/commercial/statistiques', label: 'Statistiques', icone: 'bar-chart' },
   { key: '/commercial/blog', label: 'Blog', icone: 'book-open' },
@@ -140,6 +141,24 @@ export function CoquilleEspace({
     enabled: admin,
   });
 
+  /**
+   * Les prospects que personne n'a encore regardés.
+   *
+   * C'EST LE SEUL SIGNAL QU'UNE DEMANDE EST ARRIVÉE. Le formulaire public
+   * dépose un prospect en « nouveau » (B-46) et aucun courriel ne prévient
+   * personne — il n'y a pas d'envoi d'e-mail dans le projet. Sans cette
+   * pastille, une demande déposée un vendredi soir attendrait qu'un commercial
+   * pense à ouvrir l'écran.
+   *
+   * La route est bornée au portefeuille côté serveur : un commercial voit les
+   * siens, l'administration voit tout. Le menu n'a rien à filtrer.
+   */
+  const prospects = useQuery({
+    queryKey: ['crm', 'indicateurs'],
+    queryFn: chargerIndicateursCrm,
+    enabled: admin || espace === 'commercial',
+  });
+
   const deconnexion = useMutation({
     mutationFn: () => apiFetch<void>('/auth/logout', { method: 'POST' }),
     onSuccess: () => {
@@ -153,6 +172,7 @@ export function CoquilleEspace({
       : undefined,
     demandes: tableau.data?.dernieres_demandes.filter((d) => d.statut === 'nouvelle').length,
     propositions: propositions.data?.length,
+    prospects: prospects.data?.nouveaux,
   } as const;
 
   const entrees = NAV_DE_L_ESPACE[espace]
