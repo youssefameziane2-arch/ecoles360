@@ -624,6 +624,10 @@ model Prospect {
   message          String?        @db.Text
   source           ProspectSource @default(formulaire)
   statut_pipeline  ProspectStatut @default(nouveau)
+  /// Consentement 09-08 (RG09). `false` signifie « non recueilli par ce
+  /// canal » — un prospect saisi au téléphone par un commercial —, jamais
+  /// « refusé ». Le formulaire public, lui, REFUSE la demande sans lui.
+  consentement     Boolean        @default(false)
   cree_le          DateTime       @default(now()) @db.Timestamp(0)
 
   etablissement Etablissement? @relation(fields: [etablissement_id], references: [id], onDelete: SetNull)

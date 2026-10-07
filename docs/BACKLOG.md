@@ -790,3 +790,43 @@ livrable 14 est déjà respectée — un service `web` derrière le proxy —,
 précisément pour que ce jour-là rien d'autre ne bouge.
 
 **Statut :** à arbitrer — client (avant ou après l'ouverture au public).
+
+## B-46 — Formulaire public d'inscription : ce qu'il ouvre, et ce qu'il reste à faire
+
+Posé le 7 octobre 2026. `POST /inscriptions` est, avec les routes des parents,
+**la seule écriture ouverte à tout internet**. Ce qu'elle refuse compte donc
+plus que ce qu'elle enregistre, et c'est ce que la suite de tests éprouve :
+consentement 09-08 obligatoire, numéro marocain, formule connue, type parmi les
+sept (RG02), et surtout `forbidNonWhitelisted` — sans lui, n'importe qui
+s'attribuerait un dossier (`commercial_id`), le déclarerait transformé
+(`statut_pipeline`) ou le rattacherait à la fiche d'une autre école.
+
+**Une colonne ajoutée :** `prospects.consentement`, par défaut `false`.
+Exiger un consentement sans le conserver revient à ne pas pouvoir le prouver,
+et le journal d'audit n'y suffisait pas — il est purgé à trois ans (RG26) quand
+un prospect vit plus longtemps. `false` signifie « non recueilli par ce canal »,
+jamais « refusé » : les prospects saisis au téléphone par un commercial ont pu
+consentir de vive voix sans que rien ne l'enregistre.
+
+**L'adresse IP n'est PAS conservée**, bien que la colonne existe au journal.
+Une IP est une donnée personnelle, et la garder trois ans pour une demande
+légitime contredirait la minimisation appliquée partout ailleurs. La limitation
+de débit — trois par heure, plus serré que les cinq d'un parent — suffit à
+freiner les envois automatisés.
+
+**Ce qui reste ouvert :**
+
+1. **Personne n'est prévenu.** Un prospect atterrit dans la colonne
+   « Nouveaux » du CRM, et il y reste jusqu'à ce qu'un commercial ouvre
+   l'écran. Aucune notification, aucun courriel : il n'y a pas d'envoi d'e-mail
+   dans le projet. C'est le manque le plus coûteux à l'ouverture — une demande
+   déposée un vendredi soir attend le lundi sans que personne ne le sache.
+2. **Aucun accusé n'est envoyé au demandeur.** Il voit « Demande envoyée ! » à
+   l'écran, et plus rien ensuite. Même cause.
+3. **Les doublons ne sont pas détectés.** Un directeur qui s'y reprend à deux
+   fois crée deux prospects. Dédoublonner sur le téléphone est tentant, mais
+   deux établissements d'un même groupe partagent parfois une ligne — la règle
+   appartient au client.
+
+**Statut :** fait pour la route et l'écran ; notification et accusé `à faire`,
+dédoublonnage `à trancher` (le client décide de la règle).

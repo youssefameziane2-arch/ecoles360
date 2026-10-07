@@ -1,5 +1,5 @@
-import { useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { FormulaireInscription } from '@/components/FormulaireInscription';
 import { FormulesVisibilite } from '@/components/FormulesVisibilite';
 import { useConseillerAffiche } from '@/components/MobilierAssistance';
 import { lienTelephone } from '@/lib/telephone';
@@ -11,27 +11,21 @@ const EMAIL = 'etablissements@ecoles360.com';
 /**
  * Inscrire son établissement — livrable 1 (offre) et livrable 12 §5.
  *
- * PAS DE FORMULAIRE ICI, DÉLIBÉRÉMENT. La création de prospect est une route
- * du back-office commercial (lot 5) : aucune API publique ne l'accepte
- * aujourd'hui. Afficher un formulaire qui n'enverrait rien — ou qui afficherait
- * « nous vous recontacterons » sans que personne ne soit prévenu — coûterait
- * exactement ce que cette page cherche à gagner : la confiance d'un directeur
- * d'établissement. On donne donc les deux canaux qui fonctionnent vraiment
- * aujourd'hui, et le formulaire prendra leur place quand la route existera.
+ * LE FORMULAIRE EXISTE DEPUIS QUE LA ROUTE EXISTE. Il a longtemps manqué, et
+ * c'était volontaire : afficher un formulaire qui n'enverrait rien — ou qui
+ * dirait « nous vous recontacterons » sans que personne ne soit prévenu —
+ * aurait coûté exactement ce que cette page cherche à gagner, la confiance
+ * d'un directeur d'établissement. `POST /inscriptions` l'enregistre désormais
+ * comme prospect « nouveau » dans le pipeline commercial (RG17).
+ *
+ * LES CANAUX DIRECTS RESTENT, SOUS LE FORMULAIRE. Un directeur qui préfère
+ * appeler ne doit pas avoir à remplir onze champs pour obtenir un numéro.
  */
 export function InscriptionEtablissement() {
   useTitrePage(
     'Inscrire mon établissement',
     'Référencez gratuitement votre établissement privé sur écoles360 et recevez les demandes des parents.',
   );
-
-  /**
-   * Le bouton d'une formule mène AU SEUL ENDROIT QUI RÉPOND : le bloc de
-   * contact. Tant qu'aucune route publique n'enregistre une demande, « Choisir
-   * cet abonnement » ne peut rien choisir — l'emmener ailleurs promettrait une
-   * souscription qui n'existe pas.
-   */
-  const blocContact = useRef<HTMLElement>(null);
 
   // Le même conseiller que la bannière flottante : deux numéros sur une page
   // laisseraient le directeur choisir celui qui ne répond pas.
@@ -80,14 +74,15 @@ export function InscriptionEtablissement() {
       {/* Pleine largeur : les trois cartes de la maquette ne tiennent pas dans
           la colonne de 780 du reste de la page. */}
       <FormulesVisibilite
-        onChoisir={() => blocContact.current?.scrollIntoView({ behavior: 'smooth' })}
+        onChoisir={() =>
+          document.getElementById('formulaire')?.scrollIntoView({ behavior: 'smooth' })
+        }
       />
 
+      <FormulaireInscription />
+
       <div className="conteneur section" style={{ maxWidth: 780, paddingTop: 0 }}>
-      <section
-        ref={blocContact}
-        style={{ ...carte, background: '#1D3557', border: 'none', marginTop: 24 }}
-      >
+      <section style={{ ...carte, background: '#1D3557', border: 'none', marginTop: 24 }}>
         <h2 style={{ ...sousTitre, color: '#fff' }}>Comment s&rsquo;inscrire</h2>
         <p style={{ ...paragraphe, color: '#C6D2E2' }}>
           Écrivez-nous en indiquant le nom de votre établissement, sa ville et un numéro où vous

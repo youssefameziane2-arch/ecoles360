@@ -70,7 +70,7 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 | FAQ | `/faq` | ✅ |
 | Blog | `/blog` | ✅ |
 | Article | `/blog/:slug` | ✅ |
-| Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité — demandent une route publique de tarifs |
+| Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité et formulaire en 2 étapes compris, le prospect arrive dans le CRM — manquent les trois étapes `insSteps3`, les témoignages de directeurs et la FAQ qui leur est destinée, qui n'ont pas de source |
 | Connexion | `/connexion` | ✅ écart assumé : formulaire unique au lieu des 2 étapes |
 | Mentions légales | `/mentions-legales` | 🟡 8 rubriques rédigées et semées — restent 3 `[À COMPLÉTER]` : raison sociale, RC/ICE, directeur de publication, hébergeur |
 | Confidentialité | `/confidentialite` | 🟡 11 rubriques rédigées — restent 2 `[À COMPLÉTER]`, dont le **numéro de déclaration CNDP**, qui suppose une démarche et non une saisie |
@@ -291,12 +291,12 @@ l'autre.
 
 | Bloc | État |
 |---|---|
-| H1 + « Commencer l'inscription » | 🟡 le H1 y est ; le bouton n'a nulle part où mener tant qu'il n'y a pas de formulaire |
+| H1 + « Commencer l'inscription » | ✅ les boutons des trois formules mènent au formulaire |
 | `benefits` | ✅ sous deux cartes (« gratuitement » / « ce que l'abonnement ajoute ») |
 | « Formules de visibilité » + `plans`, bascule Mensuel / Annuel −10 % | ✅ `FormulesVisibilite`, trois `PricingCard` du design system. **Sans montants — c'est la maquette qui le veut** : elle écrit « Tarif communiqué par votre conseiller ». La bascule ne calcule rien, elle annonce la remise de 10 % (RG11). Sous-titre et note rendus autour de la carte, faute de fente (CORRECTIFS.md §6) |
 | `insSteps3` — les trois étapes | ❌ **la ligne disait ✅ ; vérifié le 6 octobre 2026 dans le navigateur, elles ne sont nulle part sur la page** |
 | « On s'occupe de tout par téléphone » / « Vous préférez écrire ? » | 🟡 un bloc « Comment s'inscrire » donne les deux canaux, sans les deux titres de la maquette |
-| Formulaire en 2 étapes + « Demande envoyée ! » | ❌ **la ligne disait ✅ ; il n'y a aucun formulaire.** Il lui faut une route publique de création de prospect, qui n'existe pas : `CrmController` est entièrement derrière la session. Avec elle viennent la limitation de débit et le consentement 09-08 |
+| Formulaire en 2 étapes + « Demande envoyée ! » | ✅ `FormulaireInscription` sur `POST /inscriptions`, route publique d'un module à part — jamais une exception au milieu de `CrmController`, qui est entièrement derrière la session. Le prospect naît « nouveau », sans commercial (RG17) et sans fiche. Consentement 09-08 obligatoire, trois demandes par heure, et le 429 est dit en français. Vérifié de bout en bout : formulaire rempli dans le navigateur, prospect relu en base |
 | `insTestimonials` — « La parole aux directeurs » | ❌ aucune source ; les témoignages de la maquette sont fictifs |
 | `insFaqItems` — questions fréquentes | ❌ la FAQ du CMS est celle des parents ; celle-ci s'adresse aux directeurs |
 
