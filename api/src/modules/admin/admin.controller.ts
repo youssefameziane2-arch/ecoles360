@@ -47,6 +47,8 @@ import { RedigerArticleAdminDto } from '../articles/dto/rediger-article-admin.dt
 import { ModerationAvisService } from '../avis/moderation.service';
 import { DecisionAvisDto } from '../avis/dto/decision-avis.dto';
 import { BasculeEnAvantDto } from '../avis/dto/bascule-en-avant.dto';
+import { CategoriesArticlesService } from '../contenu/categories-articles.service';
+import { CategorieArticleDto } from '../contenu/dto/categorie-article.dto';
 import { FaqService } from '../contenu/faq.service';
 import { FaqItemDto } from '../contenu/dto/faq-item.dto';
 import { OrdreFaqDto } from '../contenu/dto/ordre-faq.dto';
@@ -100,6 +102,7 @@ export class AdminController {
     private readonly photosService: PhotosService,
     private readonly secretariat: SecretariatService,
     private readonly comptes: ComptesService,
+    private readonly categoriesArticles: CategoriesArticlesService,
     private readonly crm: CrmService,
     private readonly crmLecture: CrmLectureService,
     private readonly facturation: FacturationService,
@@ -774,6 +777,43 @@ export class AdminController {
   @ApiOperation({ summary: 'FAQ éditoriale — questions dépubliées comprises' })
   faq() {
     return this.faqService.listerPourAdmin();
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Catégories d'articles — onglet « Catégories » de « Contenu du site »
+  // ---------------------------------------------------------------------------
+
+  @Post('categories-articles')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Ajouter une catégorie à la liste proposée à la rédaction',
+    description:
+      'La liste est un référentiel, pas une contrainte : `Article.categorie` reste une chaîne libre.',
+  })
+  @ApiResponse({ status: 409, description: 'Cette catégorie existe déjà.' })
+  creerCategorieArticle(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Body() dto: CategorieArticleDto,
+  ) {
+    return this.categoriesArticles.creer(dto.libelle, utilisateur.userId);
+  }
+
+  /**
+   * LA RÉPONSE DIT COMBIEN D'ARTICLES GARDENT CE LIBELLÉ. Retirer une
+   * catégorie encore portée est permis — c'est le cas courant quand on renomme
+   * une rubrique — mais l'administrateur doit savoir ce qu'il laisse derrière.
+   */
+  @Delete('categories-articles/:id')
+  @ApiOperation({
+    summary: 'Retirer une catégorie de la liste proposée',
+    description: 'Ne déclasse aucun article : elle cesse seulement d’être offerte à la rédaction.',
+  })
+  @ApiResponse({ status: 404, description: 'Catégorie inconnue.' })
+  supprimerCategorieArticle(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.categoriesArticles.supprimer(BigInt(id), utilisateur.userId);
   }
 
   @Post('faq')

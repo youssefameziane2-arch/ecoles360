@@ -143,3 +143,44 @@ export const mettreALaUne = (id: string, aLaUne: boolean) =>
     method: 'PATCH',
     body: JSON.stringify({ a_la_une: aLaUne }),
   });
+
+// ---------------------------------------------------------------------------
+//  Catégories d'articles — référentiel, pas contrainte
+// ---------------------------------------------------------------------------
+
+export interface CategorieArticle {
+  id: string;
+  libelle: string;
+  ordre: number;
+}
+
+/**
+ * Le RÉFÉRENTIEL — ce que la rédaction se voit proposer.
+ *
+ * À NE PAS CONFONDRE AVEC `chargerCategoriesArticles`, juste au-dessus, qui
+ * rend les catégories RÉELLEMENT PORTÉES par les articles publiés et alimente
+ * le filtre du blog. Les deux divergent par construction : une catégorie
+ * proposée mais jamais employée n'apparaît pas dans le filtre, et une
+ * catégorie retirée du référentiel reste dans le filtre tant qu'un article la
+ * porte.
+ *
+ * Publique : l'éditeur d'article sert l'admin, un établissement et un
+ * commercial.
+ */
+export const chargerCategoriesProposees = () =>
+  apiFetch<CategorieArticle[]>('/categories-articles');
+
+export const creerCategorieArticle = (libelle: string) =>
+  apiFetch<CategorieArticle>('/admin/categories-articles', {
+    method: 'POST',
+    body: JSON.stringify({ libelle }),
+  });
+
+/**
+ * Retirer une catégorie NE DÉCLASSE AUCUN ARTICLE : `Article.categorie` reste
+ * une chaîne. La réponse dit combien d'articles gardent le libellé.
+ */
+export const supprimerCategorieArticle = (id: string) =>
+  apiFetch<{ articles_concernes: number }>(`/admin/categories-articles/${id}`, {
+    method: 'DELETE',
+  });

@@ -963,3 +963,34 @@ explicitement, parce que c'est le genre de fuite qu'on n'aperçoit jamais en
 relisant un écran.
 **Statut :** construit. Envoi du mot de passe par courriel : `à faire`, bloqué
 par l'absence de SMTP (B-46).
+
+## B-50 — Demandes de catégorie d'article : qui demande, et que se passe-t-il au refus
+
+L'onglet « Catégories » de l'écran `isAdminContent` est construit : la liste
+des catégories proposées à la rédaction s'ajoute, se retire, et a été reprise
+des articles existants.
+
+**La maquette montre AUSSI un bloc de demandes** (`catRequests`) : des
+propositions de catégorie venues d'un établissement ou d'une secrétaire, avec
+un bouton « Approuver » et un compteur de demandes en attente.
+
+**Il n'est pas construit, et ce n'est pas un oubli.** La maquette dessine
+l'écran mais aucune règle ne dit :
+
+- **qui peut demander** — un établissement ? une secrétaire sur portée
+  `fiches` ? un commercial ?
+- **ce qui se passe au refus** — la maquette ne montre qu'« Approuver ». Un
+  refus silencieux laisserait le demandeur attendre ;
+- **ce que devient l'article pendant ce temps** — reste-t-il en brouillon,
+  part-il en validation avec une catégorie qui n'existe pas encore ?
+- **si le demandeur est prévenu** — et par quel canal, puisqu'il n'y a aucun
+  envoi d'e-mail (B-46).
+
+Chacune de ces questions change le modèle de données. Les inventer produirait
+exactement le défaut que ce backlog existe pour éviter : une règle plausible,
+qui compile, passe les tests, et se révèle fausse à la recette.
+
+**Ce qui existe en attendant :** la rédaction choisit dans la liste proposée,
+et l'administration ajoute une catégorie quand on la lui demande — par
+téléphone, comme le reste.
+**Statut :** à trancher — client.

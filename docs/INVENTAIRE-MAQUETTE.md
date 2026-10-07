@@ -89,7 +89,7 @@ appelé mais jamais dessiné).
 
 ---
 
-## Administration — 15 écrans attendus, 9 complets
+## Administration — 15 écrans attendus, 10 complets
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -99,7 +99,7 @@ appelé mais jamais dessiné).
 | Blog | `isBlogList` | `/admin/blog` | ✅ |
 | Article (éditeur) | `isBlogDetail` | `/admin/blog` | ✅ |
 | Journal d'audit | `isAdminJournal` | `/admin/journal` | ✅ |
-| Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ, page « À propos » et les **trois pages légales** (onglets) — manquent les catégories d'articles, qui demandent une migration |
+| Contenu du site | `isAdminContent` | `/admin/contenu` | ✅ FAQ, page « À propos », les **trois pages légales** et les **catégories d'articles** (onglets). Les *demandes* de catégorie de la maquette restent à définir : qui demande, ce qui se passe au refus, et si le demandeur est prévenu (B-50) |
 | Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
 | CRM Clients | `isAdminCrm` | `/admin/crm` | ✅ indicateurs, pipeline en 6 colonnes (RG17), relances, attribution des dossiers (RG18), **pastille des prospects jamais ouverts** dans le menu — seul signal qu'une demande du formulaire public est arrivée, faute d'envoi d'e-mail (B-46) |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
@@ -175,11 +175,11 @@ qu'un commercial doit lire des chiffres d'une fiche n'est écrit nulle part.
 | Périmètre | Complets | Partiels | Restants |
 |---|---|---|---|
 | Site public (13) | 9 | 4 — dont 2 pages légales en attente de mentions, et la 3ᵉ de l'image, carte et réseaux sociaux | 0 |
-| Administration (15) | 9 | 5 | 1 — l'explorateur de base |
+| Administration (15) | 10 | 4 | 1 — l'explorateur de base |
 | Établissement (7) | 6 | 1 — statistiques | 0 (+1 hors périmètre) |
 | Secrétariat (5) | 5 | 0 | 0 |
 | Commercial (6) | 2 | 3 | 1 — statistiques, en attente de définition |
-| **Total (46)** | **31** | **13** | **2** |
+| **Total (46)** | **32** | **12** | **2** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait

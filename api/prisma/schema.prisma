@@ -984,6 +984,28 @@ enum ArticleStatut {
   refuse
 }
 
+/// Catégories proposées à la rédaction — onglet « Catégories » de l'écran
+/// « Contenu du site ».
+///
+/// AUCUNE RELATION VERS `Article`, VOLONTAIREMENT. `Article.categorie` reste
+/// une chaîne : en faire une clé étrangère aurait imposé de migrer chaque
+/// ligne existante et de décider, pour chacune, vers quelle catégorie pointer.
+/// Rien ne joint sur la catégorie dans le produit — on filtre dessus. Cette
+/// table est le référentiel de ce que l'écran PROPOSE, pas une contrainte sur
+/// ce qui existe. Retirer une catégorie ne déclasse donc aucun article : elle
+/// cesse seulement d'être offerte à la rédaction.
+/// PAS DE `slug` : rien ne le lit. Le blog filtre sur le libellé, et le jour
+/// où une URL en aura besoin, `common/texte/slug.ts` le fabriquera — la
+/// normalisation NFD y existe déjà, là où MySQL ne sait pas replier un accent.
+model CategorieArticle {
+  id      BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  libelle String   @unique @db.VarChar(60)
+  ordre   Int      @default(0) @db.UnsignedInt
+  cree_le DateTime @default(now()) @db.Timestamp(0)
+
+  @@map("categories_articles")
+}
+
 /// 29 — FaqItem (RG27) : FAQ réordonnable, l'ordre étant recalculé de façon
 /// contiguë par CmsService à chaque réordonnancement.
 model FaqItem {
