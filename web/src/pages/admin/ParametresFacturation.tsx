@@ -20,6 +20,9 @@ const UNITE: Record<string, string> = {
   remise_annuelle_pct: '%',
   rappel_echeance_j: 'jours',
   conservation_facture_ans: 'ans',
+  // Oublié à l'ajout du paramètre : le seul taux de l'écran sans son signe,
+  // sur la ligne où une erreur d'unité se paierait en salaire (RG18).
+  commission_pct: '%',
 };
 
 const chargerParametres = () => apiFetch<ParametreFacturation[]>('/admin/parametres-facturation');

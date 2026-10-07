@@ -89,7 +89,7 @@ appelé mais jamais dessiné).
 
 ---
 
-## Administration — 15 écrans attendus, 6 complets
+## Administration — 15 écrans attendus, 7 complets
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -104,7 +104,7 @@ appelé mais jamais dessiné).
 | CRM Clients | `isAdminCrm` | `/admin/crm` | ✅ indicateurs, pipeline en 6 colonnes (RG17), relances, attribution des dossiers (RG18), **pastille des prospects jamais ouverts** dans le menu — seul signal qu'une demande du formulaire public est arrivée, faute d'envoi d'e-mail (B-46) |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
 | Abonnement & facturation | `isAdminFact` | `/admin/facturation` | 🟡 indicateurs, historique, encaissement ✅ · ouverture d'abonnement et émission de facture depuis la fiche ✅ — manque le **détail de facture** (`isAdminFactDetail`) |
-| Facture (détail) | `isAdminFactDetail` | — | ❌ formules, essai, remise, reçu |
+| Facture (détail) | `isAdminFactDetail` | sous la fiche, dans « Établissements » | 🟡 **formules, essai et remise sont faits** par le panneau `AbonnementEtablissement` — choix de la formule, tarif négocié, remise annuelle (RG11), émission et encaissement. Ne manque que le **reçu**, bloqué : il porte des mentions légales obligatoires (raison sociale, RC/ICE) encore `[À COMPLÉTER]` |
 | Secrétariat | `isAdminUsers` | `/admin/secretariat` | 🟡 comptes et rattachement, portées déléguées (RG05), suspension qui coupe les sessions (RG25) — manquent la **création de compte** et la **réinitialisation de mot de passe** : qui a le droit de créer un compte et comment le mot de passe parvient à son titulaire ne sont écrits nulle part |
 | Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | 🟡 portefeuilles, transformations, taux, relances dues, commissions — manque la **création de compte**, qui se fait par `compte:creer --role=commercial` |
 | Base de données | `isAdminDb` | — | ❌ explorateur lecture seule (pas dans la navigation actuelle) |
@@ -115,7 +115,7 @@ référence, à la demande du client.
 
 ---
 
-## Espace établissement — 5 / 7
+## Espace établissement — 6 / 7
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -153,11 +153,12 @@ Servi par **les mêmes écrans que l'établissement**, filtrés par portée dél
 
 ## Espace commercial — 2 / 6 écrans complets
 
-**La navigation et les six routes existent** (`/commercial/…`, thème
+**Les six routes existent** (`/commercial/…`, thème
 `commercial` de `SidebarNav`) : un commercial se connecte et arrive dans son
-espace. Le blog est construit ; les cinq autres entrées mènent à une page
-d'attente qui nomme ce qu'elle contiendra — le CRM n'expose encore aucune
-route à ce rôle.
+espace. **Quatre écrans sur six sont construits** — tableau de bord, agenda,
+mes leads, transferts & commissions — et le blog avec eux. Seul « Statistiques »
+reste une page d'attente, et elle attend une DÉFINITION, pas du travail : ce
+qu'un commercial doit lire des chiffres d'une fiche n'est écrit nulle part.
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -171,14 +172,14 @@ route à ce rôle.
 
 ## Récapitulatif
 
-| Périmètre | Fait | Reste |
-|---|---|---|
-| Site public | 9 | 0 + 4 partiels — dont 2 pages légales, rédigées mais portant des mentions à compléter |
-| Administration | 6 | 2 + 7 partiels |
-| Établissement | 5 | 1 + 1 partiel |
-| Secrétariat | 5 | 0 |
-| Commercial | 2 | 1 + 3 partiels |
-| **Total** | **27** | **4 + 15 partiels** |
+| Périmètre | Complets | Partiels | Restants |
+|---|---|---|---|
+| Site public (13) | 9 | 4 — dont 2 pages légales en attente de mentions, et la 3ᵉ de l'image, carte et réseaux sociaux | 0 |
+| Administration (15) | 7 | 7 | 1 — l'explorateur de base |
+| Établissement (7) | 6 | 1 — statistiques | 0 (+1 hors périmètre) |
+| Secrétariat (5) | 5 | 0 | 0 |
+| Commercial (6) | 2 | 3 | 1 — statistiques, en attente de définition |
+| **Total (46)** | **29** | **15** | **2** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait
@@ -236,7 +237,7 @@ node docs/sections.mjs "docs/handoff/écoles360.dc.html" isHome
 | Compteur « N établissements » | ✅ |
 | `skeletons` pendant le chargement | ✅ |
 | `results` — cartes du design system | ✅ |
-| **Bascule « Carte »** — vue cartographique | ❌ |
+| Bascule « Carte » — vue cartographique | ✅ `CarteResultats` (Leaflet + OpenStreetMap), avec le bouton « Carte » de chaque résultat qui y situe la fiche. **Cette ligne disait ❌ alors que la ligne 66 disait ✅** — vérifié dans `Resultats.tsx` le 7 octobre 2026 |
 | Pagination `pages` | ✅ |
 | `emptyState` + « Réinitialiser les filtres » | ✅ |
 
@@ -250,7 +251,7 @@ Filières · Équipements · Tarifs · Équipe · Avis.
 | Galerie `gallery`, badges, spécifications | ✅ |
 | Onglets `Tabs`, `detCycles`, `detChiffres`, `det_filieres` | ✅ |
 | `equipementsFiche`, `detTarifs`, `detFacilites` | ✅ |
-| **`detTeam` — onglet Équipe** | ❌ |
+| `detTeam` — onglet Équipe | ✅ servi par `equipe`, édité depuis l'espace via la file de propositions (RG20). **Cette ligne disait ❌ alors que la ligne 67 disait ✅ du même écran** — vérifié dans `Fiche.tsx` le 7 octobre 2026 |
 | Avis : `avisDist`, `avisStarChips`, `avisSortOptions`, `avisList` | ✅ |
 | Dépôt d'avis : formulaire étoiles + « Soumettre mon avis » | ✅ |
 | **« Utile (n) » — vote d'utilité sur un avis** | ❌ |

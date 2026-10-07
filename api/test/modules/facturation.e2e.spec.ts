@@ -363,4 +363,73 @@ describe('Facturation (intégration)', () => {
       .send({ formule: 'mensuel', tarif_mad: -500 })
       .expect(422);
   });
+
+  // ---------------------------------------------------------------------------
+  //  Commission du commercial apporteur — RG18
+  // ---------------------------------------------------------------------------
+
+  /**
+   * LE TAUX VIENT DU PARAMÈTRE, JAMAIS DU CODE. Il a valu zéro tant qu'aucun
+   * livrable ne le fixait ; le client l'a porté à 8 % le 7 octobre 2026, et il
+   * reste modifiable depuis l'écran « Paramètres ».
+   *
+   * CE TEST NE FIGE PAS LE 8. Il lit le paramètre, puis vérifie que la
+   * commission en découle — une valeur en dur ici tomberait le jour où la
+   * Direction change le taux, et ferait croire à une régression là où il n'y
+   * aurait qu'une décision de gestion.
+   */
+  it('crée la commission au taux du paramètre, en « à valider » (RG18)', async () => {
+    const admin = await connecte(ADMIN);
+    const fiche = await ficheNeuve(admin);
+
+    const commercial = await db.user.findFirstOrThrow({
+      where: { role: { code: 'commercial' } },
+      select: { id: true },
+    });
+
+    // SANS PROSPECT APPORTÉ, PAS DE COMMISSION : c'est le prospect transformé
+    // qui dit qui a vendu. On le fabrique donc explicitement.
+    const prospect = await db.prospect.create({
+      data: {
+        etablissement_nom: 'Apport commercial',
+        contact_nom: 'Contact',
+        telephone: '06 00 00 00 00',
+        commercial_id: commercial.id,
+        etablissement_id: BigInt(fiche.id),
+      },
+    });
+
+    const taux = Number(
+      (
+        await db.parametreFacturation.findUniqueOrThrow({ where: { cle: 'commission_pct' } })
+      ).valeur,
+    );
+
+    expect(taux).toBeGreaterThan(0);
+
+    const abonnement = await admin
+      .post(`/admin/etablissements/${fiche.id}/abonnement`)
+      .send({ formule: 'mensuel', tarif_mad: 2000 })
+      .expect(201);
+
+    const facture = await admin
+      .post(`/admin/abonnements/${abonnement.body.data.id}/facture`)
+      .send({})
+      .expect(201);
+
+    const commission = await db.commission.findFirstOrThrow({
+      where: { facture_id: BigInt(facture.body.data.id) },
+    });
+
+    expect(Number(commission.taux_pct)).toBe(taux);
+    expect(commission.commercial_id).toBe(commercial.id);
+    expect(Number(commission.montant_mad)).toBeCloseTo(2000 * (taux / 100), 2);
+
+    // « À VALIDER », PAS « RÉGLÉE » : la commission naît à l'émission de la
+    // facture, pas à son encaissement, et la Direction la valide ensuite.
+    expect(commission.statut).toBe('a_valider');
+
+    await db.commission.deleteMany({ where: { facture_id: BigInt(facture.body.data.id) } });
+    await db.prospect.delete({ where: { id: prospect.id } });
+  });
 });

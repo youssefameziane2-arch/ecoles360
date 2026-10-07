@@ -49,7 +49,7 @@ les tests, et ne se découvre qu'à la recette. La ligne est tracée ici.
 | | |
 |---|---|
 | **`masquee` vs `suspendue`** | ~~Question posée au client~~ — **tranché le 7 octobre 2026**, voir B-47. |
-| **Taux de commission** | Reste à 0. Il détermine la paie de personnes réelles. La capacité de le fixer par facture existe déjà (RG18) ; le chiffre appartient à la Direction. |
+| **Taux de commission** | ~~Reste à 0~~ — **fixé à 8 % par le client le 7 octobre 2026**, et modifiable depuis l'écran « Paramètres ». Voir B-48. |
 | **« Taux de contact » (B-42)** | Numérateur et dénominateur indéfinis, et aucun rapport des nombres de la maquette ne donne son 1,5 %. La tuile reste omise. |
 | **Définition d'une « visite » (B-40)** | Session ou page vue : la maquette ne le dit pas, et le choix change la facturation à la vue (RG12). |
 
@@ -879,3 +879,44 @@ l'établissement propose et que l'admin publie. Lui donner ce bouton serait une
 écriture directe sur sa fiche — à trancher avec le client si le besoin se
 présente.
 **Statut :** tranché par le client ; construit. Qui peut masquer : `à trancher`.
+
+## B-48 — Taux de commission : 8 %, et modifiable
+
+Il valait **zéro** depuis l'origine, volontairement : aucun livrable ne fixait
+ce taux, et l'inventer revenait à décider ce que touche un commercial. Tant
+qu'il valait zéro, l'émission d'une facture ne créait aucune commission.
+
+**Tranché par le client le 7 octobre 2026 : 8 %, modifiable par l'admin.**
+
+Le mécanisme existait déjà et n'a pas changé : `commission_pct` est un
+`ParametreFacturation`, lu à chaque émission de facture, et l'écran
+« Paramètres » le modifie. Ce qui change est la valeur de départ.
+
+**Deux endroits, et il fallait les deux :**
+
+1. le semis, pour une base neuve ;
+2. une migration, pour les bases déjà semées — le semis pose les paramètres en
+   `update: {}` et ne réécrit donc jamais une valeur existante, précisément
+   pour qu'un `db:seed` de routine n'efface pas une décision de gestion.
+
+**La migration a dû être réécrite, et c'est la leçon à retenir.** Écrite
+d'abord en simple `UPDATE … WHERE valeur = '0'`, elle n'a rien trouvé sur la
+base de développement : **la ligne n'y existait pas du tout**, cette base ayant
+été semée avant l'ajout du paramètre. Le taux serait resté au repli de zéro,
+aucune commission n'aurait été créée, et **rien ne l'aurait signalé** — ni une
+erreur, ni un écran. Elle est devenue un `INSERT … ON DUPLICATE KEY UPDATE`
+qui crée la ligne si elle manque et ne relève que le zéro si elle existe.
+
+**Ce que la migration ne fait pas, volontairement :**
+
+- elle ne touche pas une valeur déjà réglée à la main depuis l'écran. Une
+  migration de données ne doit jamais défaire un geste humain plus récent
+  qu'elle ;
+- elle ne recalcule aucune commission déjà émise. `Commission.taux_pct` garde
+  le taux en vigueur au moment de la facture ; le réécrire changerait
+  rétroactivement ce qui est dû à quelqu'un.
+
+Le test de facturation **lit le paramètre** plutôt que d'attendre 8 : figer la
+valeur ferait tomber la suite le jour où la Direction change le taux, et
+ferait croire à une régression là où il n'y aurait qu'une décision de gestion.
+**Statut :** tranché par le client ; construit.
