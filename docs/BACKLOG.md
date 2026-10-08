@@ -542,7 +542,7 @@ journalisée sous le rôle réel de l'acteur (elle l'était sous « établisseme
 en dur). Le secrétariat reste fermé.
 **Statut :** corrigé.
 
-## B-38 — Tableau de bord admin : « Pipeline CRM Clients » non construit
+## B-38 — Tableau de bord admin : « Pipeline CRM Clients » — fait
 
 La maquette (`isAdminDash`, liste `adminPipe`) pose en bas du tableau de bord
 le pipeline de prospection : une barre par étape, avec son effectif. Le modèle
@@ -554,9 +554,18 @@ règles de portée (un commercial ne voit que ses prospects).
 **À faire :** route de lecture `GET /admin/prospects` (ou un agrégat par étape
 dans `/admin/tableau-de-bord`), puis le bloc. L'écran « CRM Clients » en
 bénéficierait d'abord.
-**Statut :** planifié — lot CRM (avenant n° 1).
+**Fait le 8 octobre 2026.** Le CRM étant construit, le bloc n'était plus qu'une
+lecture de plus : un `groupBy` par étape dans `/admin/tableau-de-bord`.
 
-## B-39 — Tableau de bord admin : « Derniers encaissements », « Encaisser » et « Reçu »
+LES SIX ÉTAPES SONT TOUJOURS RENDUES, même à zéro. `groupBy` ne rend que les
+étapes peuplées ; s'en contenter ferait disparaître une colonne du graphique
+dès qu'elle se vide, et la barre d'à côté paraîtrait s'élargir. L'ordre est
+celui de `COLONNES_PIPELINE`, réutilisé et non recopié — deux listes d'étapes
+finiraient par diverger, et le tableau de bord montrerait un pipeline rangé
+autrement que celui qu'on ouvre en cliquant dessus.
+**Statut :** fait.
+
+## B-39 — Tableau de bord admin : « Dernières factures » — fait, « Encaisser » écarté
 
 La maquette (`facturesMini`) liste les dernières factures, avec deux boutons :
 **Encaisser** sur une facture impayée, **Reçu** sur une facture payée. Le
@@ -569,9 +578,21 @@ au journal (RG15) et ses tests de concurrence ; la poser en passant sur un
 tableau de bord de lecture serait l'exposer sans ces garanties. Le reçu HTML,
 lui, sort de l'enveloppe (`@SansEnveloppe()`, livrable 11 §3.2).
 
-**À faire :** le module de facturation (écran `isAdminFact`), puis un agrégat
-« derniers encaissements » dans `/admin/tableau-de-bord`.
-**Statut :** planifié — lot facturation.
+**Fait le 8 octobre 2026 — la lecture seulement.** Les quatre dernières
+factures sont rendues par `/admin/tableau-de-bord`, avec leur établissement,
+leur montant et leur statut de paiement.
+
+« ENCAISSER » N'EST PAS REPRIS, et ne le sera pas depuis cet écran. Le
+raisonnement de l'entrée reste exact : c'est une écriture qui débloque la
+publication d'une fiche (RG14), avec sa transaction et sa trace au journal. Un
+second chemin depuis un tableau de bord de lecture serait un second endroit où
+la règle pourrait céder. Le bloc renvoie vers « Abonnement & facturation », qui
+le fait correctement.
+
+Le reçu reste à faire, et il est bloqué ailleurs : il porte des mentions
+légales obligatoires — raison sociale, RC/ICE — encore `[À COMPLÉTER]`.
+**Statut :** lecture faite ; « Encaisser » volontairement hors de cet écran ;
+reçu bloqué par les mentions légales.
 
 ## B-40 — Recherches et visites du site : aucune source
 

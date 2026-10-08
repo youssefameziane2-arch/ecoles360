@@ -2,6 +2,7 @@ import { apiFetch } from './client';
 import type { EntreeAudit } from './audit';
 import type { TypeEtablissement } from './etablissements';
 import type { ChampsModifies } from './espace';
+import type { StatutProspect } from './crm';
 
 /** Back-office admin — livrable 11 §3.4. Réservé au Super Admin (RG25). */
 
@@ -251,6 +252,17 @@ export interface TableauDeBordAdmin {
     nb_avis: number;
     ville: { nom: string };
     vues: number;
+  }[];
+  /** Les six étapes, toujours — même à zéro, pour que le graphique ne bouge pas. */
+  pipeline: { etape: StatutProspect; total: number }[];
+  dernieres_factures: {
+    id: string;
+    numero: string;
+    objet: string;
+    total_ttc: string;
+    statut_paiement: StatutPaiement;
+    emise_le: string;
+    etablissement: { id: string; nom: string; slug: string };
   }[];
 }
 
