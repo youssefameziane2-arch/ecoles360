@@ -18,7 +18,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles, Utilisateur } from '../../common/decorators';
+import { Roles, Scopes, Utilisateur } from '../../common/decorators';
 import { AppException, ERROR_CODES } from '../../common/errors';
 import { POIDS_MAX_OCTETS, type FichierTeleverse } from '../../common/stockage/stockage.service';
 import {
@@ -26,6 +26,7 @@ import {
   AvisStatut,
   EtablissementStatut,
   FactureStatut,
+  PermissionPortee,
   RoleCode,
   type EtablissementType,
 } from '../../generated/prisma';
@@ -693,10 +694,25 @@ export class AdminController {
     return this.moderationAvis.basculerEnAvant(BigInt(id), dto.en_avant, utilisateur.userId);
   }
 
+  /**
+   * OUVERTE AU SECRÉTARIAT QUI PORTE LA PORTÉE `blog` — RG05, étendue par le
+   * client le 7 octobre 2026 : la relecture du blog « est un privilège que
+   * l'admin peut céder à la secrétaire lors de l'ajout ».
+   *
+   * LE `@Roles` DE LA MÉTHODE SURCHARGE CELUI DE LA CLASSE, qui réserve tout
+   * `/admin` au superadmin. Le `@Scopes` ajoute la seconde condition :
+   * `ScopesGuard` laisse passer un superadmin sans portée — son périmètre les
+   * englobe — et exige la portée de tout autre rôle. Les deux décorateurs sont
+   * donc nécessaires, et aucun ne suffit seul.
+   */
   @Get('articles')
+  @Roles(RoleCode.superadmin, RoleCode.secretariat)
+  @Scopes(PermissionPortee.blog)
   @ApiOperation({
     summary: 'Articles du blog, filtrables par statut',
-    description: 'Sans filtre : tout le circuit, brouillons des établissements compris.',
+    description:
+      'Sans filtre : tout le circuit, brouillons des établissements compris. ' +
+      'Ouverte au secrétariat portant la portée « blog » (RG05).',
   })
   articles(@Query('statut') statut?: ArticleStatut) {
     return this.articlesService.listerPourAdmin(statut);
@@ -744,10 +760,21 @@ export class AdminController {
     return this.articlesService.supprimerParAdmin(BigInt(id), utilisateur.userId);
   }
 
+  /**
+   * MÊME PORTÉE QUE LA LECTURE, ET C'EST LE POINT. Confier la relecture du
+   * blog sans la décision n'aurait aucun sens : la secrétaire verrait la file
+   * sans pouvoir la vider. Approuver adopte au passage une catégorie inédite
+   * (B-50) — elle enrichit donc le référentiel de toute la rédaction, comme le
+   * ferait l'administrateur. C'est le même geste, pas un sous-ensemble.
+   */
   @Patch('articles/:id')
+  @Roles(RoleCode.superadmin, RoleCode.secretariat)
+  @Scopes(PermissionPortee.blog)
   @ApiOperation({
     summary: 'Approuver ou refuser un article soumis',
-    description: 'Le motif est obligatoire au refus et rendu à l’auteur (livrable 11 §3.5).',
+    description:
+      'Le motif est obligatoire au refus et rendu à l’auteur (livrable 11 §3.5). ' +
+      'Ouverte au secrétariat portant la portée « blog » (RG05).',
   })
   @ApiResponse({ status: 409, description: 'Article qui n’est pas en attente de validation.' })
   deciderArticle(
@@ -755,7 +782,7 @@ export class AdminController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: DecisionArticleDto,
   ) {
-    return this.articlesService.decider(BigInt(id), dto, utilisateur.userId);
+    return this.articlesService.decider(BigInt(id), dto, utilisateur.userId, utilisateur.role);
   }
 
   @Patch('articles/:id/a-la-une')

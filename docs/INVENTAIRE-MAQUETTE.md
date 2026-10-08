@@ -99,13 +99,13 @@ appelé mais jamais dessiné).
 | Blog | `isBlogList` | `/admin/blog` | ✅ |
 | Article (éditeur) | `isBlogDetail` | `/admin/blog` | ✅ |
 | Journal d'audit | `isAdminJournal` | `/admin/journal` | ✅ |
-| Contenu du site | `isAdminContent` | `/admin/contenu` | ✅ FAQ, page « À propos », les **trois pages légales** et les **catégories d'articles** (onglets). Les *demandes* de catégorie de la maquette restent à définir : qui demande, ce qui se passe au refus, et si le demandeur est prévenu (B-50) |
+| Contenu du site | `isAdminContent` | `/admin/contenu` | ✅ FAQ, page « À propos », les **trois pages légales** et les **catégories d'articles** (onglets). Les *demandes* de catégorie de la maquette restent à définir : qui demande, ce qui se passe au refus, et si le demandeur est prévenu — tranché le 7 octobre 2026 : pas de file séparée, la catégorie inédite s'adopte en approuvant l'article qui l'emploie (B-50) |
 | Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
 | CRM Clients | `isAdminCrm` | `/admin/crm` | ✅ indicateurs, pipeline en 6 colonnes (RG17), relances, attribution des dossiers (RG18), **pastille des prospects jamais ouverts** dans le menu — seul signal qu'une demande du formulaire public est arrivée, faute d'envoi d'e-mail (B-46) |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
 | Abonnement & facturation | `isAdminFact` | `/admin/facturation` | 🟡 indicateurs, historique, encaissement ✅ · ouverture d'abonnement et émission de facture depuis la fiche ✅ — manque le **détail de facture** (`isAdminFactDetail`) |
 | Facture (détail) | `isAdminFactDetail` | sous la fiche, dans « Établissements » | 🟡 **formules, essai et remise sont faits** par le panneau `AbonnementEtablissement` — choix de la formule, tarif négocié, remise annuelle (RG11), émission et encaissement. Ne manque que le **reçu**, bloqué : il porte des mentions légales obligatoires (raison sociale, RC/ICE) encore `[À COMPLÉTER]` |
-| Secrétariat | `isAdminUsers` | `/admin/secretariat` | ✅ **création de compte** et **réinitialisation de mot de passe** comprises, avec rattachement, portées déléguées (RG05) et suspension qui coupe les sessions (RG25). Le mot de passe est tiré au sort et affiché **une seule fois** — un lien de première connexion par courriel vaudrait mieux, mais il n'y a aucun envoi d'e-mail dans le projet (B-46) |
+| Secrétariat | `isAdminUsers` | `/admin/secretariat` | ✅ **quatre portées déléguées** depuis le 7 octobre 2026, la relecture du blog comprise (B-51) · **création de compte** et **réinitialisation de mot de passe** comprises, avec rattachement, portées déléguées (RG05) et suspension qui coupe les sessions (RG25). Le mot de passe est tiré au sort et affiché **une seule fois** — un lien de première connexion par courriel vaudrait mieux, mais il n'y a aucun envoi d'e-mail dans le projet (B-46) |
 | Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | ✅ **création de compte** comprise, portefeuilles, transformations, taux, relances dues, commissions. Un commercial sans téléphone n'apparaît pas sur la bannière d'aide du site, et l'écran le dit |
 | Base de données | `isAdminDb` | — | ❌ explorateur lecture seule (pas dans la navigation actuelle) |
 
@@ -151,18 +151,18 @@ Servi par **les mêmes écrans que l'établissement**, filtrés par portée dél
 
 ---
 
-## Espace commercial — 2 / 6 écrans complets
+## Espace commercial — 3 / 6 écrans complets
 
 **Les six routes existent** (`/commercial/…`, thème
 `commercial` de `SidebarNav`) : un commercial se connecte et arrive dans son
-espace. **Quatre écrans sur six sont construits** — tableau de bord, agenda,
+espace. **Cinq écrans sur six sont construits**, dont trois complets — agenda,
 mes leads, transferts & commissions — et le blog avec eux. Seul « Statistiques »
 reste une page d'attente, et elle attend une DÉFINITION, pas du travail : ce
 qu'un commercial doit lire des chiffres d'une fiche n'est écrit nulle part.
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
-| Tableau de bord | `isCommercialDash` | `/commercial` | 🟡 son portefeuille et ses indicateurs — la maquette y met aussi les transferts, qui ne sont pas définis |
+| Agenda & tâches | `isAgenda` | `/commercial/agenda` | ✅ **calendrier du mois** (lundi en tête, pastille sur les jours chargés, filtrage au clic), relances dues, retards signalés, « c'est fait » (RG17) — reste la synchronisation Google Agenda, qui demande un compte de service |
 | Agenda & tâches | `isAgenda` | `/commercial/agenda` | 🟡 relances dues, retards signalés, « c’est fait » (RG17) — manquent le calendrier et la synchronisation Google Agenda |
 | Mes leads | `isCrm` | `/commercial/leads` | ✅ pipeline borné à son portefeuille par le serveur, relances comprises |
 | Transferts & commissions | `isTransferts` | `/commercial/transferts` | 🟡 commissions par facture et par statut (RG18) — le **transfert de dossier** entre commerciaux n’est défini nulle part |
@@ -178,8 +178,8 @@ qu'un commercial doit lire des chiffres d'une fiche n'est écrit nulle part.
 | Administration (15) | 10 | 4 | 1 — l'explorateur de base |
 | Établissement (7) | 6 | 1 — statistiques | 0 (+1 hors périmètre) |
 | Secrétariat (5) | 5 | 0 | 0 |
-| Commercial (6) | 2 | 3 | 1 — statistiques, en attente de définition |
-| **Total (46)** | **32** | **12** | **2** |
+| Commercial (6) | 3 | 2 | 1 — statistiques, en attente de définition |
+| **Total (46)** | **33** | **11** | **2** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait

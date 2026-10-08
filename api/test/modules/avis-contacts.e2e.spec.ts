@@ -68,10 +68,37 @@ describe('Site public — avis et contacts (intégration)', () => {
      * Fabriquer soi-même la donnée dont on dépend, plutôt que d'espérer
      * l'ordre : c'est la règle du projet, et elle a été apprise ici.
      */
-    await db.etablissement.updateMany({
+    const almassira = await db.etablissement.update({
       where: { slug: 'lycee-al-massira-casablanca' },
       data: { statut: 'validee' },
+      select: { id: true },
     });
+
+    /**
+     * ET LA FICHE VALIDÉE NE SUFFISAIT PAS. « En avant » exige TROIS
+     * conditions à la fois : l'avis épinglé, l'avis publié, la fiche validée.
+     * Le `beforeAll` n'en garantissait qu'une, et la suite de modération
+     * dépublie ou dépingle les avis de cette même fiche — d'où un échec
+     * intermittent, selon l'ordre dans lequel Jest ordonne les suites.
+     *
+     * ON ÉPINGLE UN AVIS DÉJÀ PUBLIÉ, ON N'EN PUBLIE PAS. Une première version
+     * forçait `statut: 'publie'` ici, et cassait le test de signalement :
+     * `nb_avis` et `note_moy` sont des COMPTEURS DÉNORMALISÉS que seul le
+     * service de modération recalcule (RG08). Publier un avis par une écriture
+     * directe les laisse en arrière, et le test qui vérifie que la note baisse
+     * après un signalement comparait alors deux chiffres incohérents.
+     *
+     * `en_avant` n'entre dans aucun compteur : l'épingler ne dérange rien.
+     */
+    const epingle = await db.avis.findFirst({
+      where: { etablissement_id: almassira.id, statut: 'publie' },
+      orderBy: { id: 'desc' },
+      select: { id: true },
+    });
+
+    if (epingle) {
+      await db.avis.update({ where: { id: epingle.id }, data: { en_avant: true } });
+    }
   });
 
   // Les plafonds sont serrés (5 dépôts par heure) : sans ce nettoyage, les

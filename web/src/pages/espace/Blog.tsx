@@ -5,6 +5,7 @@ import { chargerEtablissementsAdmin } from '@/api/admin';
 import {
   basculerBlogEspace,
   chargerArticlesAdmin,
+  chargerCategoriesProposees,
   chargerBlogEspace,
   creerArticle,
   deciderArticle,
@@ -25,8 +26,16 @@ import { Badge, Button, Icon, Input, Textarea, Toast } from '@/ds/composants';
 import { formaterDate } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
 
-/** Catégories proposées d'abord — celles de la maquette. La saisie reste libre. */
-const CATEGORIES = [
+/**
+ * Repli quand le référentiel n'a pas encore répondu, ou qu'il est vide.
+ *
+ * CES SIX VALEURS ÉTAIENT ÉCRITES EN DUR ICI, et c'est d'elles que venait le
+ * contenu de la base — la migration qui a créé le référentiel les y a reprises.
+ * Elles ne restent que comme filet : l'écran « Contenu du site » commande
+ * désormais la liste, et une catégorie ajoutée là doit apparaître ici sans
+ * qu'on touche à ce fichier.
+ */
+const CATEGORIES_DE_REPLI = [
   'Conseils aux parents',
   'Vie des établissements',
   'Vie scolaire',
@@ -73,7 +82,9 @@ export function BlogAdmin() {
 
   return (
     <AvecIdentite
-      role={['superadmin']}
+      // La portée `blog` (RG05) ouvre cet écran au secrétariat ; le serveur
+      // vérifie la portée, cette liste ne fait que laisser passer le rôle.
+      role={['superadmin', 'secretariat']}
       rendu={(identite) => (
         <CoquilleEspace
           identite={identite}
@@ -537,6 +548,24 @@ function LigneArticle({
   const enAttente = article.statut === 'en_attente';
   const publie = article.statut === 'approuve';
 
+  /**
+   * SIGNALÉ AU SEUL RELECTEUR, et seulement sur un article en attente : c'est
+   * le moment où la question se pose. L'afficher sur un brouillon de l'auteur
+   * lui ferait croire à un refus à venir, alors que rien n'est encore décidé.
+   */
+  const referentiel = useQuery({
+    queryKey: ['categories-articles'],
+    queryFn: chargerCategoriesProposees,
+    enabled: admin && enAttente,
+    staleTime: 3_600_000,
+  });
+
+  const categorieInedite =
+    admin &&
+    enAttente &&
+    referentiel.data !== undefined &&
+    !referentiel.data.some((c) => c.libelle === article.categorie);
+
   return (
     <div
       style={{
@@ -560,6 +589,28 @@ function LigneArticle({
         >
           {article.categorie}
         </span>
+        {/*
+          LE RELECTEUR DOIT SAVOIR AVANT DE DÉCIDER. Approuver un article dont
+          la catégorie est inédite l'ajoute au référentiel (règle du client du
+          7 octobre 2026) : il ne tranche pas que la publication, il adopte
+          aussi un libellé que toute la rédaction se verra proposer ensuite.
+          Sans cette mention, l'adoption serait silencieuse.
+        */}
+        {categorieInedite && (
+          <span
+            style={{
+              font: "700 11px/1 'Inter', sans-serif",
+              color: '#B57708',
+              background: '#FCF1DE',
+              border: '1px solid #F0D18B',
+              padding: '4px 9px',
+              borderRadius: 20,
+            }}
+            title="Cette catégorie n’existe pas encore dans la liste proposée. L’approuver l’y ajoutera."
+          >
+            Nouvelle catégorie
+          </span>
+        )}
         <Badge tone={TON_STATUT[article.statut]}>{LIBELLE_STATUT[article.statut]}</Badge>
         {article.a_la_une && (
           <span
@@ -726,8 +777,23 @@ function Formulaire({
   /** Back-office seulement : la liste des fiches au nom desquelles publier. */
   etablissements?: { id: string; nom: string }[];
 }) {
+  /**
+   * LA LISTE VIENT DU RÉFÉRENTIEL, plus du code. Une catégorie ajoutée depuis
+   * « Contenu du site » apparaît ici sans redéploiement ; une catégorie
+   * retirée cesse d'être proposée sans toucher aux articles qui la portent.
+   */
+  const referentiel = useQuery({
+    queryKey: ['categories-articles'],
+    queryFn: chargerCategoriesProposees,
+    staleTime: 3_600_000,
+  });
+
+  const categories = referentiel.data?.length
+    ? referentiel.data.map((c) => c.libelle)
+    : CATEGORIES_DE_REPLI;
+
   const [titre, setTitre] = useState(valeurs?.titre ?? '');
-  const [categorie, setCategorie] = useState(valeurs?.categorie ?? CATEGORIES[0] ?? '');
+  const [categorie, setCategorie] = useState(valeurs?.categorie ?? '');
   const [chapeau, setChapeau] = useState(valeurs?.chapeau ?? '');
   const [contenu, setContenu] = useState(valeurs?.contenu ?? '');
   const [auteur, setAuteur] = useState('');
@@ -834,7 +900,7 @@ function Formulaire({
             deuxième file d'attente pour le même arbitrage.
           */}
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            {CATEGORIES.map((nom) => (
+            {categories.map((nom) => (
               <button
                 key={nom}
                 type="button"

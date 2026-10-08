@@ -460,11 +460,18 @@ export class ArticlesService {
    * texte que son auteur n'a pas jugé prêt, et redécider un article déjà
    * tranché effacerait la première décision sans trace de la raison.
    */
-  async decider(id: bigint, dto: DecisionArticleDto, adminId: bigint) {
+  /**
+   * LE RÔLE RÉEL DU DÉCIDEUR, pas `superadmin` par défaut. Depuis que la
+   * portée `blog` existe (RG05), une secrétaire peut approuver un article ;
+   * l'inscrire au journal comme un administrateur attribuerait la décision à
+   * quelqu'un qui ne l'a pas prise, et c'est précisément ce que le journal
+   * existe pour empêcher.
+   */
+  async decider(id: bigint, dto: DecisionArticleDto, adminId: bigint, role: RoleCode) {
     return this.db.$transaction(async (tx) => {
       const article = await tx.article.findUnique({
         where: { id },
-        select: { id: true, titre: true, statut: true },
+        select: { id: true, titre: true, statut: true, categorie: true },
       });
 
       if (!article) {
@@ -492,14 +499,60 @@ export class ArticlesService {
         select: SELECTION_GESTION,
       });
 
+      /**
+       * APPROUVER L'ARTICLE ADOPTE SA CATÉGORIE — règle du client, 7 octobre
+       * 2026 : « n'importe qui peut demander une catégorie, c'est lors de la
+       * révision du blog, avant publication, qu'on la valide ou non ».
+       *
+       * IL N'Y A DONC PAS DE FILE DE DEMANDES À PART. Une catégorie inédite
+       * voyage avec l'article qui l'emploie, et la même relecture tranche les
+       * deux. Un second circuit aurait fait deux files d'attente pour un seul
+       * arbitrage — et la maquette, qui dessine un bloc de demandes séparé,
+       * n'en disait ni l'acteur ni l'issue en cas de refus.
+       *
+       * REFUSER L'ARTICLE N'ADOPTE RIEN, par construction : on ne passe ici
+       * que si la décision est l'approbation. Et comme `Article.categorie`
+       * reste une chaîne libre, un article approuvé n'a jamais à attendre que
+       * sa catégorie existe — elle naît avec lui.
+       */
+      let categorieAdoptee = false;
+
+      if (approuve && article.categorie.trim() !== '') {
+        const connue = await tx.categorieArticle.findFirst({
+          where: { libelle: article.categorie },
+          select: { id: true },
+        });
+
+        if (!connue) {
+          const dernier = await tx.categorieArticle.findFirst({
+            orderBy: { ordre: 'desc' },
+            select: { ordre: true },
+          });
+
+          await tx.categorieArticle.create({
+            data: { libelle: article.categorie, ordre: (dernier?.ordre ?? 0) + 1 },
+          });
+
+          categorieAdoptee = true;
+        }
+      }
+
       await this.audit.journaliser(tx, {
         userId: adminId,
-        roleActeur: RoleCode.superadmin,
+        roleActeur: role,
         action: approuve ? 'article.approuve' : 'article.refuse',
         cibleType: 'article',
         cibleId: id,
         severite: approuve ? undefined : 'avertissement',
-        details: approuve ? { titre: article.titre } : { titre: article.titre, motif: dto.motif },
+        details: approuve
+          ? {
+              titre: article.titre,
+              // Dit au journal que cette approbation a AUSSI enrichi le
+              // référentiel : sans cela, une catégorie apparaîtrait un jour
+              // sans qu'on sache qui l'a introduite.
+              ...(categorieAdoptee ? { categorie_adoptee: article.categorie } : {}),
+            }
+          : { titre: article.titre, motif: dto.motif },
       });
 
       return mis;

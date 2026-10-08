@@ -227,6 +227,78 @@ describe('Blog et circuit éditorial (intégration)', () => {
       await request(app.getHttpServer()).get(`/api/v1/articles/${article.slug}`).expect(200);
     });
 
+    /**
+     * APPROUVER ADOPTE LA CATÉGORIE — règle du client du 7 octobre 2026 :
+     * n'importe qui peut en demander une, et c'est la relecture du blog, avant
+     * publication, qui la valide ou non. Il n'y a donc pas de file de demandes
+     * à part : la catégorie voyage avec l'article qui l'emploie.
+     */
+    it('adopte au référentiel la catégorie inédite d’un article approuvé', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const admin = await connecte('direction@ecoles360.com');
+      const categorie = `Rubrique Inédite ${Date.now()}`;
+
+      const reponse = await etablissement
+        .post('/mon-espace/articles')
+        .send({
+          titre: `Article à catégorie inédite ${Date.now()}`,
+          categorie,
+          contenu: 'Un contenu quelconque, assez long pour passer la validation.',
+        })
+        .expect(201);
+
+      const id = reponse.body.data.id as string;
+      creees.push(BigInt(id));
+
+      // Inconnue du référentiel AVANT la décision : sans cette vérification,
+      // le test passerait même si la catégorie y était déjà.
+      expect(await db.categorieArticle.findFirst({ where: { libelle: categorie } })).toBeNull();
+
+      await etablissement.post(`/mon-espace/articles/${id}/soumettre`).expect(201);
+      await admin.patch(`/admin/articles/${id}`).send({ decision: 'approuve' }).expect(200);
+
+      const adoptee = await db.categorieArticle.findFirstOrThrow({
+        where: { libelle: categorie },
+      });
+      expect(adoptee.libelle).toBe(categorie);
+
+      // L'ADOPTION EST DITE AU JOURNAL : sinon une catégorie apparaîtrait un
+      // jour dans la liste sans qu'on sache qui l'a introduite.
+      const trace = await db.journalAudit.findFirstOrThrow({
+        where: { action: 'article.approuve', cible_id: BigInt(id) },
+      });
+      expect(trace.details).toMatchObject({ categorie_adoptee: categorie });
+
+      await db.categorieArticle.delete({ where: { id: adoptee.id } });
+    });
+
+    /** Refuser n'adopte rien : la catégorie reste hors de la liste proposée. */
+    it('n’adopte pas la catégorie d’un article refusé', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const admin = await connecte('direction@ecoles360.com');
+      const categorie = `Rubrique Refusée ${Date.now()}`;
+
+      const reponse = await etablissement
+        .post('/mon-espace/articles')
+        .send({
+          titre: `Article refusé ${Date.now()}`,
+          categorie,
+          contenu: 'Un contenu quelconque, assez long pour passer la validation.',
+        })
+        .expect(201);
+
+      const id = reponse.body.data.id as string;
+      creees.push(BigInt(id));
+
+      await etablissement.post(`/mon-espace/articles/${id}/soumettre`).expect(201);
+      await admin
+        .patch(`/admin/articles/${id}`)
+        .send({ decision: 'refuse', motif: 'Hors sujet pour le blog.' })
+        .expect(200);
+
+      expect(await db.categorieArticle.findFirst({ where: { libelle: categorie } })).toBeNull();
+    });
+
     it('REFUSE UNE DÉCISION DE REFUS SANS MOTIF (livrable 11 §3.5)', async () => {
       const etablissement = await connecte('contact@almassira.ma');
       const admin = await connecte('direction@ecoles360.com');

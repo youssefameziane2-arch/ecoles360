@@ -400,9 +400,8 @@ describe('Facturation (intégration)', () => {
     });
 
     const taux = Number(
-      (
-        await db.parametreFacturation.findUniqueOrThrow({ where: { cle: 'commission_pct' } })
-      ).valeur,
+      (await db.parametreFacturation.findUniqueOrThrow({ where: { cle: 'commission_pct' } }))
+        .valeur,
     );
 
     expect(taux).toBeGreaterThan(0);

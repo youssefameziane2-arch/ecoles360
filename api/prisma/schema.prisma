@@ -753,10 +753,17 @@ model Permission {
   @@map("permissions")
 }
 
+/// Portées déléguables au secrétariat — RG05.
+///
+/// `blog` EST LA QUATRIÈME, ajoutée le 7 octobre 2026 à la demande du client :
+/// la relecture du blog « est un privilège que l'admin peut céder à la
+/// secrétaire lors de l'ajout ». Elle ouvre la décision sur les articles
+/// soumis — et donc, par ricochet, l'adoption d'une catégorie inédite (B-50).
 enum PermissionPortee {
   fiches
   contacts
   avis
+  blog
 }
 
 /// 20 — Notification : plafond de vues (RG12), échéance (RG14), demandes,

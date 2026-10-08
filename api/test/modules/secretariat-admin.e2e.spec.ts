@@ -159,6 +159,49 @@ describe('Secrétariat — portées déléguées (intégration)', () => {
   //  Portées — RG05
   // ---------------------------------------------------------------------------
 
+  /**
+   * LA QUATRIÈME PORTÉE — `blog`, ajoutée le 7 octobre 2026 à la demande du
+   * client : la relecture du blog « est un privilège que l'admin peut céder à
+   * la secrétaire lors de l'ajout ».
+   *
+   * CE QUI EST ÉPROUVÉ EST LA FRONTIÈRE, pas l'écran. Deux décorateurs la
+   * posent — `@Roles(superadmin, secretariat)` surcharge la classe,
+   * `@Scopes(blog)` ajoute la condition de portée — et aucun ne suffit seul.
+   * Retirer l'un des deux rouvrirait `/admin/articles` à tout le secrétariat,
+   * et rien à l'écran ne le signalerait.
+   */
+  it('ouvre la relecture du blog à la portée « blog », et à elle seule', async () => {
+    const admin = await connecte(ADMIN);
+    const yassineId = await idDe(YASSINE);
+
+    // Yassine porte `fiches` et `contacts`, jamais `blog`.
+    const avant = await connecte(YASSINE);
+    await avant.get('/admin/articles').expect(403);
+
+    await admin
+      .patch(`/admin/secretariat/${yassineId}/portee`)
+      .send({ portee: 'blog', accordee: true })
+      .expect(200);
+
+    // UNE NOUVELLE SESSION : la portée est lue à chaque requête, mais l'agent
+    // précédent porte un cookie ouvert avant l'octroi — on vérifie le droit,
+    // pas la fraîcheur d'un cache.
+    const apres = await connecte(YASSINE);
+    await apres.get('/admin/articles').expect(200);
+
+    // ET RIEN D'AUTRE DU BACK-OFFICE : la portée ouvre le blog, pas `/admin`.
+    await apres.get('/admin/etablissements').expect(403);
+    await apres.get('/admin/secretariat').expect(403);
+
+    await admin
+      .patch(`/admin/secretariat/${yassineId}/portee`)
+      .send({ portee: 'blog', accordee: false })
+      .expect(200);
+
+    const revoque = await connecte(YASSINE);
+    await revoque.get('/admin/articles').expect(403);
+  });
+
   it('rend les comptes avec leur rattachement et leurs portées en cours', async () => {
     const admin = await connecte(ADMIN);
     const reponse = await admin.get('/admin/secretariat').expect(200);
@@ -320,7 +363,8 @@ describe('Secrétariat — portées déléguées (intégration)', () => {
    * pas filtrer, davantage que sur le fait qu'elle crée.
    */
   describe('création de compte', () => {
-    const jetable = () => `compte.test.${Date.now()}${Math.random().toString(36).slice(2, 6)}@ecoles360.com`;
+    const jetable = () =>
+      `compte.test.${Date.now()}${Math.random().toString(36).slice(2, 6)}@ecoles360.com`;
 
     async function supprimer(email: string) {
       const compte = await db.user.findUnique({ where: { email }, select: { id: true } });

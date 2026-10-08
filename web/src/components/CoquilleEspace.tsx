@@ -12,7 +12,7 @@ export interface Identite {
   userId: string;
   email: string;
   role: 'superadmin' | 'secretariat' | 'commercial' | 'etablissement';
-  permissions: ('fiches' | 'contacts' | 'avis')[];
+  permissions: ('fiches' | 'contacts' | 'avis' | 'blog')[];
   etablissementId: string | null;
 }
 
@@ -28,7 +28,15 @@ interface EntreeNav {
   label: string;
   icone: string;
   /** Portée exigée — secrétariat seulement (RG05). */
-  portee?: 'fiches' | 'contacts' | 'avis';
+  portee?: 'fiches' | 'contacts' | 'avis' | 'blog';
+  /**
+   * N'APPARAÎT QUE POUR UN SECRÉTARIAT. Les entrées ordinaires s'affichent
+   * pour tous et ne se filtrent par portée QUE pour un secrétariat — c'est ce
+   * qui permet à un établissement de voir sa fiche sans permission. La
+   * relecture du blog est l'inverse : elle n'a de sens que déléguée, et un
+   * établissement ne doit pas y trouver un lien vers le back-office.
+   */
+  reserveeAuSecretariat?: boolean;
   /** Source du compteur affiché en pastille. */
   compteur?: 'avis' | 'demandes' | 'propositions' | 'prospects';
 }
@@ -41,6 +49,13 @@ const NAV_ETABLISSEMENT: EntreeNav[] = [
   { key: '/espace/avis', label: 'Avis reçus', icone: 'star', portee: 'avis', compteur: 'avis' },
   { key: '/espace/demandes', label: 'Demandes de contact', icone: 'mail', portee: 'contacts', compteur: 'demandes' },
   { key: '/espace/blog', label: 'Blog', icone: 'book-open' },
+  {
+    key: '/admin/blog',
+    label: 'Relecture du blog',
+    icone: 'book-open',
+    portee: 'blog',
+    reserveeAuSecretariat: true,
+  },
   { key: '/espace/facturation', label: 'Abonnement & facturation', icone: 'credit-card' },
 ];
 
@@ -176,6 +191,7 @@ export function CoquilleEspace({
   } as const;
 
   const entrees = NAV_DE_L_ESPACE[espace]
+    .filter((entree) => !entree.reserveeAuSecretariat || identite.role === 'secretariat')
     .filter(
       (entree) =>
         !entree.portee ||

@@ -17,7 +17,7 @@ import { Badge, Button, EmptyState, Toast } from '@/ds/composants';
 import { formaterDate } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
 
-const PORTEES: PorteeDeleguee[] = ['fiches', 'contacts', 'avis'];
+const PORTEES: PorteeDeleguee[] = ['fiches', 'contacts', 'avis', 'blog'];
 
 /**
  * Secrétariat — écran `isAdminUsers` de la maquette.

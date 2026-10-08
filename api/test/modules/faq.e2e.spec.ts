@@ -356,8 +356,7 @@ describe('FAQ éditoriale (intégration)', () => {
    * une validation qu'elle n'exerce pas.
    */
   describe('catégories d’articles', () => {
-    const jetable = () =>
-      `Catégorie Test ${Date.now()}${Math.random().toString(36).slice(2, 5)}`;
+    const jetable = () => `Catégorie Test ${Date.now()}${Math.random().toString(36).slice(2, 5)}`;
 
     const nettoyerJournal = () =>
       db.journalAudit.deleteMany({ where: { cible_type: 'categorie_article' } });
@@ -407,7 +406,10 @@ describe('FAQ éditoriale (intégration)', () => {
       const admin = await connecte('direction@ecoles360.com');
 
       await admin.post('/admin/categories-articles').send({ libelle: '   ' }).expect(422);
-      await admin.post('/admin/categories-articles').send({ libelle: 'x'.repeat(61) }).expect(422);
+      await admin
+        .post('/admin/categories-articles')
+        .send({ libelle: 'x'.repeat(61) })
+        .expect(422);
     });
 
     /**
@@ -415,36 +417,42 @@ describe('FAQ éditoriale (intégration)', () => {
      * un administrateur qui renomme une rubrique retire l'ancienne, et les
      * articles déjà écrits doivent garder leur libellé.
      */
+    /**
+     * IL FABRIQUE SA PROPRE DONNÉE, et c'est la correction d'une première
+     * version qui empruntait une catégorie existante puis la reposait. Deux
+     * défauts : elle supposait que la catégorie de n'importe quel article
+     * figure au référentiel — faux dès qu'une autre suite crée un article avec
+     * une catégorie libre —, et un échec entre le retrait et la repose
+     * APPAUVRISSAIT la base pour toutes les exécutions suivantes. C'est arrivé.
+     */
     it('retire sans toucher aux articles, et dit combien en portent le libellé', async () => {
       const admin = await connecte('direction@ecoles360.com');
+      const libelle = jetable();
 
-      const article = await db.article.findFirstOrThrow({
-        where: { categorie: { not: '' } },
+      const creee = await admin.post('/admin/categories-articles').send({ libelle }).expect(201);
+
+      const article = await db.article.create({
+        data: {
+          titre: `Article ${libelle}`,
+          slug: `article-${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+          categorie: libelle,
+          statut: 'brouillon',
+        },
         select: { id: true, categorie: true },
       });
 
-      // La migration a repris les catégories portées par les articles : si
-      // celle-ci manque, c'est la reprise qui a échoué.
-      const existante = await db.categorieArticle.findFirstOrThrow({
-        where: { libelle: article.categorie },
-        select: { id: true, libelle: true },
-      });
-
       const retrait = await admin
-        .delete(`/admin/categories-articles/${existante.id}`)
+        .delete(`/admin/categories-articles/${creee.body.data.id}`)
         .expect(200);
 
-      expect(retrait.body.data.articles_concernes).toBeGreaterThan(0);
+      expect(retrait.body.data.articles_concernes).toBe(1);
 
+      // L'ARTICLE GARDE SON LIBELLÉ : c'est tout l'intérêt d'un référentiel
+      // qui propose au lieu de contraindre.
       const apres = await db.article.findUniqueOrThrow({ where: { id: article.id } });
-      expect(apres.categorie).toBe(article.categorie);
+      expect(apres.categorie).toBe(libelle);
 
-      // Reposée : la base n'est pas remise à zéro, et l'appauvrir ferait
-      // échouer ce même test à l'exécution suivante.
-      await admin
-        .post('/admin/categories-articles')
-        .send({ libelle: existante.libelle })
-        .expect(201);
+      await db.article.delete({ where: { id: article.id } });
       await nettoyerJournal();
     });
 

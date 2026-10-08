@@ -16,7 +16,13 @@ import { PagesCmsService } from './pages-cms.service';
  */
 @Module({
   controllers: [ContenuController],
-  providers: [FaqService, CategoriesArticlesService, ConseillersService, PagesCmsService, AuditService],
+  providers: [
+    FaqService,
+    CategoriesArticlesService,
+    ConseillersService,
+    PagesCmsService,
+    AuditService,
+  ],
   exports: [FaqService, CategoriesArticlesService, ConseillersService, PagesCmsService],
 })
 export class ContenuModule {}

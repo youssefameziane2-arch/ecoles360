@@ -74,6 +74,14 @@ services:
       #
       # Après modification de prisma/schema.prisma, le conteneur régénère son
       # client Prisma à chaque démarrage — `restart api` suffit.
+      #
+      # ⚠️ MAIS IL FAUT Y PENSER, et l'oubli ne ressemble pas à un oubli. Une
+      # valeur ajoutée à une énumération (`PermissionPortee`, `RoleCode`…) est
+      # appliquée en base par la migration et connue du client régénéré SUR
+      # L'HÔTE — pas de celui du conteneur, qui garde l'ancien jusqu'au
+      # redémarrage. L'écran envoie alors la nouvelle valeur, l'API répond
+      # **422 « validation échouée »**, et tout porte à croire à un bogue de
+      # saisie. Redémarrer l'API suffit ; encore faut-il y penser.
       - api_node_modules:/app/api/node_modules
       # Artefacts de build : volumes anonymes, donc PROPRES AU CONTENEUR.
       # L hôte est sous Windows, le conteneur sous Linux, et les deux écrivent

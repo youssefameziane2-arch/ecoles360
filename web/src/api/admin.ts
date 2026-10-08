@@ -299,12 +299,13 @@ export const chargerStatistiquesAdmin = (filtres: {
 //  Secrétariat — comptes et portées déléguées (RG05, RG25)
 // ---------------------------------------------------------------------------
 
-export type PorteeDeleguee = 'fiches' | 'contacts' | 'avis';
+export type PorteeDeleguee = 'fiches' | 'contacts' | 'avis' | 'blog';
 
 export const LIBELLE_PORTEE: Record<PorteeDeleguee, string> = {
   fiches: 'Fiches',
   contacts: 'Demandes de contact',
   avis: 'Modération des avis',
+  blog: 'Relecture du blog',
 };
 
 /** Ce que chaque portée ouvre réellement — l'écran doit le dire, pas le supposer. */
@@ -312,6 +313,9 @@ export const EFFET_PORTEE: Record<PorteeDeleguee, string> = {
   fiches: 'Voir et proposer des modifications de la fiche.',
   contacts: 'Lire les demandes de parents et les faire avancer.',
   avis: 'Répondre aux avis publiés et les signaler.',
+  // Approuver adopte au passage une catégorie inédite (B-50) : cette portée
+  // enrichit le référentiel que toute la rédaction se verra proposer.
+  blog: 'Relire les articles soumis, les approuver ou les refuser — et adopter leur catégorie.',
 };
 
 export interface CompteSecretariat {

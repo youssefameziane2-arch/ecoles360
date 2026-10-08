@@ -964,33 +964,78 @@ relisant un écran.
 **Statut :** construit. Envoi du mot de passe par courriel : `à faire`, bloqué
 par l'absence de SMTP (B-46).
 
-## B-50 — Demandes de catégorie d'article : qui demande, et que se passe-t-il au refus
 
-L'onglet « Catégories » de l'écran `isAdminContent` est construit : la liste
-des catégories proposées à la rédaction s'ajoute, se retire, et a été reprise
-des articles existants.
+## B-50 — Demandes de catégorie d'article : tranché, et construit
 
-**La maquette montre AUSSI un bloc de demandes** (`catRequests`) : des
-propositions de catégorie venues d'un établissement ou d'une secrétaire, avec
-un bouton « Approuver » et un compteur de demandes en attente.
+La maquette dessine un bloc de demandes (`catRequests`) : des propositions de
+catégorie venues d'un établissement ou d'une secrétaire, avec un bouton
+« Approuver » et un compteur en attente. Elle ne disait ni qui pouvait
+demander, ni ce qui se passe au refus, ni ce que devient l'article pendant ce
+temps.
 
-**Il n'est pas construit, et ce n'est pas un oubli.** La maquette dessine
-l'écran mais aucune règle ne dit :
+**Tranché par le client le 7 octobre 2026 :** *« n'importe qui peut demander
+une catégorie, c'est lors de la révision du blog par l'admin — avant
+publication sur le site — qu'on la valide ou non »*.
 
-- **qui peut demander** — un établissement ? une secrétaire sur portée
-  `fiches` ? un commercial ?
-- **ce qui se passe au refus** — la maquette ne montre qu'« Approuver ». Un
-  refus silencieux laisserait le demandeur attendre ;
-- **ce que devient l'article pendant ce temps** — reste-t-il en brouillon,
-  part-il en validation avec une catégorie qui n'existe pas encore ?
-- **si le demandeur est prévenu** — et par quel canal, puisqu'il n'y a aucun
-  envoi d'e-mail (B-46).
+**Il n'y a donc PAS de file de demandes à part**, et c'est l'essentiel de la
+règle. Une catégorie inédite voyage avec l'article qui l'emploie ; la même
+relecture tranche les deux. Un second circuit aurait fait deux files d'attente
+pour un seul arbitrage — ce que le code pressentait déjà, avant même la règle.
 
-Chacune de ces questions change le modèle de données. Les inventer produirait
-exactement le défaut que ce backlog existe pour éviter : une règle plausible,
-qui compile, passe les tests, et se révèle fausse à la recette.
+**Ce qui a été construit :**
 
-**Ce qui existe en attendant :** la rédaction choisit dans la liste proposée,
-et l'administration ajoute une catégorie quand on la lui demande — par
-téléphone, comme le reste.
-**Statut :** à trancher — client.
+- approuver un article dont la catégorie est inconnue l'**ajoute au
+  référentiel**, dans la même transaction. Avant ce changement, la catégorie
+  restait « employée mais non proposée » : l'article partait en ligne et la
+  rédaction suivante ne la voyait nulle part ;
+- refuser n'adopte rien ;
+- le journal d'audit porte `categorie_adoptee` sur l'approbation concernée.
+  Sans cela, une catégorie serait un jour apparue dans la liste sans qu'on
+  sache qui l'avait introduite ;
+- l'écran de relecture signale « **Nouvelle catégorie** » sur un article en
+  attente dont le libellé est inédit. Le relecteur ne tranche pas que la
+  publication : il adopte un libellé que toute la rédaction se verra proposer.
+  L'adoption ne devait pas être silencieuse.
+
+**Resté ouvert, et mineur :** la règle dit « l'admin ou la secrétaire ». Les
+décisions sur le blog sont aujourd'hui réservées au superadmin ; ouvrir la
+relecture au secrétariat demanderait une quatrième portée déléguée (RG05 n'en
+connaît que trois : `fiches`, `contacts`, `avis`). À confirmer si le besoin se
+présente.
+**Statut :** tranché par le client ; construit.
+
+## B-51 — `blog` : quatrième portée déléguée au secrétariat
+
+**Tranché par le client le 7 octobre 2026**, en réponse à la question laissée
+ouverte par B-50 : *« superadmin et lui-même l'admin, et c'est un privilège
+qu'il peut céder à la secrétaire lors de l'ajout »*.
+
+Deux choses dans cette phrase :
+
+1. **`superadmin` EST l'admin.** Il n'y a pas deux rôles d'administration à
+   distinguer — la question ne se posera plus ;
+2. **la relecture du blog devient délégable**, exactement comme les trois
+   autres portées de la RG05 : accordée au cas par cas, à la création du compte
+   ou plus tard, et révocable.
+
+**Ce que la portée ouvre :** voir les articles soumis, les approuver ou les
+refuser. Et, par ricochet, **adopter une catégorie inédite** (B-50) : une
+secrétaire à qui l'on confie cette portée enrichit le référentiel que toute la
+rédaction se verra proposer. C'est voulu — c'est le même geste que celui de
+l'administrateur, pas un sous-ensemble —, et l'écran de délégation le dit.
+
+**Le journal porte désormais le rôle RÉEL du décideur.** `decider()` écrivait
+`superadmin` en dur ; une décision prise par une secrétaire aurait été
+attribuée à un administrateur. C'est précisément ce qu'un journal d'audit
+existe pour empêcher.
+
+**Migration additive :** une valeur ajoutée en fin d'énumération MySQL ne
+réécrit aucune ligne et ne verrouille pas la table. Aucun compte existant ne
+reçoit la portée : un secrétariat déjà créé continue exactement comme avant.
+
+**Dans la navigation**, l'entrée « Relecture du blog » est marquée
+`reserveeAuSecretariat`. Sans ce drapeau, elle serait apparue AUSSI chez les
+établissements : le filtre de portée ne s'applique qu'au secrétariat, et une
+entrée sans portée exigée passe pour tout le monde. Un établissement aurait eu
+un lien vers le back-office.
+**Statut :** tranché par le client ; construit.
