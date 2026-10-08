@@ -146,8 +146,33 @@ model Ville {
 
   etablissements Etablissement[]
   sponsorings    Sponsoring[]
+  recherches     TraceRecherche[]
 
   @@map("villes")
+}
+
+/// Trace de recherche — B-40, tuiles « Recherches » et bloc « par ville ».
+///
+/// UNE TABLE À PART, pas une valeur de plus dans `EvenementType` : une
+/// recherche ne porte sur aucune fiche, et l'y ranger aurait obligé à rendre
+/// `evenement_traces.etablissement_id` nullable — relâchant une contrainte qui
+/// protège toutes les autres traces.
+///
+/// AUCUN TERME LIBRE, NI UTILISATEUR, NI IP. Seules la ville et le type
+/// cherchés sont conservés : ce sont les seuls champs que les écrans
+/// demandent, et ce qu'on ne garde pas ne fuit pas.
+model TraceRecherche {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  ville_id     BigInt?  @db.UnsignedBigInt
+  type         String?  @db.VarChar(40)
+  nb_resultats Int      @default(0) @db.UnsignedInt
+  survenu_le   DateTime @default(now()) @db.Timestamp(0)
+
+  ville Ville? @relation(fields: [ville_id], references: [id], onDelete: SetNull)
+
+  @@index([survenu_le], map: "idx_rech_periode")
+  @@index([ville_id, survenu_le], map: "idx_rech_ville")
+  @@map("traces_recherche")
 }
 
 /// 03 — NiveauFiliere (RG02) — distinct des six types d'établissement.

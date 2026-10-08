@@ -381,21 +381,28 @@ function Visites({ visites, jours }: { visites: Donnees['visites']; jours: numbe
         />
       )}
 
-      {/*
-        DEUX TUILES, PAS TROIS. La maquette pose « Recherches effectuées » en
-        tête : aucune trace ne les compte (l'enum d'événements s'arrête aux
-        vues et aux clics), et la tuile est omise plutôt que remplie d'un zéro.
-      */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
+          gridTemplateColumns: 'repeat(3, 1fr)',
           gap: 12,
           marginTop: 14,
           paddingTop: 14,
           borderTop: '1px solid #F1ECE3',
         }}
       >
+        {/*
+          SANS VARIATION, à la différence des deux autres : la table de traces
+          commence le jour de sa migration, et une comparaison à la fenêtre
+          antérieure annoncerait une hausse de l'infini pendant un mois. La
+          maquette ne lui met d'ailleurs aucun pourcentage.
+        */}
+        <div>
+          <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
+            {formaterNombre(visites.recherches)}
+          </div>
+          <div style={{ fontSize: 11.5, color: '#9AA3AF', marginTop: 2 }}>Recherches effectuées</div>
+        </div>
         <Tuile libelle="Vues de fiches" comparaison={visites.vues_fiches} />
         <Tuile libelle="Demandes envoyées" comparaison={visites.demandes} />
       </div>

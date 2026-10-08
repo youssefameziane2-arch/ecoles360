@@ -13,6 +13,9 @@ import {
 /** Lignes du classement — six dans la maquette, quatre de marge pour trier. */
 const TOP_ETABLISSEMENTS = 10;
 
+/** Villes du bloc « Recherches par ville » — six barres dans la maquette. */
+const TOP_VILLES = 6;
+
 /**
  * Durée et granularité de chaque période — celles de la maquette : un point
  * par jour sur 7 et 30 jours, par semaine sur 90, par mois sur l'année.
@@ -41,11 +44,22 @@ const PERIODES: Record<
  * filtrée sur Rabat à côté d'un total national ferait lire deux chiffres qui
  * ne parlent pas de la même chose.
  *
- * CE QUI MANQUE, ET POURQUOI (B-40). La maquette pose des « visites du site »,
- * des « recherches effectuées », un « taux de transformation » (demandes ÷
- * recherches) et un bloc « Recherches par ville ». Aucune trace ne compte les
- * recherches ni les visites : ces blocs sont absents plutôt qu'à zéro. La
- * courbe « Visites du site » porte donc les vues de fiches, et le dit.
+ * CE QUI MANQUE ENCORE, ET POURQUOI (B-40). Les recherches sont désormais
+ * tracées (`traces_recherche`), ce qui remplit « Recherches effectuées », le
+ * « taux de transformation » et « Recherches par ville ». RESTENT LES
+ * « VISITES DU SITE », et elles manquent faute de DÉFINITION, non faute de
+ * code : une visite peut être une session, un visiteur unique du jour, ou une
+ * page vue — trois chiffres qui diffèrent d'un facteur dix. Choisir à la place
+ * du client produirait un indicateur qui compile et qui mentira à la recette.
+ * La courbe porte donc les vues de fiches, et le dit.
+ *
+ * LE TAUX DE TRANSFORMATION EST INDICATIF DÈS QU'UN TYPE EST FILTRÉ, et
+ * l'écran doit le dire. Les deux termes suivent le même périmètre que le reste
+ * de l'écran, mais une recherche n'est typée que si le parent a coché un
+ * cycle : chercher « Casablanca » sans cycle puis demander un lycée compte au
+ * numérateur et pas au dénominateur. Le rapport peut donc dépasser 100 % sur
+ * un type donné. On le rend tel quel — borner le chiffre le rendrait faux
+ * sans le rendre juste.
  */
 @Injectable()
 export class StatistiquesAdminService {
@@ -73,7 +87,25 @@ export class StatistiquesAdminService {
       ' AND ',
     );
 
-    const [vues, demandes, avis, vuesParJour, vuesParType, classement, villes] = await Promise.all([
+    // Périmètre des recherches — le même que celui des fiches, exprimé sur la
+    // trace : la ville CHERCHÉE, et le cycle coché s'il l'a été.
+    const recherche: Prisma.TraceRechercheWhereInput = {
+      survenu_le: { gte: depuis },
+      ...(filtres.ville ? { ville: { slug: filtres.ville } } : {}),
+      ...(filtres.type ? { type: filtres.type } : {}),
+    };
+
+    const [
+      vues,
+      demandes,
+      avis,
+      recherches,
+      vuesParJour,
+      vuesParType,
+      classement,
+      recherchesParVille,
+      villes,
+    ] = await Promise.all([
       this.db.evenementTrace.count({
         where: { type: { in: TYPES_VUE }, survenu_le: { gte: depuis }, etablissement: fiche },
       }),
@@ -85,6 +117,7 @@ export class StatistiquesAdminService {
       this.db.avis.count({
         where: { depose_le: { gte: depuis }, etablissement: fiche },
       }),
+      this.db.traceRecherche.count({ where: recherche }),
 
       this.db.$queryRaw<{ jour: Date; total: bigint }[]>`
         SELECT DATE(t.survenu_le) AS jour, COUNT(*) AS total
@@ -113,6 +146,28 @@ export class StatistiquesAdminService {
         orderBy: [{ _count: { etablissement_id: 'desc' } }, { etablissement_id: 'asc' }],
         take: TOP_ETABLISSEMENTS,
       }),
+
+      // « Recherches par ville » — en SQL plutôt qu'en `groupBy` Prisma, qui
+      // rendrait des `ville_id` à rejoindre ensuite pour obtenir un nom.
+      // LES RECHERCHES SANS VILLE SONT ÉCARTÉES : « 1 240 recherches, dont
+      // 300 sans ville » n'a pas de ligne dans un classement de villes, et le
+      // total de la tuile, lui, les compte déjà.
+      this.db.$queryRaw<{ nom: string; slug: string; total: bigint }[]>`
+        SELECT v.nom AS nom, v.slug AS slug, COUNT(*) AS total
+          FROM traces_recherche r
+          JOIN villes v ON v.id = r.ville_id
+         WHERE ${Prisma.join(
+           [
+             Prisma.sql`r.survenu_le >= ${depuis}`,
+             ...(filtres.ville ? [Prisma.sql`v.slug = ${filtres.ville}`] : []),
+             ...(filtres.type ? [Prisma.sql`r.\`type\` = ${filtres.type}`] : []),
+           ],
+           ' AND ',
+         )}
+         GROUP BY v.id, v.nom, v.slug
+         ORDER BY total DESC, v.nom ASC
+         LIMIT ${TOP_VILLES}
+      `,
 
       // Dans la même réponse : l'écran n'a pas à attendre une seconde requête
       // pour remplir son sélecteur de ville.
@@ -147,7 +202,16 @@ export class StatistiquesAdminService {
       granularite,
       depuis,
 
-      indicateurs: { vues_fiches: vues, demandes, nouveaux_avis: avis },
+      indicateurs: {
+        vues_fiches: vues,
+        demandes,
+        nouveaux_avis: avis,
+        recherches,
+        // NUL ET NON ZÉRO QUAND IL N'Y A AUCUNE RECHERCHE : « 0 % » se lirait
+        // comme « personne ne nous contacte », quand la réalité est « on n'a
+        // rien à diviser ». L'écran affiche un tiret.
+        taux_transformation: recherches > 0 ? demandes / recherches : null,
+      },
 
       courbe: regrouper(serieJournaliere(depuis, maintenant, vuesParJour), granularite),
 
@@ -170,6 +234,12 @@ export class StatistiquesAdminService {
           },
         ];
       }),
+
+      recherches_par_ville: recherchesParVille.map((ligne) => ({
+        nom: ligne.nom,
+        slug: ligne.slug,
+        recherches: Number(ligne.total),
+      })),
 
       options: { villes },
     };

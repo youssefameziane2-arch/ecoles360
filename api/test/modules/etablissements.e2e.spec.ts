@@ -64,6 +64,7 @@ describe('Site public — établissements (intégration)', () => {
   });
 
   const get = (chemin: string) => request(app.getHttpServer()).get(`/api/v1${chemin}`);
+  const patienter = (ms: number) => new Promise((suite) => setTimeout(suite, ms));
 
   // ---------------------------------------------------------------------------
   //  L'enveloppe est une interface
@@ -293,6 +294,84 @@ describe('Site public — établissements (intégration)', () => {
       // Sans borne, `?per_page=100000` chargerait les ~8 000 fiches en une
       // requête — un déni de service offert à qui lit l'URL.
       await get('/etablissements?per_page=100000').expect(422);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  //  Traces de recherche — B-40
+  // ---------------------------------------------------------------------------
+
+  describe('traces de recherche', () => {
+    /**
+     * Tout test de ce fichier qui passe un filtre écrit maintenant une trace,
+     * et sans l'attendre : les écritures des tests précédents peuvent atterrir
+     * pendant celui-ci. CHAQUE TEST PART DONC D'UNE TABLE VIDE — on laisse
+     * d'abord passer les écritures en vol, puis on efface. Sans cela, un test
+     * qui compte « exactement une trace » serait vrai ou faux selon la charge
+     * de la machine.
+     */
+    beforeEach(async () => {
+      await patienter(400);
+      await db.traceRecherche.deleteMany({});
+    });
+
+    afterAll(async () => {
+      await patienter(400);
+      await db.traceRecherche.deleteMany({});
+    });
+
+    /**
+     * Attend qu'au moins `attendu` traces soient écrites, puis les rend.
+     *
+     * LA RECHERCHE NE LES ATTEND PAS : la trace part sans `await`, pour que le
+     * parent voie ses résultats sans dépendre d'une statistique
+     * d'administration. Le test, lui, doit donc attendre.
+     */
+    async function tracesEcrites(attendu: number) {
+      for (let essai = 0; essai < 40 && (await db.traceRecherche.count()) < attendu; essai += 1) {
+        await patienter(25);
+      }
+
+      return db.traceRecherche.findMany({ include: { ville: { select: { slug: true } } } });
+    }
+
+    it('enregistre la ville cherchée et le nombre réel de résultats', async () => {
+      const reponse = await get('/etablissements?ville=casablanca&type=lycee').expect(200);
+      const traces = await tracesEcrites(1);
+
+      expect(traces).toHaveLength(1);
+      expect(traces[0]!.ville?.slug).toBe('casablanca');
+      expect(traces[0]!.type).toBe('lycee');
+      // LE NOMBRE DE RÉSULTATS VIENT DE LA BASE, PAS DU CLIENT : c'est tout
+      // l'intérêt de tracer côté serveur plutôt que de laisser le navigateur
+      // déclarer un chiffre qui finirait dans un écran d'administration.
+      expect(traces[0]!.nb_resultats).toBe(reponse.body.meta.total);
+    });
+
+    it('n’enregistre ni un affichage sans critère, ni une page suivante', async () => {
+      // Le catalogue au premier affichage : on le parcourt, on ne cherche pas.
+      await get('/etablissements').expect(200);
+      // La page 2 d'une recherche : la même recherche, pas une seconde.
+      await get('/etablissements?ville=casablanca&page=2').expect(200);
+
+      // Laisse passer le délai d'une écriture éventuelle avant de conclure à
+      // son absence — sinon le test ne prouverait que sa propre hâte.
+      await patienter(400);
+
+      expect(await db.traceRecherche.count()).toBe(0);
+    });
+
+    it('trace une recherche par nom sans conserver le nom tapé', async () => {
+      await get('/etablissements?q=massira').expect(200);
+      const traces = await tracesEcrites(1);
+
+      expect(traces).toHaveLength(1);
+      expect(traces[0]!.ville_id).toBeNull();
+      expect(traces[0]!.type).toBeNull();
+      // Le terme n'est stocké nulle part. Le vérifier sur la ligne entière, et
+      // pas seulement sur les colonnes du schéma, interdit de le glisser un
+      // jour dans une colonne existante.
+      expect(JSON.stringify(traces[0])).not.toContain('massira');
     });
   });
 

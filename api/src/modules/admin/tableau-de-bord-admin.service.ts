@@ -43,8 +43,12 @@ const TOP_ETABLISSEMENTS = 5;
  * second endroit où la RG14 pourrait céder. L'écran renvoie vers « Abonnement
  * & facturation », qui le fait correctement.
  *
- * LA TUILE « RECHERCHES EFFECTUÉES » RESTE ABSENTE : aucune trace ne les
- * compte (B-40).
+ * « RECHERCHES EFFECTUÉES » N'A PAS DE PÉRIODE PRÉCÉDENTE, à la différence des
+ * vues et des demandes. La table `traces_recherche` commence le jour de sa
+ * migration : comparer la fenêtre courante à une fenêtre antérieure
+ * annoncerait une hausse de l'infini pendant les trente premiers jours. Le
+ * chiffre est donc rendu seul, comme dans la maquette, qui ne lui met aucune
+ * variation.
  */
 @Injectable()
 export class TableauDeBordAdminService {
@@ -67,6 +71,7 @@ export class TableauDeBordAdminService {
       vuesPrecedentes,
       demandesCourantes,
       demandesPrecedentes,
+      recherchesCourantes,
       vuesParJour,
       classement,
       pipeline,
@@ -104,6 +109,7 @@ export class TableauDeBordAdminService {
       this.db.demandeContact.count({
         where: { recue_le: { gte: periodePrecedente, lt: depuis } },
       }),
+      this.db.traceRecherche.count({ where: { survenu_le: { gte: depuis } } }),
 
       // Regroupé en SQL : sur toute la plateforme, rapatrier chaque trace pour
       // la compter en mémoire coûterait une ligne transférée par vue.
@@ -197,6 +203,7 @@ export class TableauDeBordAdminService {
       visites: {
         vues_fiches: { courant: vuesCourantes, precedent: vuesPrecedentes },
         demandes: { courant: demandesCourantes, precedent: demandesPrecedentes },
+        recherches: recherchesCourantes,
         vues_par_jour: serieJournaliere(depuis, maintenant, vuesParJour),
       },
 

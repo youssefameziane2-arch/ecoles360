@@ -249,6 +249,33 @@ describe('Purges loi 09-08', () => {
   });
 
   // ---------------------------------------------------------------------------
+  //  Traces de recherche — douze mois (B-40)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * RIEN N'EST AGRÉGÉ AVANT LA SUPPRESSION, à la différence des traces
+   * d'audience : la période la plus longue de l'écran de statistiques est de
+   * douze mois, donc une trace plus ancienne n'est lue par rien.
+   */
+  it('supprime les recherches de plus de douze mois, épargne les récentes', async () => {
+    const vieille = await db.traceRecherche.create({
+      data: { type: 'lycee', nb_resultats: 7, survenu_le: IL_Y_A_13_MOIS },
+    });
+
+    const recente = await db.traceRecherche.create({
+      data: { type: 'lycee', nb_resultats: 7, survenu_le: IL_Y_A_1_MOIS },
+    });
+
+    const supprimees = await purges.recherches();
+
+    expect(supprimees).toBeGreaterThanOrEqual(1);
+    expect(await db.traceRecherche.findUnique({ where: { id: vieille.id } })).toBeNull();
+    expect(await db.traceRecherche.findUnique({ where: { id: recente.id } })).not.toBeNull();
+
+    await db.traceRecherche.delete({ where: { id: recente.id } });
+  });
+
+  // ---------------------------------------------------------------------------
   //  Journal d'audit — trois ans (RG26)
   // ---------------------------------------------------------------------------
 

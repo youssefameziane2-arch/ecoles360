@@ -140,6 +140,35 @@ export class PurgesService {
   }
 
   /**
+   * Supprime les traces de recherche de plus de douze mois — B-40.
+   *
+   * RIEN À AGRÉGER AVANT DE SUPPRIMER, contrairement aux traces d'audience.
+   * La période la plus longue que l'écran de statistiques propose est douze
+   * mois : une trace plus ancienne n'est lue par rien. La conserver sous forme
+   * d'agrégat ajouterait une table que personne n'interroge.
+   *
+   * CE N'EST PAS UNE OBLIGATION LÉGALE, et c'est la seule purge de ce service
+   * dont ce soit le cas : la table ne porte ni nom, ni adresse IP, ni terme
+   * saisi — rien qui désigne une personne. Elle s'aligne malgré tout sur le
+   * seuil des douze mois, pour qu'il n'y ait qu'une durée de conservation à
+   * expliquer, et parce qu'une table de traces sans borne finit toujours par
+   * peser.
+   */
+  async recherches(): Promise<number> {
+    const seuil = new Date(Date.now() - DOUZE_MOIS_MS);
+
+    const resultat = await this.db.traceRecherche.deleteMany({
+      where: { survenu_le: { lt: seuil } },
+    });
+
+    await this.journaliser('purge.recherches', resultat.count, {
+      seuil: seuil.toISOString().slice(0, 10),
+    });
+
+    return resultat.count;
+  }
+
+  /**
    * Supprime les entrées du journal d'audit de plus de trois ans — RG26.
    *
    * LE JOURNAL EST EN LECTURE SEULE PARTOUT AILLEURS, et cette purge est la

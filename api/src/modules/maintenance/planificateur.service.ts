@@ -44,6 +44,13 @@ export class PlanificateurService {
     await this.executer('purge:traces', () => this.purges.traces());
   }
 
+  // Après `purge:traces` : les deux balaient le même seuil de douze mois, et
+  // les enchaîner évite qu'une nuit les traite et l'autre pas.
+  @Cron('0 45 2 * * *', { name: 'purge:recherches', timeZone: 'Africa/Casablanca' })
+  async purgerRecherches(): Promise<void> {
+    await this.executer('purge:recherches', () => this.purges.recherches());
+  }
+
   @Cron('0 0 4 * * 0', { name: 'purge:audit', timeZone: 'Africa/Casablanca' })
   async purgerAudit(): Promise<void> {
     await this.executer('purge:audit', () => this.purges.purgerAudit());

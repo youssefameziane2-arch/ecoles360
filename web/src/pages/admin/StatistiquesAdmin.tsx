@@ -8,7 +8,7 @@ import {
 import { LIBELLE_TYPE, type TypeEtablissement } from '@/api/etablissements';
 import { AvecIdentite, CoquilleEspace } from '@/components/CoquilleEspace';
 import { CourbeVues } from '@/components/CourbeVues';
-import { DataTable, SourceBars } from '@/ds/composants';
+import { BarChart, DataTable, SourceBars } from '@/ds/composants';
 import { formaterNombre, formaterNote } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
 
@@ -24,11 +24,12 @@ const TYPES = Object.keys(LIBELLE_TYPE) as TypeEtablissement[];
 /**
  * Statistiques de la plateforme — maquette `isAdminStats`.
  *
- * CE QUI N'Y EST PAS, ET POURQUOI (B-40). La maquette pose six indicateurs et
- * un bloc « Recherches par ville ». Les visites du site, les recherches et le
- * taux de transformation (demandes ÷ recherches) n'ont aucune source : aucune
- * trace ne les compte. Ils sont absents, pas à zéro — un zéro ferait croire
- * que personne ne cherche.
+ * CE QUI N'Y EST PAS, ET POURQUOI (B-40). La maquette pose six indicateurs ;
+ * cinq sont servis. Manquent les « visites du site », faute de DÉFINITION :
+ * une visite peut être une session, un visiteur unique du jour ou une page
+ * vue, et les trois chiffres diffèrent d'un ordre de grandeur. La courbe porte
+ * donc les vues de fiches, et son sous-titre le dit — plutôt qu'un total
+ * choisi à la place du client.
  */
 export function StatistiquesAdmin() {
   useTitrePage('Statistiques');
@@ -151,14 +152,21 @@ function Contenu() {
             transition: 'opacity .15s ease',
           }}
         >
-          <Indicateurs donnees={donnees} periode={libellePeriode} />
+          <Indicateurs donnees={donnees} periode={libellePeriode} typeFiltre={type !== ''} />
 
-          <Carte
-            titre="Visites du site"
-            droite={<span style={{ fontSize: 12, color: '#9AA3AF' }}>vues de fiches — {libellePeriode}</span>}
-          >
-            <Courbe donnees={donnees} />
-          </Carte>
+          {/* Courbe et barres côte à côte, 1.6fr / 1fr — la maquette. */}
+          <div className="e-2col">
+            <Carte
+              titre="Visites du site"
+              droite={<span style={{ fontSize: 12, color: '#9AA3AF' }}>vues de fiches — {libellePeriode}</span>}
+            >
+              <Courbe donnees={donnees} />
+            </Carte>
+
+            <Carte titre="Recherches par ville">
+              <RecherchesParVille lignes={donnees.recherches_par_ville} />
+            </Carte>
+          </div>
 
           <div className="e-2col-inverse">
             <Carte titre="Vues par type d’établissement">
@@ -192,11 +200,47 @@ function Contenu() {
   );
 }
 
-function Indicateurs({ donnees, periode }: { donnees: Donnees; periode: string }) {
-  const tuiles = [
-    { libelle: 'Vues de fiches', valeur: donnees.indicateurs.vues_fiches },
-    { libelle: 'Demandes envoyées', valeur: donnees.indicateurs.demandes },
-    { libelle: 'Nouveaux avis', valeur: donnees.indicateurs.nouveaux_avis },
+function Indicateurs({
+  donnees,
+  periode,
+  typeFiltre,
+}: {
+  donnees: Donnees;
+  periode: string;
+  typeFiltre: boolean;
+}) {
+  const { recherches, taux_transformation: taux } = donnees.indicateurs;
+
+  /**
+   * Note sous le taux — elle change avec le filtre, et ce n'est pas cosmétique.
+   *
+   * UNE RECHERCHE N'EST TYPÉE QUE SI LE PARENT A COCHÉ UN CYCLE. Filtré sur
+   * « lycée », le numérateur compte toutes les demandes reçues par des lycées,
+   * et le dénominateur seulement les recherches où « lycée » était coché :
+   * chercher « Casablanca » sans cycle puis demander un lycée ne compte que
+   * d'un côté. Le rapport dépasse alors 100 %, et un administrateur qui lirait
+   * « 400 % » sans explication conclurait à un bogue. Le chiffre n'est pas
+   * borné — ce serait le rendre faux sans le rendre juste — il est situé.
+   */
+  const noteTaux = (() => {
+    if (taux === null) return 'aucune recherche sur la période';
+    if (typeFiltre) return 'indicatif : toutes les recherches ne cochent pas un cycle';
+    return 'demandes ÷ recherches';
+  })();
+
+  const tuiles: { libelle: string; valeur: string; note: string }[] = [
+    { libelle: 'Recherches effectuées', valeur: formaterNombre(recherches), note: `sur ${periode}` },
+    { libelle: 'Vues de fiches', valeur: formaterNombre(donnees.indicateurs.vues_fiches), note: `sur ${periode}` },
+    { libelle: 'Demandes envoyées', valeur: formaterNombre(donnees.indicateurs.demandes), note: `sur ${periode}` },
+    { libelle: 'Nouveaux avis', valeur: formaterNombre(donnees.indicateurs.nouveaux_avis), note: `sur ${periode}` },
+    {
+      libelle: 'Taux de transformation',
+      // UN TIRET ET NON « 0 % » QUAND IL N'Y A AUCUNE RECHERCHE : zéro pour
+      // cent se lirait « personne ne nous contacte », quand il n'y a
+      // simplement rien à diviser.
+      valeur: taux === null ? '—' : `${(taux * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %`,
+      note: noteTaux,
+    },
   ];
 
   return (
@@ -208,12 +252,36 @@ function Indicateurs({ donnees, periode }: { donnees: Donnees; periode: string }
         >
           <div style={{ fontSize: 12, color: '#9AA3AF', fontWeight: 600 }}>{tuile.libelle}</div>
           <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.6px', marginTop: 6 }}>
-            {formaterNombre(tuile.valeur)}
+            {tuile.valeur}
           </div>
-          <div style={{ fontSize: 11.5, color: '#9AA3AF', marginTop: 3 }}>sur {periode}</div>
+          <div style={{ fontSize: 11.5, color: '#9AA3AF', marginTop: 3 }}>{tuile.note}</div>
         </div>
       ))}
     </div>
+  );
+}
+
+/**
+ * « Recherches par ville » — `BarChart` du bundle, comme la maquette.
+ *
+ * SANS LE FORMAT « k » DE LA MAQUETTE. Sa démonstration affiche des dizaines
+ * de milliers de recherches par ville ; divisées par mille, les vraies
+ * valeurs se liraient toutes « 0k ». Le nombre est rendu tel quel.
+ */
+function RecherchesParVille({ lignes }: { lignes: Donnees['recherches_par_ville'] }) {
+  if (lignes.length === 0) {
+    return <Vide>Aucune recherche ciblant une ville sur la période.</Vide>;
+  }
+
+  return (
+    <BarChart
+      data={lignes.map((ligne) => ({ label: ligne.nom, value: ligne.recherches }))}
+      // `-1` mettrait la DERNIÈRE barre en rouge, soit la ville la moins
+      // cherchée : le classement est décroissant, c'est la première qui compte.
+      currentIndex={0}
+      height={200}
+      valueFormat={(valeur) => formaterNombre(valeur)}
+    />
   );
 }
 

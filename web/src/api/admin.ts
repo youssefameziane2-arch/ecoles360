@@ -239,6 +239,8 @@ export interface TableauDeBordAdmin {
   visites: {
     vues_fiches: Comparaison;
     demandes: Comparaison;
+    /** Sans comparaison : la table de traces n'a pas de passé avant sa migration. */
+    recherches: number;
     vues_par_jour: { jour: string; vues: number }[];
   };
   top_etablissements: {
@@ -277,7 +279,14 @@ export interface StatistiquesAdmin {
   periode: PeriodeStatistiques;
   granularite: 'jour' | 'semaine' | 'mois';
   depuis: string;
-  indicateurs: { vues_fiches: number; demandes: number; nouveaux_avis: number };
+  indicateurs: {
+    vues_fiches: number;
+    demandes: number;
+    nouveaux_avis: number;
+    recherches: number;
+    /** Demandes ÷ recherches, en proportion. Nul quand il n'y a rien à diviser. */
+    taux_transformation: number | null;
+  };
   courbe: { debut: string; vues: number }[];
   vues_par_type: { type: TypeEtablissement; vues: number }[];
   top_etablissements: {
@@ -292,6 +301,7 @@ export interface StatistiquesAdmin {
     vues: number;
     contacts: number;
   }[];
+  recherches_par_ville: { nom: string; slug: string; recherches: number }[];
   options: { villes: { nom: string; slug: string }[] };
 }
 

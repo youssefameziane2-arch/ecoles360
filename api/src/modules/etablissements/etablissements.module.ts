@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SponsoringsModule } from '../sponsorings/sponsorings.module';
 import { EtablissementsController } from './etablissements.controller';
 import { EtablissementsService } from './etablissements.service';
+import { TracesRechercheService } from './traces-recherche.service';
 
 /**
  * Domaine « établissements » — livrable 7 §3.
@@ -13,7 +14,7 @@ import { EtablissementsService } from './etablissements.service';
 @Module({
   imports: [SponsoringsModule],
   controllers: [EtablissementsController],
-  providers: [EtablissementsService],
+  providers: [EtablissementsService, TracesRechercheService],
   exports: [EtablissementsService],
 })
 export class EtablissementsModule {}

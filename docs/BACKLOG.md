@@ -594,46 +594,73 @@ légales obligatoires — raison sociale, RC/ICE — encore `[À COMPLÉTER]`.
 **Statut :** lecture faite ; « Encaisser » volontairement hors de cet écran ;
 reçu bloqué par les mentions légales.
 
-## B-40 — Recherches et visites du site : aucune source
+## B-40 — Recherches tracées ; les « visites du site » restent à définir
 
-Deux écrans d'administration dessinent des chiffres que rien ne compte.
+Deux moitiés, et une seule dépendait d'un arbitrage.
 
-**Tableau de bord (`isAdminDash`).** Le bloc « Visites du site » pose trois
-tuiles : recherches effectuées, vues de fiches, demandes envoyées. Les deux
-dernières sont servies ; la tuile « Recherches » est omise.
+### Fait — les recherches (8 octobre 2026)
 
-**Statistiques (`isAdminStats`).** Six indicateurs et cinq blocs. Sont servis,
-et commandés par les filtres période / ville / type : vues de fiches, demandes
-envoyées, nouveaux avis, la courbe, les vues par type d'établissement, le
-classement. Sont omis :
-- les tuiles **« Visites du site »** et **« Recherches effectuées »** ;
-- la tuile **« Taux de transformation »** — la maquette la calcule en
-  demandes ÷ recherches (4 812 / 74 210 = 6,5 %) : sans recherches, pas de
-  dénominateur ;
-- le bloc **« Recherches par ville »** (`statCities`).
+Migration `20261008230000_traces_recherche` : une **table dédiée**, et non une
+valeur de plus dans `EvenementType`. L'enum aurait obligé à rendre
+`evenement_traces.etablissement_id` nullable — une recherche ne porte sur
+aucune fiche —, donc à relâcher une contrainte `NOT NULL` qui protège toutes
+les autres traces ; et « Recherches par ville » a besoin de la ville
+**cherchée**, que `evenement_traces` n'aurait eu aucun endroit où mettre.
 
-La courbe « Visites du site » porte donc les **vues de fiches**, et son
-en-tête le dit.
+`traces_recherche` ne garde que `ville_id`, `type`, `nb_resultats` et
+`survenu_le`. **Ni terme saisi, ni utilisateur, ni adresse IP** : les écrans ne
+demandent rien d'autre, et ce qu'on ne garde pas ne fuit pas. Deux tests
+gardent cette décision — l'un vérifie la liste exacte des colonnes, l'autre
+qu'une recherche par nom ne laisse le nom tapé nulle part.
 
-**Pourquoi rien n'est affiché à zéro :** l'enum `EvenementType` ne connaît que
-`appel | whatsapp | vue | vue_sponsorisee`. Aucune recherche, aucune visite
-de page n'est tracée. Un zéro ferait croire que personne ne cherche.
+L'enregistrement est **côté serveur**, dans `EtablissementsService.rechercher`,
+et non par une route que le front appellerait : celle-ci aurait laissé le
+navigateur **déclarer** son nombre de résultats, un chiffre client atterrissant
+dans un écran d'administration. Il est écrit sans `await` et avale ses erreurs
+— un parent qui cherche une école n'a pas à voir échouer une statistique.
 
-**Ce qu'il faudrait :**
-1. une migration additive — soit une valeur `recherche` dans `EvenementType`
-   avec `etablissement_id` rendu nullable pour elle (une recherche ne porte sur
-   aucune fiche), soit une table dédiée qui garderait aussi la ville et le
-   type cherchés, dont « Recherches par ville » a besoin ;
-2. le traçage côté front, au lancement d'une recherche — au mieux, comme les
-   autres traces : un échec ne doit jamais gêner le parent ;
-3. les tuiles, le bloc, et la part des recherches dans la courbe.
+Une recherche est **un critère, pas un affichage** : la page de résultats se
+charge sans filtre au premier rendu, et chaque page suivante rappelle la même
+route. On n'enregistre qu'un premier écran portant au moins un critère.
 
-« Visites du site » demande en plus de trancher ce qu'est une visite (une
-session ? une page vue ?), ce que la maquette ne dit pas.
+Servis depuis : la tuile « Recherches effectuées » du tableau de bord (sans
+variation — la table n'a pas de passé avant sa migration), et sur l'écran
+« Statistiques » les tuiles « Recherches effectuées » et « Taux de
+transformation » (nul, et non zéro, quand il n'y a rien à diviser) plus le bloc
+« Recherches par ville » (`BarChart` du bundle, six villes, sans le format
+« k » de la maquette qui ferait lire « 0k » sur de vraies valeurs).
 
-La migration passe par la relecture locale (SESSIONS-CLOUD.md).
-**Statut :** à trancher — la forme de la trace (valeur d'enum ou table
-dédiée) et la définition d'une visite.
+**Un défaut du site public corrigé au passage.** Les deux champs « Budget » de
+l'écran de résultats écrivaient dans l'URL à chaque touche : taper « 15000 »
+envoyait cinq requêtes, dont quatre portaient des bornes que personne n'avait
+voulues (1, 15, 150, 1 500 MAD/an). Invisible tant que rien ne comptait les
+recherches ; depuis, cela gonflait la tuile et faussait le taux. Les champs
+attendent maintenant 600 ms de silence. Vérifié : une saisie de cinq chiffres
+produit une trace, non cinq.
+
+Purge à douze mois (`purge:recherches`, 2 h 45) : rien à agréger avant, la
+période la plus longue de l'écran étant de douze mois. Ce n'est pas une
+obligation légale — la table ne désigne personne — mais une table de traces
+sans borne finit par peser, et il n'y a ainsi qu'une durée à expliquer.
+
+**Limite assumée :** le taux de transformation devient indicatif dès qu'un type
+est filtré. Une recherche n'est typée que si le parent a coché un cycle :
+chercher « Casablanca » sans cycle puis demander un lycée compte au numérateur
+et pas au dénominateur, et le rapport peut dépasser 100 % sur un type donné. Il
+est rendu tel quel — borner le chiffre le rendrait faux sans le rendre juste.
+
+### Reste — « Visites du site »
+
+La courbe porte toujours les **vues de fiches**, et son en-tête le dit.
+
+Ce qui manque n'est pas du code mais une **définition** : une visite est-elle
+une session, un visiteur unique du jour, ou une page vue ? Les trois chiffres
+diffèrent d'un ordre de grandeur, et le choix touche la facturation à la vue
+(RG12). Choisir à la place du client produirait un indicateur qui compile,
+passe les tests, et ne se découvre faux qu'à la recette.
+
+**Statut :** recherches faites ; définition d'une visite **à trancher** par le
+client.
 
 ## B-41 — Traces d'audience : `une` jamais émise, une vue comptée deux fois
 

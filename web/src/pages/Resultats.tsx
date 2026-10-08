@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -264,22 +264,18 @@ export function Resultats() {
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.6px', textTransform: 'uppercase', color: '#9AA3AF' }}>
                   Budget
                 </span>
-                <input
-                  value={filtres.budget_min ?? ''}
-                  onChange={(e) => majFiltre('budget_min', e.target.value)}
-                  inputMode="numeric"
-                  placeholder="Min"
-                  aria-label="Budget minimum"
-                  style={champBudget}
+                <ChampBudget
+                  valeur={filtres.budget_min}
+                  libelle="Budget minimum"
+                  marque="Min"
+                  onChange={(valeur) => majFiltre('budget_min', valeur)}
                 />
                 <span style={{ color: '#9AA3AF' }}>–</span>
-                <input
-                  value={filtres.budget_max ?? ''}
-                  onChange={(e) => majFiltre('budget_max', e.target.value)}
-                  inputMode="numeric"
-                  placeholder="Max"
-                  aria-label="Budget maximum"
-                  style={champBudget}
+                <ChampBudget
+                  valeur={filtres.budget_max}
+                  libelle="Budget maximum"
+                  marque="Max"
+                  onChange={(valeur) => majFiltre('budget_max', valeur)}
                 />
                 <span style={{ fontSize: 12, color: '#9AA3AF', fontWeight: 600, whiteSpace: 'nowrap' }}>MAD/an</span>
               </div>
@@ -810,6 +806,68 @@ const selecteurTri: React.CSSProperties = {
   cursor: 'pointer',
   color: '#1A1A1A',
 };
+
+/**
+ * Un montant de budget, répercuté dans l'URL après une pause de frappe.
+ *
+ * CHAQUE TOUCHE DÉCLENCHAIT UNE RECHERCHE. Le champ écrivait directement dans
+ * l'URL : taper « 15000 » envoyait cinq requêtes au serveur, dont les quatre
+ * premières portaient des bornes que personne n'avait voulues (1, 15, 150,
+ * 1 500 MAD par an). Le défaut était invisible tant que rien ne comptait les
+ * recherches ; depuis B-40 il gonfle une statistique d'administration et fausse
+ * le taux de transformation. Les filtres à liste déroulante ou à case à cocher
+ * n'ont pas ce problème — un clic vaut une intention, une touche non.
+ *
+ * LA VALEUR DE L'URL REPREND LA MAIN quand elle change sans passer par ici —
+ * « Réinitialiser », un lien partagé, le bouton Précédent du navigateur :
+ * sans cela, le champ garderait à l'écran un montant que la recherche
+ * n'applique plus.
+ */
+function ChampBudget({
+  valeur,
+  libelle,
+  marque,
+  onChange,
+}: {
+  valeur: number | undefined;
+  libelle: string;
+  marque: string;
+  onChange: (valeur: string) => void;
+}) {
+  const depuisUrl = valeur !== undefined ? String(valeur) : '';
+  const [saisie, setSaisie] = useState(depuisUrl);
+  const [dernierUrl, setDernierUrl] = useState(depuisUrl);
+
+  if (depuisUrl !== dernierUrl) {
+    setDernierUrl(depuisUrl);
+    setSaisie(depuisUrl);
+  }
+
+  useEffect(() => {
+    if (saisie === depuisUrl) return;
+
+    const minuterie = setTimeout(() => onChange(saisie), DELAI_SAISIE_MS);
+
+    return () => clearTimeout(minuterie);
+    // `onChange` est recréée à chaque rendu du parent : la mettre en
+    // dépendance relancerait la minuterie sans fin.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saisie, depuisUrl]);
+
+  return (
+    <input
+      value={saisie}
+      onChange={(evenement) => setSaisie(evenement.target.value)}
+      inputMode="numeric"
+      placeholder={marque}
+      aria-label={libelle}
+      style={champBudget}
+    />
+  );
+}
+
+/** Pause de frappe au bout de laquelle un montant devient une recherche. */
+const DELAI_SAISIE_MS = 600;
 
 const champBudget: React.CSSProperties = {
   width: 56,
