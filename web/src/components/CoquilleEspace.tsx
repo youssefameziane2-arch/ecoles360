@@ -5,6 +5,7 @@ import { chargerPropositionsAdmin } from '@/api/admin';
 import { chargerAvisModeration } from '@/api/moderation';
 import { chargerTableauDeBord } from '@/api/espace';
 import { chargerIndicateursCrm } from '@/api/crm';
+import { ClocheNotifications } from '@/components/ClocheNotifications';
 import { Icon, SidebarNav } from '@/ds/composants';
 
 /** Réponse de `GET /auth/me` — livrable 11 §2. */
@@ -256,6 +257,14 @@ export function CoquilleEspace({
               <div style={{ fontSize: 13.5, color: '#9AA3AF', marginTop: 2 }}>{sousTitre}</div>
             )}
           </div>
+
+          {/*
+            DANS LA COQUILLE, DONC SUR TOUS LES ÉCRANS CONNECTÉS. Une cloche
+            qui ne vivrait que sur le tableau de bord ne servirait à rien :
+            c'est justement quand on est ailleurs qu'on a besoin d'être
+            prévenu.
+          */}
+          <ClocheNotifications espace={espace} />
 
           <button
             type="button"

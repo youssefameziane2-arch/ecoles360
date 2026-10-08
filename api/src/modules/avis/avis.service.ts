@@ -2,7 +2,13 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { AppException, ERROR_CODES } from '../../common/errors';
 import { Page } from '../../common/interceptors';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AvisStatut, EtablissementStatut, SignalementStatut } from '../../generated/prisma';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  AvisStatut,
+  EtablissementStatut,
+  NotificationType,
+  SignalementStatut,
+} from '../../generated/prisma';
 import type { DeposerAvisDto } from './dto/deposer-avis.dto';
 import type { SignalerAvisDto } from './dto/signaler-avis.dto';
 
@@ -30,7 +36,10 @@ const PAR_PAGE = 10;
 export class AvisService {
   private readonly logger = new Logger(AvisService.name);
 
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   /**
    * Avis publiés d'une fiche — les seuls visibles (RG06).
@@ -125,6 +134,24 @@ export class AvisService {
       select: { id: true, statut: true },
     });
 
+    /**
+     * L'ADMINISTRATION EST PRÉVENUE, PAS L'ÉTABLISSEMENT. Un avis en attente
+     * n'existe pas encore pour l'école : le lui annoncer avant modération
+     * l'inviterait à réagir à un texte qui ne sera peut-être jamais publié
+     * (RG06). Elle le verra quand il le sera.
+     *
+     * NI LE NOM NI LE TEXTE DANS LE CONTENU. Une notification est lue en
+     * dehors de l'écran de modération, où le contexte manque ; y recopier un
+     * commentaire possiblement injurieux le diffuserait avant toute décision.
+     */
+    await this.notifications.sansRompre(() =>
+      this.notifications.pourAdministration(
+        this.db,
+        NotificationType.moderation,
+        `Nouvel avis à modérer sur ${etablissement.nom}.`,
+      ),
+    );
+
     this.logger.log(`Avis ${avis.id} déposé sur ${slug}, en attente de modération`);
 
     return avis;
@@ -204,10 +231,12 @@ export class AvisService {
   }
 
   /** Une fiche non validée n'accepte ni consultation ni dépôt (RG03). */
-  private async fichePubliee(slug: string): Promise<{ id: bigint }> {
+  private async fichePubliee(slug: string): Promise<{ id: bigint; nom: string }> {
     const etablissement = await this.db.etablissement.findFirst({
       where: { slug, statut: EtablissementStatut.validee },
-      select: { id: true },
+      // Le nom sert à la notification de modération : sans lui, l'administrateur
+      // lirait « un avis à modérer » sans savoir où.
+      select: { id: true, nom: true },
     });
 
     if (!etablissement) {

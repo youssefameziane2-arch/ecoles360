@@ -1,12 +1,15 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { AppException, ERROR_CODES } from '../../common/errors';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   DemandeStatut,
   EtablissementStatut,
   EvenementType,
   LeadSource,
   LeadUrgence,
+  NotificationType,
+  PermissionPortee,
 } from '../../generated/prisma';
 import type { DemandeContactDto } from './dto/demande-contact.dto';
 import type { TracerEvenementDto } from './dto/tracer-evenement.dto';
@@ -27,7 +30,10 @@ import type { TracerEvenementDto } from './dto/tracer-evenement.dto';
 export class ContactsService {
   private readonly logger = new Logger(ContactsService.name);
 
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   /**
    * Demande de contact déposée depuis une fiche publique.
@@ -71,9 +77,25 @@ export class ContactsService {
       return creee;
     });
 
-    // LOT 6 — les jobs BullMQ `mail` et `alerts` notifieront l'établissement et
-    // le secrétariat (livrable 11 §6). En attendant, la demande est enregistrée
-    // et visible dans la file : rien n'est perdu, seule la notification manque.
+    /**
+     * HORS DE LA TRANSACTION, ET SANS POUVOIR LA ROMPRE. La demande et son
+     * lead sont le bien ; la notification n'en est que l'écho. Perdre une
+     * demande de parent parce qu'on n'a pas su prévenir serait absurde — et
+     * c'est exactement ce qu'un appel dans la transaction aurait produit.
+     *
+     * Le courriel viendra par-dessus quand un compte SMTP existera (B-53) :
+     * la colonne `canal` le prévoit, et rien ici ne changera.
+     */
+    await this.notifications.sansRompre(() =>
+      this.notifications.pourEtablissement(
+        this.db,
+        etablissement.id,
+        PermissionPortee.contacts,
+        NotificationType.demande,
+        `Nouvelle demande de ${dto.parent_nom} — ${dto.canal}.`,
+      ),
+    );
+
     this.logger.log(`Demande ${demande.id} reçue sur ${slug}, lead créé`);
 
     return demande;

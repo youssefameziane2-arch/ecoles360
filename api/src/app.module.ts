@@ -11,6 +11,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AdminModule } from './modules/admin/admin.module';
 import { SeoModule } from './modules/seo/seo.module';
 import { CrmModule } from './modules/crm/crm.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { InscriptionsModule } from './modules/inscriptions/inscriptions.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ArticlesModule } from './modules/articles/articles.module';
@@ -70,6 +71,7 @@ import { RedisModule } from './redis/redis.module';
       }),
     }),
     PrismaModule,
+    NotificationsModule,
     RedisModule,
     AuthModule,
     HealthModule,

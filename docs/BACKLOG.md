@@ -1094,3 +1094,83 @@ Quatre tests gardent ces absences, et une cinquième vérifie qu'`users`,
 `permissions`, `journal_audits` et `password_reset_tokens` sont bien hors de la
 liste consultable.
 **Statut :** construit.
+
+## B-53 — Envoi d'e-mail : ce qu'il faut du client, et ce qui n'en dépend pas
+
+**À RAPPELER AU CLIENT** — demandé le 8 octobre 2026.
+
+Il n'y a aucun envoi de courriel dans le projet. `.env.example` prévoit déjà
+les cinq réglages, en commentaire :
+
+```
+SMTP_HOST=        # smtp.hostinger.com, smtp.gmail.com…
+SMTP_PORT=587
+SMTP_USER=        # le compte de la boîte expéditrice
+SMTP_PASSWORD=    # son mot de passe — chez Gmail, un « mot de passe d'application »
+MAIL_FROM=        # l'adresse affichée : contact@ecoles360.com
+```
+
+**CE N'EST PAS LE VPS QUI BLOQUE**, contrairement à ce qui a été dit une fois
+dans une session. Le VPS n'est que l'endroit où ces identifiants vivront en
+production (`.env.prod`, hors dépôt). Le code d'envoi s'écrit et s'éprouve en
+local avec n'importe quel compte de messagerie.
+
+**Ce qu'il faut du client :** une boîte expéditrice (`@ecoles360.com` de
+préférence) et ses paramètres. Si elle n'existe pas, c'est une démarche de
+quelques minutes chez l'hébergeur du domaine.
+
+**Le mot de passe ne transite pas par une conversation** : il s'écrit
+directement dans `.env`, ignoré par Git.
+
+**CE QUI N'ATTEND PAS L'E-MAIL :** le canal `in_app` de la table
+`Notification`. Voir B-54.
+**Statut :** à confirmer — client (adresse expéditrice et identifiants SMTP).
+
+## B-54 — Centre de notifications : la table qui n'avait jamais servi
+
+La table `Notification` existait depuis le livrable 10 §2.20 — cinq types,
+deux canaux (`in_app`, `email`) — et **pas une ligne n'y avait jamais été
+écrite**. Le produit comptait sur le hasard : qu'un administrateur ouvre le
+bon écran au bon moment, qu'une école pense à regarder ses demandes.
+
+**Construit le 8 octobre 2026, canal `in_app` seulement.** L'envoi de courriel
+demande un compte SMTP que le projet n'a pas (B-53) ; le canal est porté par
+la colonne, et le jour où il existe, c'est un second enregistrement par
+notification — rien du service ne change.
+
+**Quatre des cinq types sont câblés :**
+
+| Type | Déclencheur | Destinataires |
+|---|---|---|
+| `demande` | une demande de contact déposée sur une fiche | le compte propriétaire, et les secrétariats portant `contacts` |
+| `moderation` | un avis déposé, en attente | toute l'administration |
+| `proposition_fiche` | une proposition de modification (RG20) | toute l'administration |
+| `echeance_abonnement` | **la tâche de 08 h 00**, selon `rappel_echeance_j` | l'école (portée `fiches`) et l'administration |
+
+**`plafond_vue_atteint` reste à faire** — il suppose la facturation à la vue
+(RG12), dont le modèle `PaiementVue` existe mais qu'aucun code n'alimente.
+
+**LE PARAMÈTRE `rappel_echeance_j` SERT ENFIN.** Il était réglable depuis
+l'écran « Paramètres » depuis le premier jour, semé à 7 jours, et **aucune
+ligne de code ne le lisait**. Un abonnement expirait, la fiche cessait de
+pouvoir être validée (RG14), et personne n'avait été prévenu.
+
+**Décisions qui méritent d'être retenues :**
+
+- **La portée commande la diffusion** (RG05). Une secrétaire à qui l'on a
+  confié les avis n'est pas alertée d'une demande de contact : la
+  notification mènerait à un écran qui lui répondrait 403 ;
+- **écrire une notification ne peut jamais rompre ce qui la déclenche.** Une
+  demande enregistrée dont la notification échoue reste une demande. L'inverse
+  serait absurde — d'où `sansRompre()`, hors transaction ;
+- **l'avis en attente prévient l'administration, pas l'école.** Un avis non
+  modéré n'existe pas encore pour elle (RG06), et le contenu de la
+  notification ne recopie ni le nom de l'auteur ni son texte : une
+  notification se lit hors de l'écran de modération ;
+- **le rappel ne part qu'une fois** par abonnement et par fenêtre. La tâche
+  tourne chaque nuit ; sans garde elle aurait réécrit le même rappel sept
+  nuits de suite. Le garde est la fenêtre elle-même, pas un drapeau au schéma
+  qu'il aurait fallu remettre à zéro au renouvellement ;
+- **08 h 00, pas la nuit** comme les purges. Un rappel est fait pour être lu.
+**Statut :** construit, canal `in_app`. `email` attend B-53 ;
+`plafond_vue_atteint` attend la facturation à la vue (RG12).

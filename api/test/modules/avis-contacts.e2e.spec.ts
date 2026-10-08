@@ -273,6 +273,34 @@ describe('Site public — avis et contacts (intégration)', () => {
       expect(demande.leads.length).toBe(1);
       expect(demande.leads[0]?.candidat_nom).toBe('Parent Avec Lead');
       expect(demande.consentement).toBe(true);
+
+      /**
+       * ET L'ÉTABLISSEMENT EST PRÉVENU. C'est le seul signal qu'une demande
+       * est arrivée : sans lui, elle attend qu'on pense à ouvrir l'écran.
+       *
+       * Le compte propriétaire de la fiche la reçoit ; une secrétaire ne la
+       * reçoit que si elle porte la portée `contacts` (RG05) — une
+       * notification qui mènerait à un 403 serait pire qu'aucune.
+       */
+      const fiche = await db.etablissement.findUniqueOrThrow({
+        where: { slug: SLUG },
+        select: { proprietaire_user_id: true },
+      });
+
+      if (fiche.proprietaire_user_id) {
+        const notification = await db.notification.findFirst({
+          where: { user_id: fiche.proprietaire_user_id, type: 'demande' },
+          orderBy: { id: 'desc' },
+        });
+
+        expect(notification).not.toBeNull();
+        expect(notification?.contenu).toContain('Parent Avec Lead');
+        expect(notification?.canal).toBe('in_app');
+        // `envoyee_le` est posé tout de suite sur ce canal : elle s'affiche à
+        // la prochaine ouverture, donc elle EST envoyée dès l'écriture.
+        expect(notification?.envoyee_le).not.toBeNull();
+        expect(notification?.lue_le).toBeNull();
+      }
     });
   });
 

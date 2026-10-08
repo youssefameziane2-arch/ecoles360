@@ -312,3 +312,29 @@ export interface FacturationEspaceDonnees {
  */
 export const chargerMaFacturation = () =>
   apiFetch<FacturationEspaceDonnees>('/mon-espace/facturation');
+
+// ---------------------------------------------------------------------------
+//  Centre de notifications
+// ---------------------------------------------------------------------------
+
+export type TypeNotification =
+  | 'echeance_abonnement'
+  | 'plafond_vue_atteint'
+  | 'demande'
+  | 'moderation'
+  | 'proposition_fiche';
+
+export interface Notification {
+  id: string;
+  type: TypeNotification;
+  contenu: string;
+  lue_le: string | null;
+  envoyee_le: string | null;
+}
+
+/** Bornées au compte de la session — aucun identifiant en paramètre. */
+export const chargerNotifications = () =>
+  apiFetch<{ notifications: Notification[]; non_lues: number }>('/notifications');
+
+export const marquerNotificationsLues = () =>
+  apiFetch<void>('/notifications/lues', { method: 'PATCH' });

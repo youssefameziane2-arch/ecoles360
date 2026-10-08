@@ -855,4 +855,110 @@ describe('Espace connecté et administration (intégration)', () => {
       await etablissement.get('/admin/base/utilisateurs').expect(403);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  //  Centre de notifications
+  // ---------------------------------------------------------------------------
+
+  /**
+   * CE QUI SE TESTE, C'EST LA PORTÉE. Une notification est bornée à son
+   * destinataire par `user_id`, et il n'existe aucun paramètre qui permette
+   * d'en désigner un autre — mais c'est le genre d'invariant qu'une
+   * refonte casse sans bruit.
+   */
+  describe('centre de notifications', () => {
+    it('refuse l’anonyme', async () => {
+      await request(app.getHttpServer()).get('/api/v1/notifications').expect(401);
+    });
+
+    it('ne rend que les notifications de la session, et compte les non lues', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const compte = await db.user.findUniqueOrThrow({
+        where: { email: 'contact@almassira.ma' },
+        select: { id: true },
+      });
+
+      const autre = await db.user.findFirstOrThrow({
+        where: { email: { not: 'contact@almassira.ma' } },
+        select: { id: true },
+      });
+
+      // Une pour moi, une pour quelqu'un d'autre : seule la mienne doit sortir.
+      const mienne = await db.notification.create({
+        data: {
+          user_id: compte.id,
+          type: 'demande',
+          contenu: 'Notification de test — la mienne.',
+          canal: 'in_app',
+          envoyee_le: new Date(),
+        },
+      });
+
+      const voisine = await db.notification.create({
+        data: {
+          user_id: autre.id,
+          type: 'demande',
+          contenu: 'Notification de test — celle du voisin.',
+          canal: 'in_app',
+          envoyee_le: new Date(),
+        },
+      });
+
+      const reponse = await etablissement.get('/notifications').expect(200);
+      const ids = (reponse.body.data.notifications as { id: string }[]).map((n) => n.id);
+
+      expect(ids).toContain(mienne.id.toString());
+      expect(ids).not.toContain(voisine.id.toString());
+      expect(reponse.body.data.non_lues).toBeGreaterThan(0);
+
+      await db.notification.deleteMany({ where: { id: { in: [mienne.id, voisine.id] } } });
+    });
+
+    /**
+     * MARQUER LUES NE TOUCHE QUE LES SIENNES. Un `updateMany` dont le `where`
+     * perdrait son `user_id` viderait les notifications de toute la
+     * plateforme, et rien ne le signalerait.
+     */
+    it('marque ses propres notifications lues, et seulement les siennes', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const compte = await db.user.findUniqueOrThrow({
+        where: { email: 'contact@almassira.ma' },
+        select: { id: true },
+      });
+      const autre = await db.user.findFirstOrThrow({
+        where: { email: { not: 'contact@almassira.ma' } },
+        select: { id: true },
+      });
+
+      const mienne = await db.notification.create({
+        data: {
+          user_id: compte.id,
+          type: 'demande',
+          contenu: 'À marquer lue.',
+          canal: 'in_app',
+          envoyee_le: new Date(),
+        },
+      });
+      const voisine = await db.notification.create({
+        data: {
+          user_id: autre.id,
+          type: 'demande',
+          contenu: 'Ne doit pas bouger.',
+          canal: 'in_app',
+          envoyee_le: new Date(),
+        },
+      });
+
+      await etablissement.patch('/notifications/lues').expect(204);
+
+      expect(
+        (await db.notification.findUniqueOrThrow({ where: { id: mienne.id } })).lue_le,
+      ).not.toBeNull();
+      expect(
+        (await db.notification.findUniqueOrThrow({ where: { id: voisine.id } })).lue_le,
+      ).toBeNull();
+
+      await db.notification.deleteMany({ where: { id: { in: [mienne.id, voisine.id] } } });
+    });
+  });
 });

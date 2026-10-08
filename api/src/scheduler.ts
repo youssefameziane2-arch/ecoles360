@@ -29,7 +29,8 @@ async function bootstrap(): Promise<void> {
   contexte.enableShutdownHooks();
 
   new Logger('Scheduler').log(
-    'Tâches planifiées actives — purge des demandes 02 h 00, des traces 02 h 30, du journal dimanche 04 h 00 (Africa/Casablanca).',
+    'Tâches planifiées actives — purge des demandes 02 h 00, des traces 02 h 30, ' +
+      'du journal dimanche 04 h 00, rappel des échéances 08 h 00 (Africa/Casablanca).',
   );
 }
 

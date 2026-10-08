@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PurgesService } from './purges.service';
+import { RappelsService } from './rappels.service';
 
 /**
  * Tâches récurrentes — livrable 10 §6.3.
@@ -28,7 +29,10 @@ import { PurgesService } from './purges.service';
 export class PlanificateurService {
   private readonly logger = new Logger('Planificateur');
 
-  constructor(private readonly purges: PurgesService) {}
+  constructor(
+    private readonly purges: PurgesService,
+    private readonly rappels: RappelsService,
+  ) {}
 
   @Cron('0 0 2 * * *', { name: 'purge:demandes', timeZone: 'Africa/Casablanca' })
   async purgerDemandes(): Promise<void> {
@@ -43,6 +47,17 @@ export class PlanificateurService {
   @Cron('0 0 4 * * 0', { name: 'purge:audit', timeZone: 'Africa/Casablanca' })
   async purgerAudit(): Promise<void> {
     await this.executer('purge:audit', () => this.purges.purgerAudit());
+  }
+
+  /**
+   * 08 h 00 — PAS LA NUIT, CONTRAIREMENT AUX PURGES. Un rappel est fait pour
+   * être lu : le poser à 2 h du matin le noierait sous les notifications de
+   * la journée avant que quiconque ouvre son écran. Les purges, elles, ne
+   * s'adressent à personne.
+   */
+  @Cron('0 0 8 * * *', { name: 'rappel:echeances', timeZone: 'Africa/Casablanca' })
+  async rappelerEcheances(): Promise<void> {
+    await this.executer('rappel:echeances', () => this.rappels.echeancesProches());
   }
 
   private async executer(nom: string, tache: () => Promise<unknown>): Promise<void> {
