@@ -89,7 +89,7 @@ appelé mais jamais dessiné).
 
 ---
 
-## Administration — 15 écrans attendus, 11 complets
+## Administration — 15 écrans attendus, 12 complets
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -107,7 +107,7 @@ appelé mais jamais dessiné).
 | Facture (détail) | `isAdminFactDetail` | sous la fiche, dans « Établissements » | 🟡 **formules, essai et remise sont faits** par le panneau `AbonnementEtablissement` — choix de la formule, tarif négocié, remise annuelle (RG11), émission et encaissement. Ne manque que le **reçu**, bloqué : il porte des mentions légales obligatoires (raison sociale, RC/ICE) encore `[À COMPLÉTER]` |
 | Secrétariat | `isAdminUsers` | `/admin/secretariat` | ✅ **quatre portées déléguées** depuis le 7 octobre 2026, la relecture du blog comprise (B-51) · **création de compte** et **réinitialisation de mot de passe** comprises, avec rattachement, portées déléguées (RG05) et suspension qui coupe les sessions (RG25). Le mot de passe est tiré au sort et affiché **une seule fois** — un lien de première connexion par courriel vaudrait mieux, mais il n'y a aucun envoi d'e-mail dans le projet (B-46) |
 | Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | ✅ **création de compte** comprise, portefeuilles, transformations, taux, relances dues, commissions. Un commercial sans téléphone n'apparaît pas sur la bannière d'aide du site, et l'écran le dit |
-| Base de données | `isAdminDb` | — | ❌ explorateur lecture seule (pas dans la navigation actuelle) |
+| Base de données | `isAdminDb` | `/admin/base` | ✅ six tables en **lecture seule**, colonnes énumérées une par une — jamais `SELECT *`. Sont écartés le hachage de mot de passe, le contact d'un auteur d'avis (loi 09-08) et le téléphone d'un lead, qui appartient à l'établissement (RG23). Aucune requête libre : une table hors liste répond 422 |
 
 **Hors maquette, construits en plus** : Sponsoring (`/admin/sponsorings`) et
 Paramètres de facturation (`/admin/parametres`) — écrans dessinés sans
@@ -175,11 +175,11 @@ qu'un commercial doit lire des chiffres d'une fiche n'est écrit nulle part.
 | Périmètre | Complets | Partiels | Restants |
 |---|---|---|---|
 | Site public (13) | 9 | 4 — dont 2 pages légales en attente de mentions, et la 3ᵉ de l'image, carte et réseaux sociaux | 0 |
-| Administration (15) | 11 | 3 | 1 — l'explorateur de base |
+| Administration (15) | 12 | 3 | 0 |
 | Établissement (7) | 6 | 1 — statistiques | 0 (+1 hors périmètre) |
 | Secrétariat (5) | 5 | 0 | 0 |
 | Commercial (6) | 3 | 2 | 1 — statistiques, en attente de définition |
-| **Total (46)** | **34** | **10** | **2** |
+| **Total (46)** | **35** | **10** | **1** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait

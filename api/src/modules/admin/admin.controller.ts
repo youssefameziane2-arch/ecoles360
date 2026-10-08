@@ -67,6 +67,7 @@ import { CreerEtablissementDto } from './dto/creer-etablissement.dto';
 import { PorteeSecretariatDto } from './dto/portee-secretariat.dto';
 import { StatutCompteDto } from './dto/statut-compte.dto';
 import { ComptesService } from './comptes.service';
+import { ExplorateurBaseService } from './explorateur-base.service';
 import { SecretariatService } from './secretariat.service';
 import { CrmService } from '../crm/crm.service';
 import { CrmLectureService } from '../crm/crm-lecture.service';
@@ -104,6 +105,7 @@ export class AdminController {
     private readonly secretariat: SecretariatService,
     private readonly comptes: ComptesService,
     private readonly categoriesArticles: CategoriesArticlesService,
+    private readonly explorateur: ExplorateurBaseService,
     private readonly crm: CrmService,
     private readonly crmLecture: CrmLectureService,
     private readonly facturation: FacturationService,
@@ -630,6 +632,40 @@ export class AdminController {
    * qu'on peut retoucher ne prouve rien. Les écritures viennent uniquement
    * d'`AuditService`, appelé dans la transaction de l'action qu'il trace.
    */
+  // ---------------------------------------------------------------------------
+  //  Explorateur de base — écran `isAdminDb`, LECTURE SEULE
+  // ---------------------------------------------------------------------------
+
+  @Get('base')
+  @ApiOperation({
+    summary: 'Tables consultables et leurs colonnes',
+    description: 'Liste fermée de six tables. Aucune requête libre, aucun nom de table arbitraire.',
+  })
+  catalogueBase() {
+    return this.explorateur.catalogue();
+  }
+
+  /**
+   * LA TABLE VIENT D'UNE LISTE FERMÉE, jamais du paramètre. Le service choisit
+   * une fonction de lecture par clé ; rien n'est interpolé dans une requête.
+   * Un explorateur qui prendrait un nom de table serait une injection SQL
+   * avec une interface.
+   */
+  @Get('base/:table')
+  @ApiOperation({
+    summary: 'Lignes d’une table, paginées',
+    description:
+      'Colonnes énumérées une par une — jamais `SELECT *`. Le hachage de mot de passe et le ' +
+      'contact d’un auteur d’avis ne sortent pas (loi 09-08).',
+  })
+  @ApiResponse({ status: 422, description: 'Table hors de la liste consultable.' })
+  lireBase(
+    @Param('table') table: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
+  ) {
+    return this.explorateur.lire(table, page);
+  }
+
   @Get('audit')
   @ApiOperation({
     summary: 'Journal d’audit, du plus récent au plus ancien',

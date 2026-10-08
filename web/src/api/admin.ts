@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, apiFetchPage } from './client';
 import type { EntreeAudit } from './audit';
 import type { TypeEtablissement } from './etablissements';
 import type { ChampsModifies } from './espace';
@@ -538,3 +538,20 @@ export const reinitialiserMotDePasse = (id: string) =>
     `/admin/comptes/${id}/mot-de-passe`,
     { method: 'POST' },
   );
+
+// ---------------------------------------------------------------------------
+//  Explorateur de base — lecture seule, six tables
+// ---------------------------------------------------------------------------
+
+export interface TableConsultable {
+  cle: string;
+  libelle: string;
+  /** Colonnes choisies une par une côté serveur — jamais `SELECT *`. */
+  colonnes: string[];
+}
+
+export const chargerCatalogueBase = () => apiFetch<TableConsultable[]>('/admin/base');
+
+/** 422 si la table n'est pas dans la liste fermée — aucun nom arbitraire. */
+export const chargerTableBase = (table: string, page: number) =>
+  apiFetchPage<Record<string, unknown>>(`/admin/base/${table}?page=${page}`);

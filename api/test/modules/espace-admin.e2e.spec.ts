@@ -766,4 +766,93 @@ describe('Espace connecté et administration (intégration)', () => {
       await etablissement.get('/admin/audit').expect(403);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  //  Explorateur de base — lecture seule
+  // ---------------------------------------------------------------------------
+
+  /**
+   * CE QUI SE TESTE ICI N'EST PAS QUE L'ÉCRAN AFFICHE, mais qu'il N'AFFICHE
+   * PAS. Un explorateur générique est l'endroit exact où une fuite passe
+   * inaperçue : personne ne relit la liste des colonnes d'un écran qui marche.
+   *
+   * Ces trois assertions doivent survivre à toutes les évolutions du schéma.
+   * Le jour où quelqu'un ajoute un jeton à `users`, elles sont ce qui empêche
+   * qu'il s'affiche.
+   */
+  describe('explorateur de base', () => {
+    it('ne rend que les six tables de la liste fermée', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const reponse = await admin.get('/admin/base').expect(200);
+
+      const cles = (reponse.body.data as { cle: string }[]).map((t) => t.cle);
+
+      expect(cles).toEqual([
+        'etablissements',
+        'utilisateurs',
+        'avis',
+        'articles',
+        'factures',
+        'leads',
+      ]);
+    });
+
+    /**
+     * UNE TABLE HORS LISTE EST UN 422, pas un 404 : ce n'est pas une ressource
+     * absente, c'est un paramètre refusé. La nuance compte — un 404 inviterait
+     * à chercher la bonne orthographe.
+     */
+    it.each(['users', 'permissions', 'journal_audits', 'password_reset_tokens'])(
+      'refuse la table « %s », hors de la liste consultable',
+      async (table) => {
+        const admin = await connecte('direction@ecoles360.com');
+
+        await admin.get(`/admin/base/${table}`).expect(422);
+      },
+    );
+
+    it('NE REND JAMAIS le hachage de mot de passe d’un compte', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const reponse = await admin.get('/admin/base/utilisateurs').expect(200);
+
+      const brut = JSON.stringify(reponse.body.data);
+
+      expect(brut).not.toContain('$argon2');
+      expect(brut).not.toContain('passwordHash');
+      expect(brut).not.toContain('password_hash');
+    });
+
+    it('NE REND JAMAIS le contact d’un auteur d’avis (loi 09-08)', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const reponse = await admin.get('/admin/base/avis').expect(200);
+
+      for (const ligne of reponse.body.data as Record<string, unknown>[]) {
+        expect(ligne).not.toHaveProperty('auteur_contact');
+      }
+    });
+
+    /**
+     * NI TÉLÉPHONE NI ADRESSE SUR UN LEAD. Ce sont les coordonnées d'un
+     * parent, et c'est l'établissement propriétaire qui a le droit de les lire
+     * (RG23). Un explorateur sert à compter et à vérifier, pas à extraire un
+     * fichier de prospection.
+     */
+    it('NE REND NI téléphone NI adresse sur un lead (RG23)', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const reponse = await admin.get('/admin/base/leads').expect(200);
+
+      for (const ligne of reponse.body.data as Record<string, unknown>[]) {
+        expect(ligne).not.toHaveProperty('tel');
+        expect(ligne).not.toHaveProperty('email');
+        expect(ligne).not.toHaveProperty('whatsapp');
+      }
+    });
+
+    it('n’est ouvert qu’à l’administration (RG25)', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+
+      await etablissement.get('/admin/base').expect(403);
+      await etablissement.get('/admin/base/utilisateurs').expect(403);
+    });
+  });
 });

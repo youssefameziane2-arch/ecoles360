@@ -21,6 +21,7 @@ import { DemandesEspacePage } from './pages/espace/DemandesEspace';
 import { EtablissementsAdmin } from './pages/admin/EtablissementsAdmin';
 import { TableauDeBordAdmin } from './pages/admin/TableauDeBordAdmin';
 import { PropositionsAdmin } from './pages/admin/PropositionsAdmin';
+import { ExplorateurBase } from './pages/admin/ExplorateurBase';
 import { ParametresFacturation } from './pages/admin/ParametresFacturation';
 import { FacturationAdmin } from './pages/admin/FacturationAdmin';
 import { CrmAdmin } from './pages/admin/CrmAdmin';
@@ -90,6 +91,7 @@ export function App() {
         <Route path="/admin/statistiques" element={<StatistiquesAdmin />} />
         <Route path="/admin/journal" element={<JournalAdmin />} />
         <Route path="/admin/sponsorings" element={<SponsoringsAdmin />} />
+        <Route path="/admin/base" element={<ExplorateurBase />} />
         <Route path="/admin/parametres" element={<ParametresFacturation />} />
 
         <Route path="/commercial" element={<TableauDeBordCommercial />} />

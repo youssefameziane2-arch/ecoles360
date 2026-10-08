@@ -1060,3 +1060,37 @@ reçoit la portée : un secrétariat déjà créé continue exactement comme ava
 entrée sans portée exigée passe pour tout le monde. Un établissement aurait eu
 un lien vers le back-office.
 **Statut :** tranché par le client ; construit.
+
+## B-52 — Explorateur de base : ce qu'il ne montre pas
+
+Écran `isAdminDb`, construit le 8 octobre 2026. Six tables en lecture seule —
+établissements, utilisateurs, avis, articles, factures, leads — paginées.
+
+**C'EST L'ÉCRAN OÙ UNE FUITE PASSE INAPERÇUE.** Un explorateur générique qui
+marche n'est jamais relu : personne ne vérifie la liste de ses colonnes six
+mois plus tard. Trois décisions de conception en découlent.
+
+**Aucune requête libre, aucun nom de table en paramètre.** Le service connaît
+six clés et une fonction de lecture par clé ; rien n'est interpolé dans une
+requête. Un explorateur qui prendrait un nom de table serait une injection SQL
+avec une interface. Une clé hors liste répond **422** — pas 404 : ce n'est pas
+une ressource absente, c'est un paramètre refusé.
+
+**Chaque colonne est énumérée, jamais `SELECT *`.** C'est la seule protection
+qui tienne dans le temps : une colonne ajoutée au schéma demain n'apparaîtra
+pas sans qu'on l'ait voulu. Avec `SELECT *`, le jour où quelqu'un ajoute un
+jeton à `users`, il s'affiche — et personne ne s'en aperçoit.
+
+**Trois champs volontairement absents**, et l'écran le dit à l'utilisateur
+plutôt que de le taire :
+
+| Écarté | Pourquoi |
+|---|---|
+| `users.passwordHash` | un hachage Argon2id n'a rien à faire sur un écran, même pour un administrateur : le voir ne sert à rien, le copier sert à quelqu'un |
+| `avis.auteur_contact` | l'adresse ou le téléphone d'un parent. Le site public ne le rend jamais (loi 09-08) ; un explorateur n'est pas une raison de le rendre |
+| `leads.tel`, `email`, `whatsapp` | les coordonnées d'un parent appartiennent à l'établissement qui a reçu le lead (RG23). L'administration arbitre, elle ne démarche pas — et cet écran ne doit pas servir à extraire un fichier de prospection |
+
+Quatre tests gardent ces absences, et une cinquième vérifie qu'`users`,
+`permissions`, `journal_audits` et `password_reset_tokens` sont bien hors de la
+liste consultable.
+**Statut :** construit.

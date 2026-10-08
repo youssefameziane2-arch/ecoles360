@@ -74,6 +74,10 @@ const NAV_ADMIN: EntreeNav[] = [
   { key: '/admin/contenu', label: 'Contenu du site', icone: 'globe' },
   { key: '/admin/statistiques', label: 'Statistiques', icone: 'bar-chart' },
   { key: '/admin/journal', label: 'Journal d’audit', icone: 'calendar' },
+  // `database` n'existe pas au jeu d'icônes du design system — l'entrée se
+  // serait affichée sans glyphe. `search` est le plus proche : on vient ici
+  // chercher une ligne, pas administrer la base.
+  { key: '/admin/base', label: 'Base de données', icone: 'search' },
   { key: '/admin/parametres', label: 'Paramètres', icone: 'settings' },
 ];
 
