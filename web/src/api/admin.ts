@@ -507,6 +507,21 @@ export interface AbonnementAdmin {
   debut: string;
   echeance: string;
   statut: 'essai' | 'actif' | 'expire' | 'resilie';
+  /**
+   * Ce qu'une facture porterait — calculé par le serveur, jamais par l'écran.
+   *
+   * Nul sur un essai gratuit, qui n'a pas de tarif et ne se facture pas
+   * (RG13).
+   */
+  apercu: {
+    base_ht: string;
+    remise_pct: number;
+    remise_mad: string;
+    montant_ht: string;
+    tva_pct: number;
+    tva: string;
+    total_ttc: string;
+  } | null;
   factures: { id: string; numero: string; total_ttc: string; statut_paiement: StatutPaiement }[];
 }
 

@@ -198,6 +198,51 @@ describe('Facturation (intégration)', () => {
   });
 
   /**
+   * L'APERÇU EST UNE PROMESSE. L'écran l'affiche sous « Émettre une facture » :
+   * s'il annonçait un montant et que la facture en portait un autre, on
+   * signerait une pièce comptable qu'on n'a pas lue. Ce test compare les deux
+   * sur le même abonnement — c'est le seul moyen de garantir qu'ils ne
+   * dérivent pas.
+   */
+  it('annonce avant d’émettre exactement ce que la facture portera', async () => {
+    const admin = await connecte(ADMIN);
+    const fiche = await ficheNeuve(admin);
+
+    const abonnement = await admin
+      .post(`/admin/etablissements/${fiche.id}/abonnement`)
+      .send({ formule: 'annuel', tarif_mad: 12000 })
+      .expect(201);
+
+    const avant = await admin.get(`/admin/etablissements/${fiche.id}/abonnements`).expect(200);
+    const { apercu } = avant.body.data[0];
+
+    expect(Number(apercu.base_ht)).toBe(12000);
+    expect(Number(apercu.remise_mad)).toBe(1200);
+
+    const facture = await admin
+      .post(`/admin/abonnements/${abonnement.body.data.id}/facture`)
+      .send({})
+      .expect(201);
+
+    expect(Number(apercu.montant_ht)).toBe(Number(facture.body.data.montant_ht));
+    expect(Number(apercu.tva)).toBe(Number(facture.body.data.tva));
+    expect(Number(apercu.total_ttc)).toBe(Number(facture.body.data.total_ttc));
+  });
+
+  it('ne promet aucun montant sur un essai gratuit (RG13)', async () => {
+    const admin = await connecte(ADMIN);
+    const fiche = await ficheNeuve(admin);
+
+    await admin.post(`/admin/etablissements/${fiche.id}/essai-gratuit`).expect(204);
+
+    const lecture = await admin.get(`/admin/etablissements/${fiche.id}/abonnements`).expect(200);
+
+    // NUL, ET NON UN RÉCAPITULATIF À ZÉRO : un essai ne donnera lieu à AUCUNE
+    // facture, pas à une facture de zéro dirham.
+    expect(lecture.body.data[0].apercu).toBeNull();
+  });
+
+  /**
    * LE NUMÉRO EST UNE OBLIGATION COMPTABLE : séquence continue, sans doublon.
    * Deux émissions successives doivent donner deux numéros, et le second doit
    * suivre le premier — c'est ce que le verrou garantit.

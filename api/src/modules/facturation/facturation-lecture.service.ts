@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AbonnementStatut, FactureStatut } from '../../generated/prisma';
+import { ParametresFacturationService } from '../admin/parametres-facturation.service';
+import { montantsFacture } from './facturation.service';
+import { AbonnementStatut, FactureStatut, type Prisma } from '../../generated/prisma';
+
+/** TVA de repli si le paramètre a disparu — le Maroc applique 20 %. */
+const TVA_DEFAUT_PCT = 20;
 
 /** Un mois calendaire en UTC — même convention que les statistiques. */
 function moisCourant(): { debut: Date; fin: Date } {
@@ -24,7 +29,10 @@ function moisCourant(): { debut: Date; fin: Date } {
  */
 @Injectable()
 export class FacturationLectureService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly parametres: ParametresFacturationService,
+  ) {}
 
   /**
    * Les indicateurs de l'en-tête.
@@ -140,24 +148,72 @@ export class FacturationLectureService {
     });
   }
 
-  /** Les abonnements d'un établissement, du plus récent au plus ancien. */
+  /**
+   * Les abonnements d'un établissement, du plus récent au plus ancien, chacun
+   * accompagné du récapitulatif de ce qu'une facture porterait.
+   *
+   * L'APERÇU VOYAGE AVEC L'ABONNEMENT, sans route ni appel de plus : l'écran
+   * charge déjà cette liste, et le bouton « Émettre une facture » est juste à
+   * côté. Jusqu'ici il s'actionnait À L'AVEUGLE — on validait une pièce
+   * comptable sans avoir vu son montant, et on ne le découvrait qu'une fois
+   * émise, c'est-à-dire trop tard pour la corriger.
+   *
+   * LES MONTANTS VIENNENT DE `montantsFacture`, le calcul qu'emploie
+   * l'émission elle-même. Les recalculer ici, ou pire dans le navigateur,
+   * ferait diverger l'aperçu de la facture le jour où la remise ou la TVA
+   * change — et c'est précisément le genre d'écart qu'on ne voit pas venir.
+   */
   async abonnements(etablissementId: bigint) {
-    return this.db.abonnement.findMany({
-      where: { etablissement_id: etablissementId },
-      orderBy: { debut: 'desc' },
-      select: {
-        id: true,
-        formule: true,
-        tarif_mad: true,
-        remise_pct: true,
-        debut: true,
-        echeance: true,
-        statut: true,
-        factures: {
-          select: { id: true, numero: true, total_ttc: true, statut_paiement: true },
-          orderBy: { emise_le: 'desc' },
+    const [abonnements, tvaPct] = await Promise.all([
+      this.db.abonnement.findMany({
+        where: { etablissement_id: etablissementId },
+        orderBy: { debut: 'desc' },
+        select: {
+          id: true,
+          formule: true,
+          tarif_mad: true,
+          remise_pct: true,
+          debut: true,
+          echeance: true,
+          statut: true,
+          factures: {
+            select: { id: true, numero: true, total_ttc: true, statut_paiement: true },
+            orderBy: { emise_le: 'desc' },
+          },
         },
-      },
-    });
+      }),
+      this.parametres.entier('tva_pct', TVA_DEFAUT_PCT),
+    ]);
+
+    return abonnements.map((abonnement) => ({
+      ...abonnement,
+      // NUL SUR UN ESSAI GRATUIT, qui n'a pas de tarif et ne se facture pas
+      // (RG13). Un récapitulatif à zéro laisserait croire à une facture de
+      // zéro dirham, alors qu'il n'y en aura aucune.
+      apercu: abonnement.tarif_mad === null ? null : this.apercu(abonnement, tvaPct),
+    }));
+  }
+
+  /** Le récapitulatif d'un abonnement payant — montants en chaînes. */
+  private apercu(
+    abonnement: { tarif_mad: Prisma.Decimal | null; remise_pct: Prisma.Decimal | null },
+    tvaPct: number,
+  ) {
+    const tarif = Number(abonnement.tarif_mad);
+    const remisePct = Number(abonnement.remise_pct ?? 0);
+    const { montantHt, tva, totalTtc } = montantsFacture({ tarif, remisePct, tvaPct });
+
+    return {
+      base_ht: tarif.toFixed(2),
+      remise_pct: remisePct,
+      // La remise en dirhams, et pas seulement en pourcentage : c'est le
+      // montant retiré que l'on relit sur un devis, pas un taux à appliquer
+      // de tête.
+      remise_mad: (Math.round((tarif - montantHt) * 100) / 100).toFixed(2),
+      montant_ht: montantHt.toFixed(2),
+      tva_pct: tvaPct,
+      tva: tva.toFixed(2),
+      total_ttc: totalTtc.toFixed(2),
+    };
   }
 }

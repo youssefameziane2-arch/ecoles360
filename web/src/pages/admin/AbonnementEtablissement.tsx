@@ -266,6 +266,17 @@ function LigneAbonnement({
         )}
       </div>
 
+      {/*
+        LE RÉCAPITULATIF PRÉCÈDE LE BOUTON, parce qu'« Émettre une facture »
+        s'actionnait à l'aveugle : on validait une pièce comptable sans en
+        connaître le montant, et on ne le découvrait qu'une fois émise. Les
+        chiffres viennent du serveur, du même calcul que l'émission — les
+        refaire ici ferait dériver l'aperçu de la facture.
+      */}
+      {!essai && enCours && abonnement.apercu && (
+        <Recapitulatif apercu={abonnement.apercu} formule={abonnement.formule} />
+      )}
+
       {essai && (
         <p style={{ ...texteDoux, fontSize: 12.5, marginTop: 8 }}>
           Un essai gratuit ne se facture pas (RG13) — il débloque la publication sans règlement.
@@ -323,6 +334,89 @@ function LigneAbonnement({
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * « Récapitulatif » de la maquette `isAdminFactDetail` — objet, base HT,
+ * remise, total HT, TVA, total TTC.
+ *
+ * LA REMISE N'APPARAÎT QUE SI ELLE EXISTE, comme dans la maquette : une ligne
+ * « − 0 % » sur un abonnement mensuel ferait chercher une remise qu'aucune
+ * règle n'accorde (RG11).
+ */
+function Recapitulatif({
+  apercu,
+  formule,
+}: {
+  apercu: NonNullable<AbonnementAdmin['apercu']>;
+  formule: AbonnementAdmin['formule'];
+}) {
+  const remise = apercu.remise_pct > 0;
+
+  return (
+    <dl
+      style={{
+        margin: '12px 0 0',
+        paddingTop: 11,
+        borderTop: '1px solid #F1ECE3',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 7,
+      }}
+    >
+      <Ligne libelle="Objet">Abonnement {LIBELLE_FORMULE[formule].toLowerCase()}</Ligne>
+      <Ligne libelle="Base HT">{formaterMad(Number(apercu.base_ht))}</Ligne>
+      {remise && (
+        <Ligne libelle={`Remise annuelle − ${apercu.remise_pct} %`} tone="#1F7A45">
+          − {formaterMad(Number(apercu.remise_mad))}
+        </Ligne>
+      )}
+      <Ligne libelle="Total HT">{formaterMad(Number(apercu.montant_ht))}</Ligne>
+      <Ligne libelle={`TVA ${apercu.tva_pct} %`}>{formaterMad(Number(apercu.tva))}</Ligne>
+      <Ligne libelle="Total TTC" total>
+        {formaterMad(Number(apercu.total_ttc))}
+      </Ligne>
+    </dl>
+  );
+}
+
+function Ligne({
+  libelle,
+  tone,
+  total,
+  children,
+}: {
+  libelle: string;
+  tone?: string;
+  total?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 12,
+        fontSize: total ? 15 : 13,
+        ...(total ? { borderTop: '1px solid #EAE6DE', paddingTop: 9, marginTop: 2 } : {}),
+      }}
+    >
+      <dt style={{ color: tone ?? (total ? '#1D3557' : '#5A6472'), fontWeight: total ? 700 : 400 }}>
+        {libelle}
+      </dt>
+      <dd
+        style={{
+          margin: 0,
+          textAlign: 'right',
+          fontWeight: total ? 800 : 600,
+          color: tone ?? (total ? '#1D3557' : '#1A1A1A'),
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {children}
+      </dd>
     </div>
   );
 }

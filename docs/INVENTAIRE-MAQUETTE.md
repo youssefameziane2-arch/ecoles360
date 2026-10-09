@@ -89,7 +89,7 @@ appelé mais jamais dessiné).
 
 ---
 
-## Administration — 15 écrans attendus, 12 complets
+## Administration — 15 écrans attendus, 13 complets
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -103,8 +103,8 @@ appelé mais jamais dessiné).
 | Tableau de bord | `isAdminDash` | `/admin` | ✅ activité, à traiter, visites (30 j), top établissements, **pipeline CRM** et **dernières factures** (B-38, B-39). « Encaisser » renvoie à l'écran de facturation plutôt que d'ouvrir un second chemin vers la RG14. **Recherches effectuées** servie depuis que les recherches sont tracées (B-40) |
 | CRM Clients | `isAdminCrm` | `/admin/crm` | ✅ indicateurs, pipeline en 6 colonnes (RG17), relances, attribution des dossiers (RG18), **pastille des prospects jamais ouverts** dans le menu — seul signal qu'une demande du formulaire public est arrivée, faute d'envoi d'e-mail (B-46) |
 | Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, cinq indicateurs sur six — **recherches** et **taux de transformation** compris —, courbe, **« Recherches par ville »**, vues par type, top établissements. Manquent les seules « visites du site », faute de définition et non de code (B-40) |
-| Abonnement & facturation | `isAdminFact` | `/admin/facturation` | 🟡 indicateurs, historique, encaissement ✅ · ouverture d'abonnement et émission de facture depuis la fiche ✅ — manque le **détail de facture** (`isAdminFactDetail`) |
-| Facture (détail) | `isAdminFactDetail` | sous la fiche, dans « Établissements » | 🟡 **formules, essai et remise sont faits** par le panneau `AbonnementEtablissement` — choix de la formule, tarif négocié, remise annuelle (RG11), émission et encaissement. Ne manque que le **reçu**, bloqué : il porte des mentions légales obligatoires (raison sociale, RC/ICE) encore `[À COMPLÉTER]` |
+| Abonnement & facturation | `isAdminFact` | `/admin/facturation` | ✅ indicateurs, historique, encaissement · ouverture d'abonnement et émission de facture depuis la fiche. (Cette ligne annonçait le détail de facture manquant quand la ligne suivante le disait fait — **onzième contradiction de ce relevé**, levée le 9 octobre 2026 : le détail vit sous la fiche, dans « Établissements ».) |
+| Facture (détail) | `isAdminFactDetail` | sous la fiche, dans « Établissements » | 🟡 **formules, essai et remise sont faits** par le panneau `AbonnementEtablissement` — choix de la formule, tarif négocié, remise annuelle (RG11), émission et encaissement. **récapitulatif avant émission** depuis le 9 octobre 2026 — objet, base HT, remise, total HT, TVA, total TTC, calculés par le serveur avec le code qui émet, et éprouvés identiques à la facture produite. Jusque-là on émettait une pièce comptable sans en connaître le montant. Ne manque que le **reçu**, bloqué : il porte des mentions légales obligatoires (raison sociale, RC/ICE) encore `[À COMPLÉTER]` |
 | Secrétariat | `isAdminUsers` | `/admin/secretariat` | ✅ **quatre portées déléguées** depuis le 7 octobre 2026, la relecture du blog comprise (B-51) · **création de compte** et **réinitialisation de mot de passe** comprises, avec rattachement, portées déléguées (RG05) et suspension qui coupe les sessions (RG25). Le mot de passe est tiré au sort et affiché **une seule fois** — un lien de première connexion par courriel vaudrait mieux, mais il n'y a aucun envoi d'e-mail dans le projet (B-46) |
 | Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | ✅ **création de compte** comprise, portefeuilles, transformations, taux, relances dues, commissions. Un commercial sans téléphone n'apparaît pas sur la bannière d'aide du site, et l'écran le dit |
 | Base de données | `isAdminDb` | `/admin/base` | ✅ six tables en **lecture seule**, colonnes énumérées une par une — jamais `SELECT *`. Sont écartés le hachage de mot de passe, le contact d'un auteur d'avis (loi 09-08) et le téléphone d'un lead, qui appartient à l'établissement (RG23). Aucune requête libre : une table hors liste répond 422 |
@@ -175,11 +175,11 @@ qu'un commercial doit lire des chiffres d'une fiche n'est écrit nulle part.
 | Périmètre | Complets | Partiels | Restants |
 |---|---|---|---|
 | Site public (13) | 9 | 4 — dont 2 pages légales en attente de mentions, et la 3ᵉ de l'image, carte et réseaux sociaux | 0 |
-| Administration (15) | 12 | 3 | 0 |
+| Administration (15) | 13 | 2 | 0 |
 | Établissement (7) | 6 | 1 — statistiques | 0 (+1 hors périmètre) |
 | Secrétariat (5) | 5 | 0 | 0 |
 | Commercial (6) | 3 | 2 | 1 — statistiques, en attente de définition |
-| **Total (46)** | **35** | **10** | **1** |
+| **Total (46)** | **36** | **9** | **1** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait
