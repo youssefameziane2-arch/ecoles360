@@ -19,6 +19,7 @@ import { CarteBlog } from './Blog';
 import { AlerteErreur, BoutonPrimaire, Champ, ChoixNote, ZoneTexte } from '@/components/Champs';
 import { Icon, ReviewCard, Tabs, TeamMember } from '@/ds/composants';
 import { formaterDepuis, formaterMad, formaterNombre, formaterNote, rangJour } from '@/lib/formats';
+import { lienExterneSur } from '@/lib/liens';
 import { lienTelephone, lienWhatsApp } from '@/lib/telephone';
 import { useTitrePage } from '@/lib/titre';
 
@@ -61,6 +62,17 @@ export function Fiche() {
   });
 
   const e = fiche.data;
+
+  // Les réseaux dont l'adresse tient debout. Un lien saisi avant que l'API ne
+  // valide `socials` peut encore dormir en base : il est écarté ici plutôt que
+  // posé dans un `href`.
+  const reseaux = Object.entries(e?.socials ?? {}).flatMap(([reseau, url]) => {
+    const lien = lienExterneSur(url);
+
+    return lien ? [[reseau, lien] as const] : [];
+  });
+
+  const siteWeb = lienExterneSur(e?.site_web);
 
   useTitrePage(
     e ? `${e.nom} — ${LIBELLE_TYPE[e.type]} à ${e.ville.nom}` : null,
@@ -172,11 +184,23 @@ export function Fiche() {
               />
             )}
             {e.email && <LigneContact icone="mail" valeur={e.email} />}
-            {e.site_web && (
+            {/*
+              PASSÉ PAR LE MÊME FILTRE que les réseaux sociaux. `@IsUrl` côté
+              API accepte « www.ecole.ma » sans protocole : posé tel quel dans
+              un `href`, le navigateur en fait un lien RELATIF et le parent
+              atterrit sur une page d'erreur du site. Sans adresse absolue,
+              on n'affiche pas de lien plutôt qu'un lien mort.
+            */}
+            {siteWeb && (
               <LigneContact
                 icone="globe"
                 valeur={
-                  <a href={e.site_web} target="_blank" rel="noreferrer" style={{ color: '#1D3557', fontWeight: 600 }}>
+                  <a
+                    href={siteWeb}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#1D3557', fontWeight: 600 }}
+                  >
                     Site web
                   </a>
                 }
@@ -270,15 +294,15 @@ export function Fiche() {
 
           <SituationCarte etablissement={e} />
 
-          {e.socials && Object.keys(e.socials).length > 0 && (
+          {reseaux.length > 0 && (
             <BlocLateral titre="Réseaux sociaux">
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {Object.entries(e.socials).map(([reseau, url]) => (
+                {reseaux.map(([reseau, url]) => (
                   <a
                     key={reseau}
                     href={url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     style={{
                       font: "600 12.5px/1 'Inter', sans-serif",
                       color: '#1D3557',

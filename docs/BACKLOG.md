@@ -1201,3 +1201,47 @@ pouvoir être validée (RG14), et personne n'avait été prévenu.
 - **08 h 00, pas la nuit** comme les purges. Un rappel est fait pour être lu.
 **Statut :** construit, canal `in_app`. `email` attend B-53 ;
 `plafond_vue_atteint` attend la facturation à la vue (RG12).
+
+## B-55 — `socials` : une URL non validée dans un `href` public
+
+Relevé le 9 octobre 2026 en préparant les réseaux sociaux de la page À propos,
+sur du code déjà en production dans la branche.
+
+**Ce qui était ouvert.** `ProposerFicheDto.socials` n'était validé que par
+`@IsObject()` : ni les clés, ni les valeurs. Un compte établissement pouvait
+donc proposer `{"facebook": "javascript:…"}`. La file de propositions (RG20)
+n'y changeait rien — l'administrateur y relit un NOM DE PLATEFORME, pas une
+adresse —, et une fois publiée la fiche posait ce lien dans un `href` sur
+chaque visite de la page publique. React rend un `href="javascript:…"` sans
+broncher ; il se contente d'un avertissement en développement, que personne ne
+lit en production.
+
+Le même DTO sert les deux chemins d'écriture, celui de l'espace et celui de
+l'administration : le corriger une fois ferme les deux.
+
+**Trois barrières, et c'est voulu.**
+
+1. `ReseauxSociauxValides` — clés dans une liste fermée (les six de la
+   maquette), valeurs analysées par `new URL` et bornées à `http`/`https`.
+   `new URL` plutôt qu'une expression régulière : c'est l'analyseur du
+   navigateur, donc exactement ce qui décidera du sort de l'`href`.
+2. `lienExterneSur` côté front — les liens saisis AVANT cette validation
+   dorment en base, et une donnée déjà stockée ne redevient pas sûre parce
+   qu'on a corrigé l'entrée. L'aperçu de l'espace applique le même filtre :
+   montrer un lien que la fiche publique refusera ferait croire à
+   l'établissement qu'il est en ligne.
+3. L'écran d'administration ne propose plus qu'une liste déroulante. Laisser
+   taper « Twitter » produisait un 422 après coup, sur un écran qui n'avait
+   rien annoncé. Une valeur déjà enregistrée hors liste reste affichée,
+   signalée « à corriger » — sans quoi l'enregistrement suivant l'effacerait
+   sans que personne ne l'ait demandé.
+
+**Au passage, `site_web`.** `@IsUrl` accepte « www.ecole.ma » sans protocole.
+Posé tel quel dans un `href`, le navigateur en fait un lien RELATIF et le
+parent atterrit sur une page d'erreur du site. Même filtre : sans adresse
+absolue, pas de lien plutôt qu'un lien mort.
+
+Cinq tests, dont quatre refus (schéma exécutable, adresse sans protocole,
+plateforme inconnue, valeur non textuelle).
+
+**Statut :** fait.

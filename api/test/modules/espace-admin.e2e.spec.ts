@@ -264,6 +264,54 @@ describe('Espace connecté et administration (intégration)', () => {
     });
 
     /**
+     * UN LIEN DE RÉSEAU SOCIAL DEVIENT UN `href` SUR LE SITE PUBLIC.
+     *
+     * Le champ n'était validé que comme objet : un établissement pouvait
+     * proposer `{"facebook": "javascript:…"}`. La file de propositions (RG20)
+     * n'y changeait rien — l'administrateur y relit un nom de plateforme, pas
+     * une adresse — et le lien partait ensuite à chaque visite de la fiche.
+     *
+     * Les clés sont elles aussi bornées : libres, elles produisaient des
+     * pastilles au nom choisi par l'établissement, en nombre illimité.
+     */
+    it.each([
+      ['un schéma exécutable', { facebook: 'javascript:alert(1)' }],
+      ['une adresse sans protocole', { facebook: 'facebook.com/mon-ecole' }],
+      ['une plateforme inconnue', { 'Appelez-nous !': 'https://exemple.ma' }],
+      ['autre chose qu’une chaîne', { facebook: 42 }],
+    ])('refuse %s dans les réseaux sociaux', async (_libelle, socials) => {
+      const etablissement = await connecte('contact@almassira.ma');
+
+      const refus = await etablissement
+        .post('/mon-espace/fiche/propositions')
+        .send({ socials })
+        .expect(422);
+
+      expect(refus.body.code).toBe(ERROR_CODES.VALIDATION_ECHOUEE);
+    });
+
+    it('accepte une adresse http(s) sur une plateforme connue', async () => {
+      const avant = await sansPropositionEnAttente();
+      const etablissement = await connecte('contact@almassira.ma');
+
+      const socials = { facebook: 'https://facebook.com/mon-ecole', web: '' };
+
+      await etablissement.post('/mon-espace/fiche/propositions').send({ socials }).expect(201);
+
+      const proposition = await db.propositionFiche.findFirstOrThrow({
+        where: { etablissement_id: avant.id, statut: 'en_attente' },
+      });
+
+      // Vider un réseau reste une façon légitime de le retirer : la chaîne
+      // vide passe, elle ne produit simplement aucun lien.
+      //
+      // `champs_modifies` garde un AVANT et un APRÈS par champ — c'est ce que
+      // l'administrateur relit pour décider (RG20), pas la seule valeur
+      // proposée.
+      expect(proposition.champs_modifies).toMatchObject({ socials: { apres: socials } });
+    });
+
+    /**
      * L'ÉQUIPE PASSE PAR LA MÊME FILE QUE LE RESTE (RG20).
      *
      * Elle nomme des personnes réelles et leur attribue une fonction sur une

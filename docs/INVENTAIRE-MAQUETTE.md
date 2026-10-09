@@ -151,19 +151,24 @@ Servi par **les mêmes écrans que l'établissement**, filtrés par portée dél
 
 ---
 
-## Espace commercial — 3 / 6 écrans complets
+## Espace commercial — 3 / 5 écrans complets
 
-**Les six routes existent** (`/commercial/…`, thème
-`commercial` de `SidebarNav`) : un commercial se connecte et arrive dans son
-espace. **Cinq écrans sur six sont construits**, dont trois complets — agenda,
-mes leads, transferts & commissions — et le blog avec eux. Seul « Statistiques »
-reste une page d'attente, et elle attend une DÉFINITION, pas du travail : ce
-qu'un commercial doit lire des chiffres d'une fiche n'est écrit nulle part.
+**Les cinq routes existent** (`/commercial/…`, thème `commercial` de
+`SidebarNav`) : un commercial se connecte et arrive dans son espace. **Quatre
+écrans sur cinq sont construits**, dont trois complets — agenda, mes leads et
+blog. Seul « Statistiques » reste une page d'attente, et elle attend une
+DÉFINITION, pas du travail : ce qu'un commercial doit lire des chiffres d'une
+fiche n'est écrit nulle part.
+
+(Ce tableau portait DEUX lignes pour `isAgenda`, l'une ✅ et l'autre 🟡 —
+**douzième contradiction du relevé**, levée le 9 octobre 2026 après lecture de
+`CalendrierRelances.tsx` : le calendrier existe. La ligne périmée annonçait un
+écran à faire qui était fait, et le texte ci-dessus comptait « transferts &
+commissions » parmi les complets quand sa propre ligne le disait partiel.)
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
 | Agenda & tâches | `isAgenda` | `/commercial/agenda` | ✅ **calendrier du mois** (lundi en tête, pastille sur les jours chargés, filtrage au clic), relances dues, retards signalés, « c'est fait » (RG17) — reste la synchronisation Google Agenda, qui demande un compte de service |
-| Agenda & tâches | `isAgenda` | `/commercial/agenda` | 🟡 relances dues, retards signalés, « c’est fait » (RG17) — manquent le calendrier et la synchronisation Google Agenda |
 | Mes leads | `isCrm` | `/commercial/leads` | ✅ pipeline borné à son portefeuille par le serveur, relances comprises |
 | Transferts & commissions | `isTransferts` | `/commercial/transferts` | 🟡 commissions par facture et par statut (RG18) — le **transfert de dossier** entre commerciaux n’est défini nulle part |
 | Statistiques | `isEtabStats` (bloc partagé avec l'établissement) | `/commercial/statistiques` | ❌ page d'attente — la maquette y remet les chiffres d'une fiche ; ce qu'un commercial doit y lire (son portefeuille ?) n'est pas dit |
@@ -178,8 +183,8 @@ qu'un commercial doit lire des chiffres d'une fiche n'est écrit nulle part.
 | Administration (15) | 13 | 2 | 0 |
 | Établissement (7) | 6 | 1 — statistiques | 0 (+1 hors périmètre) |
 | Secrétariat (5) | 5 | 0 | 0 |
-| Commercial (6) | 3 | 2 | 1 — statistiques, en attente de définition |
-| **Total (46)** | **36** | **9** | **1** |
+| Commercial (5) | 3 | 1 | 1 — statistiques, en attente de définition |
+| **Total (45)** | **36** | **8** | **1** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait
