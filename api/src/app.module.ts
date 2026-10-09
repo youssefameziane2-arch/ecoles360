@@ -11,6 +11,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AdminModule } from './modules/admin/admin.module';
 import { SeoModule } from './modules/seo/seo.module';
 import { CrmModule } from './modules/crm/crm.module';
+import { MailModule } from './modules/mail/mail.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { InscriptionsModule } from './modules/inscriptions/inscriptions.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -71,6 +72,9 @@ import { RedisModule } from './redis/redis.module';
       }),
     }),
     PrismaModule,
+    // AVANT les notifications : elles consomment MailService pour savoir si
+    // un courriel doit être mis en file.
+    MailModule,
     NotificationsModule,
     RedisModule,
     AuthModule,

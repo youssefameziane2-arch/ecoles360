@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuditService } from '../../common/audit/audit.service';
+import { ExpediteurMailService } from '../mail/expediteur.service';
+import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ParametresFacturationService } from '../admin/parametres-facturation.service';
 import { PurgesService } from './purges.service';
@@ -24,7 +26,9 @@ import { RappelsService } from './rappels.service';
     // projet.
     NotificationsService,
     ParametresFacturationService,
+    MailService,
+    ExpediteurMailService,
   ],
-  exports: [PurgesService, RappelsService],
+  exports: [PurgesService, RappelsService, ExpediteurMailService],
 })
 export class MaintenanceModule {}

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { ExpediteurMailService } from '../mail/expediteur.service';
 import { PurgesService } from './purges.service';
 import { RappelsService } from './rappels.service';
 
@@ -32,7 +33,25 @@ export class PlanificateurService {
   constructor(
     private readonly purges: PurgesService,
     private readonly rappels: RappelsService,
+    private readonly mail: ExpediteurMailService,
   ) {}
+
+  /**
+   * La file de courriels, toutes les minutes.
+   *
+   * PAS PLUS SOUVENT : une notification n'est pas une alerte temps réel, et
+   * descendre à dix secondes multiplierait par six les requêtes sur une table
+   * presque toujours vide. Pas moins souvent non plus — une réinitialisation
+   * de mot de passe qui met un quart d'heure à partir fait recommencer la
+   * demande, et le second jeton invalide le premier.
+   *
+   * LE SERVICE SE TAIT QUAND AUCUN COMPTE SMTP N'EST CONFIGURÉ : il rend
+   * aussitôt la main, sans toucher la base.
+   */
+  @Cron(CronExpression.EVERY_MINUTE, { name: 'mail:file' })
+  async ecoulerCourriels(): Promise<void> {
+    await this.executer('mail:file', () => this.mail.ecouler());
+  }
 
   @Cron('0 0 2 * * *', { name: 'purge:demandes', timeZone: 'Africa/Casablanca' })
   async purgerDemandes(): Promise<void> {

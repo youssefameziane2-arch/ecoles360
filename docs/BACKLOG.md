@@ -1245,3 +1245,64 @@ Cinq tests, dont quatre refus (schéma exécutable, adresse sans protocole,
 plateforme inconnue, valeur non textuelle).
 
 **Statut :** fait.
+
+## B-56 — Envoi de courriel : construit, et éteint jusqu'au compte SMTP
+
+Fait le 9 octobre 2026. B-53 ne demandait pas que du client : il n'y avait
+aucun code d'envoi dans le projet. Il y en a maintenant, et il attend les cinq
+réglages sans rien bloquer entre-temps.
+
+**Le service existe même sans compte SMTP, et c'est la décision qui gouverne
+le reste.** Si l'absence de réglages empêchait l'API de démarrer, il aurait
+fallu attendre le client pour écrire une ligne. Non configuré, `MailService`
+se déclare éteint, le dit UNE fois au démarrage, et refuse poliment chaque
+envoi. C'est aussi ce qui permet aux 410 tests de tourner sans serveur de
+messagerie — une suite qui tenterait une connexion sortante échouerait en CI.
+Les quatre réglages sont exigés ENSEMBLE : un hôte sans identifiants
+construirait un transport qui échoue au premier envoi, en production.
+
+**La table `notifications` EST la file, pas BullMQ.** Même écart assumé que
+pour les purges, et pour la même raison : elle est déjà durable, reprenable
+après un redémarrage, et visible par l'administrateur dans un écran qu'il a
+déjà. BullMQ demanderait un conteneur, un état de job dans Redis et une
+seconde source de vérité sur ce qui est parti.
+
+Chaque notification écrit donc DEUX lignes : `in_app`, datée tout de suite
+puisqu'elle s'affiche dès qu'elle existe, et `email`, laissée en attente.
+L'expéditeur la reprend **hors transaction** — tenir une session SMTP dans un
+`BEGIN` allongerait le verrou sous la main d'un serveur extérieur, et un
+`ROLLBACK` ensuite laisserait un message parti pour un fait qui n'a pas eu
+lieu. La cloche ne montre que `in_app` : afficher les deux doublerait chaque
+ligne et compterait deux non-lues pour un seul événement.
+
+**Migration `20261009120000_notifications_envoi_mail`** : `cree_le` (sans date
+de création, « en attente depuis plus de deux heures » ne s'écrit pas) et
+`tentatives` (une adresse supprimée échouerait toutes les minutes pour
+toujours et noierait les vraies erreurs). Les lignes existantes reçoivent leur
+`cree_le` depuis `envoyee_le`, leur vraie date, plutôt que l'instant de la
+migration.
+
+**Six modèles**, écrits à la main : cinq pour les types de notification, un
+pour la réinitialisation de mot de passe. Pas de moteur de gabarits pour six
+messages de deux phrases. Chacun porte le lien vers l'écran qui permet
+d'agir — et pas le même selon qu'on est administration ou établissement,
+sinon le destinataire atterrit sur un 403. Sujet volontairement neutre : il
+voyage en clair dans les journaux de tous les serveurs relais, le nom d'un
+parent n'y a rien à faire. Texte ET HTML, toujours : un message en HTML seul
+part au courrier indésirable chez la plupart des hébergeurs.
+
+Treize tests unitaires, sans base ni réseau. Vérifié en plus bout en bout
+contre la vraie base avec un hôte injoignable : deux lignes écrites, l'`in_app`
+datée, l'`email` en attente, `tentatives` à 1 après l'échec, et la cloche
+affichant bien une seule ligne.
+
+**Ce qui reste à faire quand le compte existe :** décommenter les cinq lignes
+de `.env`, redémarrer. Rien d'autre.
+
+**Ce qui n'est pas branché :** la réinitialisation de mot de passe. Le modèle
+est écrit, mais le circuit de jetons (`password_reset_tokens`) n'a pas de
+route publique — c'est un travail à part, et c'est le seul courriel dont
+l'absence empêche vraiment d'utiliser le produit, puisque les autres doublent
+une notification déjà visible.
+
+**Statut :** fait, éteint. Attend l'adresse expéditrice (B-53).

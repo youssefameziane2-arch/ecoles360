@@ -794,17 +794,24 @@ enum PermissionPortee {
 /// 20 — Notification : plafond de vues (RG12), échéance (RG14), demandes,
 /// modération, propositions (RG20).
 model Notification {
-  id          BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
-  user_id     BigInt             @db.UnsignedBigInt
-  type        NotificationType
-  contenu     String             @db.VarChar(255)
-  canal       NotificationCanal
-  envoyee_le  DateTime?          @db.Timestamp(0)
-  lue_le      DateTime?          @db.Timestamp(0)
+  id         BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt            @db.UnsignedBigInt
+  type       NotificationType
+  contenu    String            @db.VarChar(255)
+  canal      NotificationCanal
+  cree_le    DateTime          @default(now()) @db.Timestamp(0)
+  /// Nul sur le canal `email` tant que le courriel n'est pas parti — c'est ce
+  /// qui fait de la table une file d'envoi (B-53). Sur `in_app`, posé à
+  /// l'écriture : la notification EST délivrée dès qu'elle existe.
+  envoyee_le DateTime?         @db.Timestamp(0)
+  /// Envois échoués. Borne l'acharnement sur une adresse qui n'existe plus.
+  tentatives Int               @default(0) @db.UnsignedTinyInt
+  lue_le     DateTime?         @db.Timestamp(0)
 
   user User @relation("NotificationUser", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, lue_le], map: "idx_notif_centre")
+  @@index([canal, envoyee_le, tentatives], map: "idx_notif_a_envoyer")
   @@map("notifications")
 }
 

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import {
   NotificationCanal,
   NotificationType,
@@ -24,10 +25,16 @@ type Ecrivain = Pick<PrismaService, 'notification' | 'user' | 'etablissement'>;
  * moment. Une demande de parent arrivée un vendredi soir attendait qu'on
  * pense à regarder.
  *
- * `in_app` SEULEMENT, POUR L'INSTANT. L'envoi de courriel demande un compte
- * SMTP que le projet n'a pas (B-53) ; le canal est porté par la colonne, et
- * le jour où il existe, c'est un second enregistrement par notification —
- * rien de ce service ne change.
+ * DEUX LIGNES PAR NOTIFICATION DEPUIS B-53, exactement comme ce commentaire
+ * l'annonçait : une en `in_app`, posée envoyée puisqu'elle s'affiche dès
+ * qu'elle existe, et une en `email` laissée en attente, que
+ * `ExpediteurMailService` reprend hors transaction. La seconde n'est écrite
+ * que si un compte SMTP est configuré — sinon elle resterait éternellement en
+ * file, et le centre compterait des envois qui n'auront jamais lieu.
+ *
+ * LE CENTRE NE MONTRE QUE `in_app`, et c'est ce qui rend la cloche juste. Les
+ * deux canaux portent le même texte : les afficher tous les deux doublerait
+ * chaque ligne et ferait compter deux non-lues pour un seul événement.
  *
  * ÉCRIRE UNE NOTIFICATION NE DOIT JAMAIS FAIRE ÉCHOUER CE QUI LA DÉCLENCHE.
  * Une demande de contact enregistrée dont la notification échoue reste une
@@ -40,7 +47,10 @@ type Ecrivain = Pick<PrismaService, 'notification' | 'user' | 'etablissement'>;
 export class NotificationsService {
   private readonly logger = new Logger('Notifications');
 
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly mail: MailService,
+  ) {}
 
   // ---------------------------------------------------------------------------
   //  Lecture — le centre lui-même
@@ -53,14 +63,18 @@ export class NotificationsService {
    * trop vite. Elles sont rangées derrière, pas effacées.
    */
   async lister(userId: bigint) {
+    // `in_app` SEULEMENT : le doublon `email` porte le même texte, et le
+    // montrer ferait apparaître chaque événement deux fois dans la cloche.
+    const centre = { user_id: userId, canal: NotificationCanal.in_app };
+
     const [notifications, nonLues] = await Promise.all([
       this.db.notification.findMany({
-        where: { user_id: userId },
+        where: centre,
         orderBy: [{ lue_le: { sort: 'asc', nulls: 'first' } }, { id: 'desc' }],
         take: PAR_PAGE,
         select: { id: true, type: true, contenu: true, lue_le: true, envoyee_le: true },
       }),
-      this.db.notification.count({ where: { user_id: userId, lue_le: null } }),
+      this.db.notification.count({ where: { ...centre, lue_le: null } }),
     ]);
 
     return { notifications, non_lues: nonLues };
@@ -76,7 +90,10 @@ export class NotificationsService {
    */
   async marquerLues(userId: bigint): Promise<number> {
     const resultat = await this.db.notification.updateMany({
-      where: { user_id: userId, lue_le: null },
+      // Borné à `in_app`, comme la lecture : marquer lue une ligne `email`
+      // n'aurait aucun sens — personne ne lit une file d'envoi — et le
+      // compteur rendu ici ne correspondrait plus à ce que la cloche affichait.
+      where: { user_id: userId, canal: NotificationCanal.in_app, lue_le: null },
       data: { lue_le: new Date() },
     });
 
@@ -183,14 +200,31 @@ export class NotificationsService {
       return;
     }
 
-    const lignes: Prisma.NotificationCreateManyInput[] = destinataires.map((userId) => ({
-      user_id: userId,
-      type,
-      // Tronqué à la colonne : `VarChar(255)`, et MySQL couperait en silence.
-      contenu: contenu.slice(0, 255),
-      canal: NotificationCanal.in_app,
-      envoyee_le: new Date(),
-    }));
+    // Tronqué à la colonne : `VarChar(255)`, et MySQL couperait en silence.
+    const texte = contenu.slice(0, 255);
+    const maintenant = new Date();
+
+    const lignes: Prisma.NotificationCreateManyInput[] = destinataires.flatMap((userId) => [
+      {
+        user_id: userId,
+        type,
+        contenu: texte,
+        canal: NotificationCanal.in_app,
+        envoyee_le: maintenant,
+      },
+      // LE COURRIEL EST MIS EN FILE, PAS ENVOYÉ D'ICI. On est peut-être dans
+      // la transaction de l'appelant : ouvrir une session SMTP y tiendrait un
+      // verrou sous la main d'un serveur extérieur, et un `ROLLBACK` ensuite
+      // laisserait un message parti pour un fait qui n'a pas eu lieu.
+      // `ExpediteurMailService` reprend la ligne après la validation.
+      //
+      // RIEN N'EST MIS EN FILE SANS COMPTE SMTP : la ligne resterait en
+      // attente pour toujours, et donnerait à lire une file d'envois qui
+      // n'auront jamais lieu.
+      ...(this.mail.actif
+        ? [{ user_id: userId, type, contenu: texte, canal: NotificationCanal.email }]
+        : []),
+    ]);
 
     await tx.notification.createMany({ data: lignes });
   }
