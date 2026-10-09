@@ -1353,3 +1353,53 @@ passe, connexion avec le nouveau (200) et refus de l'ancien (401). Le compte de
 démonstration a été restauré ensuite.
 
 **Statut :** fait. Les messages partent dès que le compte SMTP existe (B-53).
+
+## B-58 — Les tests tournent dans le conteneur, pas depuis Windows
+
+Fait le 9 octobre 2026, après deux pannes identiques en une session.
+
+**Le symptôme.** Au milieu d'une exécution, sur une requête quelconque :
+`Can't reach database server at 127.0.0.1:3306`. Une suite échoue, la
+suivante passe, et relancer suffit.
+
+**Ce que la mesure dit.** MySQL n'a rien eu : conteneur jamais redémarré,
+en marche depuis trois jours, pas de `OOMKilled`, **19 connexions simultanées
+au plus sur 151 autorisées**, `Connection_errors_max_connections` à zéro,
+quatre échecs de connexion en trois jours. Rien n'est saturé et le serveur
+n'est jamais tombé.
+
+**La cause.** Les tests tournaient sous Windows et joignaient MySQL par
+`127.0.0.1:3306`, donc par le relais de port de Docker Desktop — un pont entre
+Windows et la machine virtuelle Linux. Une suite complète ouvre et referme des
+milliers de connexions (2 816 déconnexions brutales comptées), et ce relais en
+perd une de loin en loin.
+
+**Ce que ça ne touche pas.** Ni la production, où l'API joint `mysql:3306` sur
+le réseau Docker interne — le `127.0.0.1:3306` de `docker-compose.prod.yml`
+n'est publié que pour les sauvegardes en SSH —, ni l'intégration continue, qui
+tourne sous Linux sans machine virtuelle intermédiaire. **Seule l'exécution des
+tests depuis Windows traversait ce pont.**
+
+**La correction.** `scripts/tester.mjs` joue la suite À L'INTÉRIEUR du
+conteneur `api`, où MySQL et Redis se joignent par leur nom de service. Plus
+de relais, plus rien à perdre. Les sources viennent toujours du poste
+(`./api` est monté), donc on teste bien le code qu'on vient d'écrire, et le
+client Prisma convient aux deux mondes — `binaryTargets` déclare `native` ET
+`linux-musl-openssl-3.0.x`.
+
+```bash
+node scripts/tester.mjs                             # toute la suite
+node scripts/tester.mjs test/modules/mail.spec.ts   # une suite
+node scripts/tester.mjs -t "garde le sujet neutre"  # un cas
+```
+
+**Un défaut corrigé dans le script lui-même avant de le livrer.** Les
+arguments étaient recollés avec des espaces : `-t "garde le sujet neutre"`
+arrivait au shell comme quatre mots, Jest prenait « garde » pour le filtre et
+le reste pour des chemins. Il ne plantait pas — il exécutait autre chose en
+annonçant un succès, ce qui est pire. Chaque argument est désormais protégé.
+
+La commande historique du livrable 13 reste valable et documentée ; elle est
+simplement moins fiable sur ce poste.
+
+**Statut :** fait. 411 tests verts dans le conteneur.
