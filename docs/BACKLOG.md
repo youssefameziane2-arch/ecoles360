@@ -1299,10 +1299,57 @@ affichant bien une seule ligne.
 **Ce qui reste à faire quand le compte existe :** décommenter les cinq lignes
 de `.env`, redémarrer. Rien d'autre.
 
-**Ce qui n'est pas branché :** la réinitialisation de mot de passe. Le modèle
-est écrit, mais le circuit de jetons (`password_reset_tokens`) n'a pas de
-route publique — c'est un travail à part, et c'est le seul courriel dont
-l'absence empêche vraiment d'utiliser le produit, puisque les autres doublent
-une notification déjà visible.
+**La réinitialisation de mot de passe est branchée** (B-57). J'avais écrit
+ici qu'elle n'avait pas de route publique : c'était faux, les deux routes
+existaient depuis le lot 3. Il ne manquait que l'envoi.
 
 **Statut :** fait, éteint. Attend l'adresse expéditrice (B-53).
+
+## B-57 — « Mot de passe oublié » : il manquait une ligne, pas un circuit
+
+Fait le 9 octobre 2026. J'avais annoncé qu'il fallait construire le circuit de
+jetons. **C'était faux** : `POST /auth/mot-de-passe-oublie` et
+`POST /auth/reset-mot-de-passe` existaient depuis le lot 3, avec jeton haché
+en SHA-256, usage unique, expiration à une heure, invalidation des jetons
+précédents et révocation des sessions Redis (RG25). Tout cela marchait et
+n'était éprouvé par personne, faute de dernier maillon.
+
+Le maillon manquant tenait en une instruction du contrôleur : `void jeton;`.
+Le jeton était créé, puis jeté.
+
+**L'envoi ne s'attend pas, et c'est une mesure de sécurité.** Tout ce
+formulaire est bâti pour ne pas dire si une adresse existe — même réponse, même
+message dans les deux cas. Attendre l'envoi aurait défait ce travail par la
+bande : la réponse aurait mis une seconde quand le compte existe et dix
+millisecondes sinon, et il aurait suffi de chronométrer pour reconstituer
+l'annuaire des comptes. L'envoi part donc en parallèle de la réponse.
+
+**Il ne passe pas par la file `notifications`**, contrairement aux cinq autres
+messages : il s'adresse à quelqu'un qui n'est pas connecté, et l'afficher dans
+une cloche qu'il ne peut pas ouvrir n'aurait aucun sens. Il ne peut pas non
+plus attendre jusqu'à une minute — le jeton ne vaut qu'une heure, et qui ne
+voit rien arriver redemande un lien, ce qui invalide le premier.
+
+**Deux écrans.** « Mot de passe oublié » et « Lien envoyé » sont des étapes de
+la carte de connexion, pas des routes, comme la maquette (`isStepReset`,
+`isStepResetSent`) : lui donner une URL créerait une page qu'on peut mettre en
+favori, pour un détour de dix secondes. Le formulaire de connexion est masqué
+plutôt que démonté — qui clique par réflexe puis revient n'a pas à retaper son
+adresse.
+
+Le troisième écran, `/mot-de-passe`, **n'est pas dans la maquette** : le
+prototype s'arrête à « Lien envoyé » parce qu'il n'envoie rien. Le lien doit
+bien atterrir quelque part. Il reprend la carte de connexion à l'identique, et
+annonce la règle de composition AVANT la saisie — l'API l'exige, et la
+découvrir après avoir tapé deux fois son mot de passe est une mauvaise façon
+de l'apprendre.
+
+**Aucune vérification préalable du jeton**, bien que ce soit tentant pour
+afficher « lien expiré » avant la saisie : ce serait un oracle, une route qui
+répond oui ou non sur un jeton, essayable en boucle.
+
+Vérifié de bout en bout dans le navigateur : demande, lien, nouveau mot de
+passe, connexion avec le nouveau (200) et refus de l'ancien (401). Le compte de
+démonstration a été restauré ensuite.
+
+**Statut :** fait. Les messages partent dès que le compte SMTP existe (B-53).

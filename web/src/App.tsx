@@ -12,6 +12,7 @@ import { Faq } from './pages/Faq';
 import { Blog } from './pages/Blog';
 import { Article } from './pages/Article';
 import { Connexion } from './pages/Connexion';
+import { MotDePasse } from './pages/MotDePasse';
 import { InscriptionEtablissement } from './pages/InscriptionEtablissement';
 import { Introuvable } from './pages/Introuvable';
 import { TableauDeBordEspace } from './pages/espace/TableauDeBord';
@@ -65,6 +66,13 @@ export function App() {
   // porte donc ni l'en-tête ni le pied de page du site public.
   if (pathname === '/connexion') {
     return <Connexion />;
+  }
+
+  // MÊME TRAITEMENT QUE LA CONNEXION, et pour la même raison : on arrive ici
+  // depuis un e-mail, sans session. Un en-tête public inviterait à partir
+  // explorer le site au milieu d'une réinitialisation commencée.
+  if (pathname === '/mot-de-passe') {
+    return <MotDePasse />;
   }
 
   if (connecte) {

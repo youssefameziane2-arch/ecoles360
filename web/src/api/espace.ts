@@ -322,7 +322,8 @@ export type TypeNotification =
   | 'plafond_vue_atteint'
   | 'demande'
   | 'moderation'
-  | 'proposition_fiche';
+  | 'proposition_fiche'
+  | 'inscription';
 
 export interface Notification {
   id: string;

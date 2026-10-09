@@ -56,6 +56,7 @@ export function Connexion() {
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
   const [noteGoogle, setNoteGoogle] = useState(false);
+  const [etape, setEtape] = useState<Etape>('connexion');
 
   const connexion = useMutation({
     mutationFn: () =>
@@ -160,6 +161,22 @@ export function Connexion() {
             style={{ height: 34, width: 'auto', display: 'block', margin: '0 auto 26px' }}
           />
 
+          {/*
+            L'OUBLI DE MOT DE PASSE EST UNE ÉTAPE DE CETTE CARTE, pas une
+            route — comme la maquette, qui le traite en `isStepReset` et
+            `isStepResetSent` dans le même écran. Lui donner une URL créerait
+            une page qu'on peut mettre en favori et partager, pour un détour
+            de dix secondes au milieu d'une connexion.
+          */}
+          {etape !== 'connexion' && <CarteOubli etape={etape} onEtape={setEtape} />}
+
+          {/*
+            MASQUÉ, PAS DÉMONTÉ. Le retirer du DOM viderait les champs : qui
+            clique « mot de passe oublié » par réflexe, puis revient, aurait à
+            retaper son adresse — alors qu'elle vient de lui servir.
+          */}
+          <div style={{ display: etape === 'connexion' ? 'block' : 'none' }}>
+
           <h2 style={{ margin: 0, fontSize: 25, fontWeight: 800, letterSpacing: '-0.5px' }}>
             Connexion à votre espace
           </h2>
@@ -222,14 +239,13 @@ export function Connexion() {
             </Button>
           </form>
 
-          <div style={{ marginTop: 14, textAlign: 'center', fontSize: 13, color: '#5A6472', lineHeight: 1.6 }}>
-            {/* Pas de lien « mot de passe oublié » tant que l'envoi d'e-mails
-                n'est pas en service : la route existe et répond 202, mais aucun
-                message ne partirait. Voir docs/BACKLOG.md, B-24. */}
-            Mot de passe oublié ? Écrivez-nous à{' '}
-            <a href="mailto:contact@ecoles360.com" style={{ color: '#1D3557', fontWeight: 600 }}>
-              contact@ecoles360.com
-            </a>
+          <div style={{ marginTop: 14, textAlign: 'center', fontSize: 13, lineHeight: 1.6 }}>
+            {/* Ce lien renvoyait vers « écrivez-nous » tant qu'aucun e-mail ne
+                partait. Il mène maintenant au formulaire — la route existait
+                déjà, c'est l'envoi qui manquait. */}
+            <button type="button" onClick={() => setEtape('oubli')} style={lienDiscret}>
+              Mot de passe oublié ?
+            </button>
           </div>
 
           <Separateur>OU</Separateur>
@@ -272,7 +288,132 @@ export function Connexion() {
             </Link>
           </div>
 
+          </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Les trois temps de la carte — `isLogin`, `isStepReset`, `isStepResetSent`. */
+type Etape = 'connexion' | 'oubli' | 'envoye';
+
+/**
+ * « Mot de passe oublié » — étapes `isStepReset` et `isStepResetSent`.
+ *
+ * LE MESSAGE DE CONFIRMATION NE DIT JAMAIS SI LE COMPTE EXISTE, et c'est le
+ * point entier de cet écran. « Si un compte est associé à cette adresse… » est
+ * le texte de la maquette, et il est juste : un formulaire qui répondrait
+ * « adresse inconnue » serait un annuaire de comptes offert à qui essaie des
+ * adresses. L'API répond déjà 202 dans les deux cas ; l'écran ne doit pas
+ * défaire ce travail en interprétant la réponse.
+ *
+ * L'ÉCHEC MÈNE AU MÊME ÉCRAN QUE LE SUCCÈS, à une exception près : la
+ * limitation de débit (429), qui parle d'un nombre de tentatives et non d'un
+ * compte. Afficher « une erreur est survenue » pour le reste apprendrait, par
+ * différence, quelque chose à qui teste des adresses.
+ */
+function CarteOubli({ etape, onEtape }: { etape: Etape; onEtape: (etape: Etape) => void }) {
+  const [email, setEmail] = useState('');
+
+  const demande = useMutation({
+    mutationFn: (adresse: string) =>
+      apiFetch<{ message: string }>('/auth/mot-de-passe-oublie', {
+        method: 'POST',
+        body: JSON.stringify({ email: adresse }),
+      }),
+    onSettled: (_donnees, erreur) => {
+      // `onSettled` ET NON `onSuccess` : seul un 429 doit retenir l'écran.
+      if (erreur instanceof ApiError && erreur.statut === 429) return;
+      onEtape('envoye');
+    },
+  });
+
+  const trop = demande.error instanceof ApiError && demande.error.statut === 429;
+
+  if (etape === 'envoye') {
+    return (
+      <div style={{ textAlign: 'center' }}>
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            background: '#E6F4EC',
+            display: 'grid',
+            placeItems: 'center',
+            margin: '6px auto 20px',
+          }}
+        >
+          <Icon name="check" size={30} color="#2E9E5B" strokeWidth={2.4} />
+        </div>
+        <h2 style={{ margin: 0, fontSize: 25, fontWeight: 800, letterSpacing: '-0.5px' }}>
+          Lien envoyé
+        </h2>
+        <p style={{ margin: '10px 0 26px', fontSize: 14.5, color: '#5A6472', lineHeight: 1.55 }}>
+          Si un compte est associé à <strong style={{ color: '#1A1A1A' }}>{email}</strong>, vous
+          recevrez un e-mail contenant un lien de réinitialisation dans quelques minutes.
+        </p>
+        <Button variant="primary" size="lg" block onClick={() => onEtape('connexion')}>
+          Retour à la connexion
+        </Button>
+        <div style={{ marginTop: 16, fontSize: 12.5, color: '#9AA3AF', lineHeight: 1.5 }}>
+          Vous ne recevez rien ? Vérifiez vos courriers indésirables ou{' '}
+          <button
+            type="button"
+            onClick={() => demande.mutate(email)}
+            style={{ ...lienDiscret, color: '#E63946' }}
+          >
+            renvoyez le lien
+          </button>
+          .
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 style={{ margin: 0, fontSize: 25, fontWeight: 800, letterSpacing: '-0.5px' }}>
+        Mot de passe oublié
+      </h2>
+      <p style={{ margin: '8px 0 26px', fontSize: 14.5, color: '#5A6472', lineHeight: 1.5 }}>
+        Saisissez l&rsquo;adresse e-mail de votre compte. Nous vous enverrons un lien pour
+        réinitialiser votre mot de passe.
+      </p>
+
+      {trop && (
+        <div role="alert" style={alerte}>
+          Trop de demandes en peu de temps. Patientez une minute avant de réessayer.
+        </div>
+      )}
+
+      <form
+        onSubmit={(evenement) => {
+          evenement.preventDefault();
+          demande.mutate(email);
+        }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+      >
+        <ChampAvecIcone
+          label="Adresse e-mail"
+          icone="mail"
+          type="email"
+          placeholder="vous@votre-ecole.ma"
+          valeur={email}
+          onChange={setEmail}
+          autoComplete="email"
+          autoFocus
+        />
+        <Button variant="primary" size="lg" block type="submit" disabled={!email || demande.isPending}>
+          {demande.isPending ? 'Envoi…' : 'Envoyer le lien de réinitialisation'}
+        </Button>
+      </form>
+
+      <div style={{ marginTop: 20, textAlign: 'center' }}>
+        <button type="button" onClick={() => onEtape('connexion')} style={lienDiscret}>
+          ← Retour à la connexion
+        </button>
       </div>
     </div>
   );
@@ -396,3 +537,26 @@ function destinationSure(retour: string | null, role: string): string {
 
   return retour;
 }
+
+/** Un lien textuel rendu par un bouton — il agit, il ne navigue pas. */
+const lienDiscret: React.CSSProperties = {
+  border: 0,
+  background: 'none',
+  padding: 0,
+  fontFamily: 'inherit',
+  fontSize: 'inherit',
+  fontWeight: 600,
+  color: '#1D3557',
+  cursor: 'pointer',
+  textDecoration: 'underline',
+};
+
+const alerte: React.CSSProperties = {
+  background: '#FDE8EA',
+  border: '1px solid #F5C6CB',
+  borderRadius: 10,
+  padding: '10px 12px',
+  fontSize: 13,
+  color: '#C42B38',
+  marginBottom: 14,
+};

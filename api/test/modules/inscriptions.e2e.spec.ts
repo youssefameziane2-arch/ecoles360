@@ -111,6 +111,53 @@ describe('Inscription d’un établissement (intégration)', () => {
     await db.prospect.delete({ where: { id: prospect.id } });
   });
 
+  /**
+   * C'ÉTAIT LE SEUL ÉVÉNEMENT COMMERCIAL QUE RIEN NE SIGNALAIT (B-46). Une
+   * école demandait à être référencée et l'information attendait qu'un humain
+   * pense à ouvrir le CRM. Pour un annuaire dont le modèle est que les
+   * établissements paient, c'est l'alerte qui rapporte le plus.
+   */
+  it('prévient l’administration, et elle seule (RG17)', async () => {
+    const superadmins = await db.user.findMany({
+      where: { statut: 'actif', role: { code: 'superadmin' } },
+      select: { id: true },
+    });
+    const avant = await db.notification.count({ where: { type: 'inscription' } });
+
+    await deposer().send(DEMANDE_VALIDE).expect(201);
+
+    const prospect = await db.prospect.findFirstOrThrow({ orderBy: { id: 'desc' } });
+    const notifications = await db.notification.findMany({
+      where: { type: 'inscription' },
+      orderBy: { id: 'desc' },
+      take: superadmins.length,
+      select: { user_id: true, contenu: true, canal: true },
+    });
+
+    expect(await db.notification.count({ where: { type: 'inscription' } })).toBe(
+      avant + superadmins.length,
+    );
+
+    // Chaque administrateur, et personne d'autre : un prospect naît sans
+    // commercial, et leur écran ne montre que leur portefeuille.
+    expect(new Set(notifications.map((n) => n.user_id.toString()))).toEqual(
+      new Set(superadmins.map((compte) => compte.id.toString())),
+    );
+
+    // NI LE NOM DU CONTACT, NI SON TÉLÉPHONE : ce texte part aussi par e-mail
+    // et dort ensuite dans une boîte, hors de toute purge. L'alerte dit où
+    // regarder ; les coordonnées restent dans le CRM.
+    for (const notification of notifications) {
+      expect(notification.contenu).toContain(DEMANDE_VALIDE.etablissement_nom);
+      expect(notification.contenu).not.toContain(DEMANDE_VALIDE.contact_nom);
+      expect(notification.contenu).not.toContain(DEMANDE_VALIDE.telephone);
+    }
+
+    await db.notification.deleteMany({ where: { type: 'inscription' } });
+    await db.journalAudit.deleteMany({ where: { cible_id: prospect.id, cible_type: 'prospect' } });
+    await db.prospect.delete({ where: { id: prospect.id } });
+  });
+
   it('accepte une demande réduite au strict nécessaire', async () => {
     await deposer()
       .send({

@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AuditService } from '../../common/audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ProspectSource, ProspectStatut } from '../../generated/prisma';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, ProspectSource, ProspectStatut } from '../../generated/prisma';
 import { InscriptionDto } from './dto/inscription.dto';
 
 /**
@@ -26,6 +27,7 @@ export class InscriptionsService {
   constructor(
     private readonly db: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async deposer(dto: InscriptionDto) {
@@ -71,6 +73,40 @@ export class InscriptionsService {
     });
 
     this.logger.log(`Demande de référencement — ${prospect.etablissement_nom}`);
+
+    /**
+     * L'ADMINISTRATION EST PRÉVENUE, ET ELLE SEULE (B-46).
+     *
+     * C'était le seul événement commercial du produit que rien ne signalait :
+     * une école demandait à être référencée, et l'information attendait qu'un
+     * humain pense à ouvrir le CRM. Pour un annuaire dont le modèle est que
+     * les établissements paient leur visibilité, c'est l'alerte qui rapporte
+     * le plus.
+     *
+     * PAS LES COMMERCIAUX, bien que ce soit leur métier. Un prospect naît sans
+     * commercial, et l'attribution est un acte d'administration (RG17) : leur
+     * écran ne montre que leur portefeuille, donc prévenir tout le monde d'un
+     * dossier que personne ne peut encore prendre créerait une course là où le
+     * livrable veut une décision.
+     *
+     * `sansRompre` PARCE QUE LA DEMANDE EST LE BIEN. Elle est déjà enregistrée
+     * et visible dans la colonne « Nouveaux » : la perdre parce qu'on n'a pas
+     * su prévenir serait absurde.
+     *
+     * NI LE NOM DU CONTACT, NI SON TÉLÉPHONE dans le texte, bien qu'on les
+     * ait sous la main. Ce contenu part aussi par e-mail et dort ensuite dans
+     * la boîte de chaque administrateur, hors de toute purge. Le rôle d'une
+     * alerte est de dire OÙ REGARDER ; les coordonnées vivent dans le CRM,
+     * qui les protège et les anonymise à douze mois. C'est la même
+     * minimisation que partout ailleurs (loi 09-08).
+     */
+    await this.notifications.sansRompre(() =>
+      this.notifications.pourAdministration(
+        this.db,
+        NotificationType.inscription,
+        `${prospect.etablissement_nom}${dto.ville ? ` (${dto.ville})` : ''} demande à être référencé.`,
+      ),
+    );
 
     /**
      * LA RÉPONSE NE REND PAS L'IDENTIFIANT. Il n'ouvre aucun écran côté

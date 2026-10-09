@@ -3,11 +3,17 @@ import { Throttle } from '@nestjs/throttler';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { randomBytes } from 'node:crypto';
+import { ConfigService } from '@nestjs/config';
 import { Public, Utilisateur } from '../../common/decorators';
-import { AuthService } from './auth.service';
+import { MailService } from '../mail/mail.service';
+import { modeleReinitialisation } from '../mail/modeles-mail';
+import { AuthService, TTL_JETON_RESET_MS } from './auth.service';
 import { LoginDto, MotDePasseOublieDto, ResetMotDePasseDto } from './dto';
 import { NOM_COOKIE_CSRF } from './csrf.middleware';
 import type { UtilisateurAuthentifie } from './session.types';
+
+/** Ce que l'e-mail annonce — dérivé du TTL réel, jamais recopié. */
+const TTL_JETON_RESET_HEURES = Math.round(TTL_JETON_RESET_MS / 3_600_000);
 
 /**
  * Promisifie les rappels d'express-session, qui suivent la convention Node
@@ -42,7 +48,16 @@ function promesse(action: (rappel: (erreur?: unknown) => void) => void): Promise
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly mail: MailService,
+    private readonly config: ConfigService,
+  ) {}
+
+  /** Racine publique du site, sans barre oblique finale. */
+  private appUrl(): string {
+    return (this.config.get<string>('APP_URL') ?? '').replace(/\/+$/, '');
+  }
 
   /**
    * Ouverture de session.
@@ -137,10 +152,34 @@ export class AuthController {
   async motDePasseOublie(@Body() dto: MotDePasseOublieDto): Promise<{ message: string }> {
     const jeton = await this.auth.demanderReinitialisation(dto.email);
 
-    // LOT 3 — le jeton part en file `mail` dès l'introduction de BullMQ
-    // (livrable 11 §6, docs/BACKLOG.md B-20). Il n'est jamais journalisé ni
-    // renvoyé au client : le connaître suffirait à changer le mot de passe.
-    void jeton;
+    if (jeton) {
+      /**
+       * SANS `await`, ET C'EST UNE MESURE DE SÉCURITÉ, pas une optimisation.
+       *
+       * Tout ce formulaire est construit pour ne pas dire si l'adresse existe :
+       * le message rendu est le même dans les deux cas. Attendre l'envoi
+       * défirait ce travail par la bande — la réponse mettrait une seconde
+       * quand le compte existe et dix millisecondes sinon, et il suffirait de
+       * chronométrer pour reconstituer l'annuaire des comptes.
+       *
+       * L'envoi part donc en parallèle de la réponse. `MailService` avale ses
+       * propres erreurs ; il n'y a aucun rejet à rattraper ici.
+       *
+       * PAS PAR LA FILE `notifications`, contrairement aux cinq autres
+       * messages : celui-ci s'adresse à quelqu'un qui n'est PAS connecté, et
+       * l'afficher dans une cloche qu'il ne peut pas ouvrir n'aurait aucun
+       * sens. Il ne doit pas non plus attendre jusqu'à une minute — le jeton
+       * ne vaut qu'une heure, et qui ne voit rien arriver redemande un lien,
+       * ce qui invalide le premier.
+       */
+      void this.mail.envoyer(
+        modeleReinitialisation(
+          dto.email,
+          `${this.appUrl()}/mot-de-passe?jeton=${encodeURIComponent(jeton)}`,
+          TTL_JETON_RESET_HEURES,
+        ),
+      );
+    }
 
     return {
       message:

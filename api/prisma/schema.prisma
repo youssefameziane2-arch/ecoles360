@@ -821,6 +821,9 @@ enum NotificationType {
   demande
   moderation
   proposition_fiche
+  /// Référencement demandé depuis le site public (RG17) — mène au CRM, pas à
+  /// l'écran des établissements comme `demande`.
+  inscription
 }
 
 enum NotificationCanal {

@@ -16,6 +16,10 @@ const DESTINATION: Record<TypeNotification, { admin: string; espace: string }> =
   proposition_fiche: { admin: '/admin/propositions', espace: '/espace/fiche' },
   echeance_abonnement: { admin: '/admin/facturation', espace: '/espace/facturation' },
   plafond_vue_atteint: { admin: '/admin/facturation', espace: '/espace/facturation' },
+  // L'ADMINISTRATION SEULE reçoit celui-ci : une école qui demande à être
+  // référencée n'a pas encore d'espace. La seconde branche n'existe que parce
+  // que la carte est totale.
+  inscription: { admin: '/admin/crm', espace: '/espace' },
 };
 
 const ICONE: Record<TypeNotification, string> = {
@@ -24,6 +28,9 @@ const ICONE: Record<TypeNotification, string> = {
   proposition_fiche: 'pencil',
   echeance_abonnement: 'credit-card',
   plafond_vue_atteint: 'bar-chart',
+  // `flag`, comme l'entrée « CRM Clients » du menu : l'icône de la cloche et
+  // celle de l'écran où elle mène doivent se reconnaître.
+  inscription: 'flag',
 };
 
 /**

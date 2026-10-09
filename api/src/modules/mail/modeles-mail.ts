@@ -34,6 +34,10 @@ const CHEMIN: Record<NotificationType, { administration: string; etablissement: 
     administration: '/admin/facturation',
     etablissement: '/espace/facturation',
   },
+  // L'établissement ne reçoit jamais ce type : une inscription le concerne
+  // AVANT qu'il ait un compte. La seconde branche n'est là que parce que la
+  // carte est totale, et mène au plus proche.
+  inscription: { administration: '/admin/crm', etablissement: '/espace' },
 };
 
 /** Le sujet par type — volontairement neutre, voir l'en-tête. */
@@ -43,6 +47,7 @@ const SUJET: Record<NotificationType, string> = {
   proposition_fiche: 'Une modification de fiche attend sa validation',
   echeance_abonnement: 'Votre abonnement arrive à échéance',
   plafond_vue_atteint: 'Plafond de vues atteint',
+  inscription: 'Une école demande à être référencée',
 };
 
 export interface ContexteNotification {
