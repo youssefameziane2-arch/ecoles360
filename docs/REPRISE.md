@@ -104,9 +104,35 @@ bandeau vert de la PR.
 
 C'est une exception à ce que pose `CLAUDE.md` — « une PR verte vaut preuve
 d'exécution ». Elle vaut pour `api` et `web`, qui tournent bien sur chaque PR ;
-**elle ne vaut pas pour `images`**. La première preuve viendra de la **fusion
-dans `main`**, et la seconde du premier tag `v*`. Avant cela, ce job est du
-code vraisemblable, pas du code vérifié — ne pas l'annoncer autrement.
+**elle ne vaut pas pour `images`**. Avant qu'il ait tourné, ce job est du code
+vraisemblable, pas du code vérifié — ne pas l'annoncer autrement.
+
+### Le prouver sans mettre `main` en jeu
+
+`api` et `web` n'ont **aucune condition** : ils tournent sur tout déclencheur,
+poussée de tag comprise. Et `images` se déclenche sur `refs/tags/v*`, pas
+seulement sur `main`. Un **tag jetable** exécute donc la chaîne entière —
+tests, construction, publication — sur ce qui sera fusionné, et un échec porte
+sur le tag plutôt que sur `main`, que `CLAUDE.md` veut toujours vert.
+
+```bash
+git tag v0.0.0-essai-images <sha> && git push origin v0.0.0-essai-images
+```
+
+C'est aussi le **seul** cas qui exerce la double étiquette : sur `main` une
+seule est publiée, sur un tag `v*` les deux.
+
+Nettoyage, une fois la vérification faite :
+
+```bash
+git push --delete origin v0.0.0-essai-images && git tag -d v0.0.0-essai-images
+```
+
+⚠️ **Supprimer le tag Git n'efface pas les images publiées.** Les deux paquets
+`ecoles360-api` et `ecoles360-web` garderont l'étiquette `v0.0.0-essai-images`
+dans *Settings → Packages*, et c'est une suppression séparée, à la main. Rien
+ne presse — ils sont privés — mais laisser traîner une étiquette d'essai à
+côté des vraies versions finit par faire déployer la mauvaise.
 
 ### ⛔ Le serveur ne pourra pas tirer les images en l'état
 
