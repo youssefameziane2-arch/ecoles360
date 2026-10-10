@@ -126,8 +126,22 @@ Deux issues, et le choix n'est pas que technique :
 | **Rendre les paquets publics** | *Package settings → Change visibility*. Simple, rien à installer sur le VPS. Mais **les images deviennent lisibles par tout internet** : le code compilé de l'API et du front d'un produit payant, téléchargeable par n'importe qui, concurrents compris. |
 | **Authentifier le VPS** *(recommandé)* | `docker login ghcr.io` avec un jeton portant `read:packages`, posé une fois sur la machine. Les images restent privées. Coût : un secret de plus à gérer et à faire tourner, et une étape que `deploy.sh` doit documenter. |
 
-**À soumettre au client** : c'est lui qui décide si le code compilé de son
-produit payant est public. Préparer les deux, ne pas trancher.
+**Préférence du client (10 octobre 2026) : authentifier le VPS.** Son argument
+vaut d'être retenu : **l'image API porte le code serveur, quand l'image web ne
+contient que ce qui est déjà servi aux visiteurs.** Les deux n'ont pas la même
+valeur de secret, et c'est l'API qui justifie à elle seule de garder le
+registre fermé.
+
+⏳ **Le vrai risque n'est pas la fuite, c'est l'expiration du jeton.** Le jour
+où il expire, `docker compose pull` échoue sur le VPS — pendant un
+déploiement, souvent un correctif urgent, avec un message d'authentification
+qu'on prend d'abord pour une panne de registre. **Inscrire la date
+d'expiration dans la procédure de déploiement**, pas seulement dans la tête de
+celui qui a créé le jeton.
+
+**La décision finale reste ouverte** : elle ne se joue qu'au premier
+déploiement, quand le VPS existera et que le coût réel de chaque option se
+verra. Préparer les deux. Détail en B-59.
 
 **Entrées de backlog liées — et elles ne se prennent pas de la même façon.**
 

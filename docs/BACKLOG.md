@@ -1419,7 +1419,26 @@ téléchargeable par tout internet, concurrents compris.
 *(b)* Authentifier le VPS par `docker login ghcr.io` avec un jeton portant
 `read:packages` — les images restent privées ; coût : un secret de plus à
 gérer et à renouveler, et une étape que `deploy.sh` doit documenter.
-La seconde est recommandée. La première se défend si le client juge le code
-compilé sans valeur de secret.
-**Statut :** à trancher — client (le code compilé de son produit payant
-devient-il public ?).
+**Préférence du client, exprimée le 10 octobre 2026 :** *(b)*, authentifier le
+VPS plutôt que rendre les paquets publics. Son argument est plus fin que
+« privé vaut mieux que public » : **l'image API porte le code serveur, quand
+l'image web ne contient que ce qui est déjà servi aux visiteurs.** Les deux
+n'ont donc pas la même valeur de secret, et c'est l'API qui justifie à elle
+seule de garder le registre fermé.
+
+*(Corollaire que cet argument ouvre, et que personne n'a demandé : rien
+n'oblige à traiter les deux paquets pareil. `ecoles360-web` pourrait être
+public et `ecoles360-api` privé — le VPS s'authentifierait quand même, donc
+le gain serait mince. Noté pour mémoire, pas proposé.)*
+
+**LE VRAI RISQUE N'EST PAS LA FUITE, C'EST L'EXPIRATION.** Un jeton
+`read:packages` a une date de fin ; le jour où il expire, `docker compose
+pull` échoue sur le VPS, et la panne survient au pire moment — pendant un
+déploiement, souvent un correctif urgent, avec un message d'authentification
+qu'on prend d'abord pour une erreur de registre. **La date d'expiration doit
+être inscrite dans la procédure de déploiement**, pas seulement dans la tête
+de celui qui a créé le jeton.
+
+**Statut :** à trancher — client. Préférence exprimée pour *(b)*, **décision
+finale ouverte** : elle ne se joue qu'au premier déploiement, quand le VPS
+existera et que le coût réel de chaque option se verra.
