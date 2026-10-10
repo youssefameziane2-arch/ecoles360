@@ -6,6 +6,11 @@ public gratuit pour les parents ; les établissements paient leur visibilité.
 Ce fichier est lu au démarrage de chaque session. Il dit ce qu'on ne peut pas
 deviner en lisant le code.
 
+> **Reprendre le travail : lire `docs/REPRISE.md` d'abord.** Il porte l'état
+> exact du dépôt, la tâche suivante, ce qui attend une décision du client, et
+> les pièges de ce poste. Le tenir à jour à chaque arrêt — un document de
+> reprise périmé est pire que pas de document, parce qu'on le croit.
+
 ---
 
 ## Ce qui ne se négocie pas

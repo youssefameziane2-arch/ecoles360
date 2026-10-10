@@ -42,6 +42,12 @@ Sources `.dc.html` des livrables (nécessitent `support.js` et `doc-page.js`),
 maquettes, captures d'écran, PDF, `ecoles360.sql`, `PROMPT Claude Code - Lot 1.md`
 et `CLAUDE-design-project.md` (état du projet côté conception).
 
+## `REPRISE.md`
+
+**Où le travail s'est arrêté.** État du dépôt, tâche suivante, ce qui attend une
+décision du client, pièges de ce poste. À lire en premier quand on reprend, et
+à mettre à jour à chaque arrêt.
+
 ## `BACKLOG.md`
 
 Besoins identifiés **hors périmètre du lot en cours**, à arbitrer avant implémentation.
