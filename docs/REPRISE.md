@@ -49,27 +49,50 @@ une connexion de loin en loin sur une suite complète. Le symptôme est un
 
 ## Ce qui vient ensuite : les images Docker depuis la CI
 
-**C'est la seule tâche non bloquée qui reste**, et elle commande tout le
-déploiement.
+**Le job `images` existe déjà** dans `.github/workflows/ci.yml` (commit
+`fd96269`) : il construit `ecoles360-api` et `ecoles360-web`, les pousse sur
+ghcr.io avec `GITHUB_TOKEN` et `packages: write`, après `api` et `web`, sur
+`main` et les tags `v*`. Ce que cette section annonçait comme manquant ne
+l'était pas.
 
-**Le constat.** `docker-compose.prod.yml` tire ses images de
-`ghcr.io/${GH_ORG}/ecoles360-api:${TAG}` et `…/ecoles360-web:${TAG}`. Les deux
-`Dockerfile` existent (`api/Dockerfile`, `web/Dockerfile`). Mais
-`.github/workflows/ci.yml` ne fait qu'installer, linter, construire et tester :
-**rien ne publie d'image**. Le fichier de production réclame donc quelque chose
-que la chaîne ne produit pas, et aucun déploiement n'est possible.
+**Ce qui manquait réellement, et qui est corrigé (non commité) :** le
+déclencheur `push` ne listait pas `tags: ['v*']`, donc la condition `refs/tags/v`
+du job ne pouvait jamais être vraie.
 
-**À faire :** un job qui construit les deux images et les pousse sur GHCR,
-étiquetées par le tag Git, avec `GITHUB_TOKEN` et `packages: write`.
+**Étiquetage : le SHA du commit, pas le tag Git.** Un tag `v*` déclenche la
+construction, mais l'image reste nommée par SHA. Ce n'est pas un oubli : le
+`deploy.sh` du livrable 14 fait `SHA="$1"` puis `echo "TAG=$SHA" > .env.tag`,
+avec le commentaire « le tag devient l'unique variable de version », et le
+retour arrière s'écrit `./deploy.sh <sha-precedent>`. **`TAG` ne vaut donc
+jamais `v1.0.0` : il vaut un SHA.** Ajouter `:${{ github.ref_name }}` ne
+casserait rien, mais produirait une étiquette que rien ne tire.
 
-**À lire avant d'écrire :** le livrable 14 (`docs/Livrable 14 - Déploiement
-CI-CD (hors-ligne).html`) — c'est lui qui fixe la topologie, les noms d'images
-et la stratégie d'étiquetage. **Ne pas inventer ces noms** : `docker-compose.prod.yml`
-les attend déjà.
+Le job de ce dépôt reprend **mot pour mot** celui du livrable 14 §3, y compris
+`${{ github.repository_owner }}` sans mise en minuscules. ghcr.io refuse les
+majuscules dans un nom d'image : cela tiendra tant que le propriétaire du
+dépôt en est dépourvu — c'est le cas de `youssefameziane2-arch`. Si le dépôt
+passait sous une organisation à majuscule, il faudrait abaisser la casse. **Ne
+pas le faire par avance** : ce serait s'écarter d'un extrait verbatim du
+livrable pour un risque qui n'existe pas aujourd'hui.
 
-**Entrées de backlog liées :** B-04 (lockfile dans les Dockerfiles de
-production), B-10 (jobs CI `web`, `images` et `e2e`) — toutes deux **à
-arbitrer**, donc exposer les options plutôt que trancher.
+**Jamais exécuté.** La branche n'est pas poussée : le job n'a donc jamais
+tourné sur GitHub. Il ne se prouvera qu'à la première exécution sur `main` ou
+sur un tag.
+
+**Entrées de backlog liées — et elles ne se prennent pas de la même façon.**
+
+- **B-04** (lockfile dans les Dockerfiles de production) est **`à arbitrer`** :
+  une décision du client est attendue. Le lockfile racine est déjà copié dans
+  les deux Dockerfiles ; reste à ratifier la proposition.
+- **B-10** (jobs CI `web`, `images`, `e2e`) est **`planifié`**, donc **se
+  prend librement** — `CLAUDE.md` est explicite : « `à faire` et `planifié` se
+  prennent librement ; ce qui manque est du travail, pas un arbitrage ». Reste
+  `e2e`, qui suppose un staging déployé.
+
+*(Une version antérieure de ce document rangeait B-10 parmi les entrées à
+arbitrer. C'était faux, et ce genre d'erreur coûte cher dans les deux sens :
+on soumet au client ce qu'on pouvait faire, ou l'on tranche ce qui ne nous
+appartient pas. Le statut se lit dans l'entrée, pas de mémoire.)*
 
 Ensuite seulement : le déploiement lui-même, qui demande un serveur.
 
