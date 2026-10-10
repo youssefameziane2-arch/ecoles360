@@ -85,16 +85,29 @@ n'en porte aucune — et casserait sous une organisation qui en porte, avec une
 erreur qu'on ne verrait qu'à ce moment-là. C'est le seul écart assumé avec
 l'extrait verbatim du livrable 14 §3.
 
-**La CONSTRUCTION est vérifiée, la PUBLICATION ne l'est pas.** Les deux images
-ont été construites en local avec les paramètres exacts de la CI — contexte à
-la racine, `target: runtime` pour l'API — et l'image API porte bien
-`dist/main.js` et le moteur Prisma Linux. Ce qui restait le plus douteux est
-donc écarté : les `Dockerfile` tiennent, le contexte racine est le bon, et le
-client Prisma arrive dans l'image sous sa variante `linux-musl`.
+### ✅ Le job est prouvé — tag `v0.0.0-essai-images`, 10 octobre 2026
 
-Ne reste à prouver que **la publication** : l'authentification sur ghcr.io, la
-poussée, et le nommage effectif des étiquettes. Cela ne se voit que sur
-GitHub.
+Les trois jobs sont sortis verts sur un **tag jetable posé sur `b6fd7a9`**, la
+tête de la branche. Rien n'a été fusionné pour l'obtenir : `api` et `web`
+n'ont aucune condition et tournent sur une poussée de tag, et `images` se
+déclenche sur `refs/tags/v*` autant que sur `main`. Un échec aurait porté sur
+le tag, pas sur `main` — que `CLAUDE.md` veut toujours vert.
+
+Ce que cette exécution établit, et qu'aucune autre n'aurait établi :
+
+| | |
+|---|---|
+| Construction | les deux `Dockerfile` tiennent avec le contexte à la racine ; l'image API porte `dist/main.js` et le moteur Prisma `linux-musl` *(déjà vérifié en local auparavant)* |
+| Authentification | `GITHUB_TOKEN` ouvre bien la poussée sur ghcr.io |
+| Nom d'image | le propriétaire en minuscules sort correct |
+| **Les DEUX étiquettes ensemble** | le SHA **et** `v0.0.0-essai-images`, sur chacune des deux images |
+
+**La double étiquette est le point.** C'est le seul cas de figure qui exerce
+le code ajouté le 10 octobre : sur `main`, une seule sortirait. **La chaîne
+qui servira à `v1.0.0` a donc été répétée en vrai**, pas seulement relue.
+
+Reste non prouvé : **le tirage depuis le VPS** — voir le blocage GHCR plus
+bas, qui ne se jouera qu'au premier déploiement.
 
 ⚠️ **ET UNE PULL REQUEST VERTE NE LE PROUVERA PAS.** Sa condition est
 `github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')` ;
@@ -104,35 +117,35 @@ bandeau vert de la PR.
 
 C'est une exception à ce que pose `CLAUDE.md` — « une PR verte vaut preuve
 d'exécution ». Elle vaut pour `api` et `web`, qui tournent bien sur chaque PR ;
-**elle ne vaut pas pour `images`**. Avant qu'il ait tourné, ce job est du code
-vraisemblable, pas du code vérifié — ne pas l'annoncer autrement.
+**elle ne vaut pas pour `images`**. L'avertissement garde tout son sens
+maintenant que le job est prouvé par ailleurs : la PR continuera d'afficher
+« skipped », et il ne faudra pas y lire une régression.
 
-### Le prouver sans mettre `main` en jeu
+### Refaire la preuve, le jour où ce job change
 
-`api` et `web` n'ont **aucune condition** : ils tournent sur tout déclencheur,
-poussée de tag comprise. Et `images` se déclenche sur `refs/tags/v*`, pas
-seulement sur `main`. Un **tag jetable** exécute donc la chaîne entière —
-tests, construction, publication — sur ce qui sera fusionné, et un échec porte
-sur le tag plutôt que sur `main`, que `CLAUDE.md` veut toujours vert.
+La recette tient en deux lignes, et elle resservira à chaque modification du
+job `images` :
 
 ```bash
 git tag v0.0.0-essai-images <sha> && git push origin v0.0.0-essai-images
-```
-
-C'est aussi le **seul** cas qui exerce la double étiquette : sur `main` une
-seule est publiée, sur un tag `v*` les deux.
-
-Nettoyage, une fois la vérification faite :
-
-```bash
 git push --delete origin v0.0.0-essai-images && git tag -d v0.0.0-essai-images
 ```
 
-⚠️ **Supprimer le tag Git n'efface pas les images publiées.** Les deux paquets
-`ecoles360-api` et `ecoles360-web` garderont l'étiquette `v0.0.0-essai-images`
-dans *Settings → Packages*, et c'est une suppression séparée, à la main. Rien
-ne presse — ils sont privés — mais laisser traîner une étiquette d'essai à
-côté des vraies versions finit par faire déployer la mauvaise.
+### 🧹 Reste à faire à la main : les deux paquets d'essai
+
+⚠️ **Supprimer le tag Git n'efface pas les images publiées.** Le tag
+`v0.0.0-essai-images` a été retiré du dépôt, local et distant, le 10 octobre
+2026 — **mais les images, elles, sont toujours sur ghcr.io.**
+
+Les deux paquets `ecoles360-api` et `ecoles360-web` portent encore cette
+étiquette dans *Settings → Packages*. La suppression est séparée et se fait
+**à la main**, paquet par paquet, depuis l'interface GitHub.
+
+Rien ne presse — ils sont privés, personne ne les voit. Mais **une étiquette
+d'essai laissée à côté des vraies versions finit par être déployée** : elle
+ressemble à une version, elle se trie avec les versions, et le jour d'un
+déploiement pressé elle ne se distingue pas de `v1.0.0`. À nettoyer avant la
+première vraie publication.
 
 ### ⛔ Le serveur ne pourra pas tirer les images en l'état
 
