@@ -15,13 +15,13 @@ pas de document, parce qu'on le croit.
 
 | | |
 |---|---|
-| Branche | `feat/purges-loi-09-08`, **19 commits d'avance sur `main`** |
+| Branche | `feat/purges-loi-09-08`, **20 commits d’avance sur `main`** |
 | Tests | **411 verts, 23 suites** — vérifiés dans le conteneur |
 | Arbre | propre, rien en cours |
 | Migrations | **19**, toutes appliquées en `ecoles360_dev` et `ecoles360_test` |
 | Écrans | **36 complets · 8 partiels · 1 restant** sur 45 (`INVENTAIRE-MAQUETTE.md`) |
 
-⚠️ **Les 6 derniers commits ne sont pas poussés** (`2775e2a` … `11b217d`).
+⚠️ **Les 7 derniers commits ne sont pas poussés** (`edfd2e4` … `11b217d`).
 Vérifier avant toute chose :
 
 ```bash
