@@ -59,25 +59,46 @@ l'était pas.
 déclencheur `push` ne listait pas `tags: ['v*']`, donc la condition `refs/tags/v`
 du job ne pouvait jamais être vraie.
 
-**Étiquetage : le SHA du commit, pas le tag Git.** Un tag `v*` déclenche la
-construction, mais l'image reste nommée par SHA. Ce n'est pas un oubli : le
-`deploy.sh` du livrable 14 fait `SHA="$1"` puis `echo "TAG=$SHA" > .env.tag`,
-avec le commentaire « le tag devient l'unique variable de version », et le
-retour arrière s'écrit `./deploy.sh <sha-precedent>`. **`TAG` ne vaut donc
-jamais `v1.0.0` : il vaut un SHA.** Ajouter `:${{ github.ref_name }}` ne
-casserait rien, mais produirait une étiquette que rien ne tire.
+**Étiquetage : deux étiquettes sur un tag Git, une seule sur `main`.**
 
-Le job de ce dépôt reprend **mot pour mot** celui du livrable 14 §3, y compris
-`${{ github.repository_owner }}` sans mise en minuscules. ghcr.io refuse les
-majuscules dans un nom d'image : cela tiendra tant que le propriétaire du
-dépôt en est dépourvu — c'est le cas de `youssefameziane2-arch`. Si le dépôt
-passait sous une organisation à majuscule, il faudrait abaisser la casse. **Ne
-pas le faire par avance** : ce serait s'écarter d'un extrait verbatim du
-livrable pour un risque qui n'existe pas aujourd'hui.
+Le **SHA** est celle du livrable 14, et elle est publiée dans tous les cas :
+son `deploy.sh` fait `SHA="$1"` puis `TAG=$SHA`, et le retour arrière s'écrit
+`./deploy.sh <sha-precedent>`. Elle désigne un commit sans ambiguïté et ne
+bouge jamais.
+
+Le **tag de version** (`v1.0.0`) s'y ajoute depuis le 10 octobre 2026, à la
+demande du client : déployer en écrivant `TAG=v1.0.0` dans `.env.prod` se
+relit mieux qu'un SHA de quarante caractères. Les deux cohabitent, le SHA
+reste la référence du livrable.
+
+**Sur un tag Git seulement, et c'est le point délicat.** Sur une poussée vers
+`main`, `github.ref_name` vaut « main » : on publierait `ecoles360-api:main`,
+une étiquette FLOTTANTE dont le contenu change à chaque fusion — ce que le
+livrable écarte en interdisant `:latest`. Deux déploiements du même « main »
+ne donneraient pas la même image, et un retour arrière ne voudrait plus rien
+dire.
+
+**Le propriétaire du dépôt passe en minuscules** avant d'entrer dans le nom
+d'image. ghcr.io refuse les majuscules et `github.repository_owner` rend le
+nom tel qu'il est écrit : cela passe aujourd'hui — `youssefameziane2-arch`
+n'en porte aucune — et casserait sous une organisation qui en porte, avec une
+erreur qu'on ne verrait qu'à ce moment-là. C'est le seul écart assumé avec
+l'extrait verbatim du livrable 14 §3.
 
 **Jamais exécuté.** La branche n'est pas poussée : le job n'a donc jamais
-tourné sur GitHub. Il ne se prouvera qu'à la première exécution sur `main` ou
-sur un tag.
+tourné sur GitHub.
+
+⚠️ **ET UNE PULL REQUEST VERTE NE LE PROUVERA PAS.** Sa condition est
+`github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')` ;
+sur une PR, `github.ref` vaut `refs/pull/<n>/merge`, donc **le job est sauté**.
+GitHub affiche un « skipped » qui ne se distingue pas d'un succès dans le
+bandeau vert de la PR.
+
+C'est une exception à ce que pose `CLAUDE.md` — « une PR verte vaut preuve
+d'exécution ». Elle vaut pour `api` et `web`, qui tournent bien sur chaque PR ;
+**elle ne vaut pas pour `images`**. La première preuve viendra de la **fusion
+dans `main`**, et la seconde du premier tag `v*`. Avant cela, ce job est du
+code vraisemblable, pas du code vérifié — ne pas l'annoncer autrement.
 
 **Entrées de backlog liées — et elles ne se prennent pas de la même façon.**
 
