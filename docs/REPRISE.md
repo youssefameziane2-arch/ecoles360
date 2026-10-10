@@ -55,9 +55,9 @@ ghcr.io avec `GITHUB_TOKEN` et `packages: write`, après `api` et `web`, sur
 `main` et les tags `v*`. Ce que cette section annonçait comme manquant ne
 l'était pas.
 
-**Ce qui manquait réellement, et qui est corrigé (non commité) :** le
-déclencheur `push` ne listait pas `tags: ['v*']`, donc la condition `refs/tags/v`
-du job ne pouvait jamais être vraie.
+**Ce qui manquait réellement, et qui est corrigé :** le déclencheur `push` ne
+listait pas `tags: ['v*']`, donc la condition `refs/tags/v` du job ne pouvait
+jamais être vraie.
 
 **Étiquetage : deux étiquettes sur un tag Git, une seule sur `main`.**
 
@@ -85,8 +85,16 @@ n'en porte aucune — et casserait sous une organisation qui en porte, avec une
 erreur qu'on ne verrait qu'à ce moment-là. C'est le seul écart assumé avec
 l'extrait verbatim du livrable 14 §3.
 
-**Jamais exécuté.** La branche n'est pas poussée : le job n'a donc jamais
-tourné sur GitHub.
+**La CONSTRUCTION est vérifiée, la PUBLICATION ne l'est pas.** Les deux images
+ont été construites en local avec les paramètres exacts de la CI — contexte à
+la racine, `target: runtime` pour l'API — et l'image API porte bien
+`dist/main.js` et le moteur Prisma Linux. Ce qui restait le plus douteux est
+donc écarté : les `Dockerfile` tiennent, le contexte racine est le bon, et le
+client Prisma arrive dans l'image sous sa variante `linux-musl`.
+
+Ne reste à prouver que **la publication** : l'authentification sur ghcr.io, la
+poussée, et le nommage effectif des étiquettes. Cela ne se voit que sur
+GitHub.
 
 ⚠️ **ET UNE PULL REQUEST VERTE NE LE PROUVERA PAS.** Sa condition est
 `github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')` ;
@@ -99,6 +107,27 @@ d'exécution ». Elle vaut pour `api` et `web`, qui tournent bien sur chaque PR 
 **elle ne vaut pas pour `images`**. La première preuve viendra de la **fusion
 dans `main`**, et la seconde du premier tag `v*`. Avant cela, ce job est du
 code vraisemblable, pas du code vérifié — ne pas l'annoncer autrement.
+
+### ⛔ Le serveur ne pourra pas tirer les images en l'état
+
+**GHCR crée tout nouveau paquet en PRIVÉ.** Le `deploy.sh` du livrable 14 fait
+un `docker compose pull` nu, sans `docker login` : sur le VPS, il recevra un
+refus d'authentification, et le déploiement s'arrêtera là. Le livrable ne
+traite nulle part l'accès au registre au moment du tirage — **c'est un trou du
+livrable, pas seulement du code.**
+
+Publier marchera (la CI s'authentifie avec `GITHUB_TOKEN`). C'est **tirer**
+qui échouera.
+
+Deux issues, et le choix n'est pas que technique :
+
+| | Ce que cela implique |
+|---|---|
+| **Rendre les paquets publics** | *Package settings → Change visibility*. Simple, rien à installer sur le VPS. Mais **les images deviennent lisibles par tout internet** : le code compilé de l'API et du front d'un produit payant, téléchargeable par n'importe qui, concurrents compris. |
+| **Authentifier le VPS** *(recommandé)* | `docker login ghcr.io` avec un jeton portant `read:packages`, posé une fois sur la machine. Les images restent privées. Coût : un secret de plus à gérer et à faire tourner, et une étape que `deploy.sh` doit documenter. |
+
+**À soumettre au client** : c'est lui qui décide si le code compilé de son
+produit payant est public. Préparer les deux, ne pas trancher.
 
 **Entrées de backlog liées — et elles ne se prennent pas de la même façon.**
 

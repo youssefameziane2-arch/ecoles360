@@ -1403,3 +1403,23 @@ La commande historique du livrable 13 reste valable et documentée ; elle est
 simplement moins fiable sur ce poste.
 
 **Statut :** fait. 411 tests verts dans le conteneur.
+
+### B-59 · GHCR crée les paquets en privé : le serveur ne pourra pas tirer
+
+**Source :** L14 §4 — `deploy.sh` fait `docker compose pull` sans `docker login`.
+**Constat :** GHCR crée tout nouveau paquet en **privé**. La CI publiera sans
+problème — elle s'authentifie avec `GITHUB_TOKEN` — mais le VPS recevra un
+refus d'authentification au tirage, et le déploiement s'arrêtera là. Le
+livrable ne traite nulle part l'accès au registre au moment du tirage : le
+trou est dans le livrable, pas seulement dans le code.
+**Proposition :** deux issues, et le choix n'est pas que technique.
+*(a)* Rendre les paquets publics — simple, rien à poser sur le VPS, mais le
+code compilé de l'API et du front d'un produit **payant** devient
+téléchargeable par tout internet, concurrents compris.
+*(b)* Authentifier le VPS par `docker login ghcr.io` avec un jeton portant
+`read:packages` — les images restent privées ; coût : un secret de plus à
+gérer et à renouveler, et une étape que `deploy.sh` doit documenter.
+La seconde est recommandée. La première se défend si le client juge le code
+compilé sans valeur de secret.
+**Statut :** à trancher — client (le code compilé de son produit payant
+devient-il public ?).
