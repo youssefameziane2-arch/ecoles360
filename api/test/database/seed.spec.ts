@@ -70,13 +70,43 @@ describe('Seeders (base réelle)', () => {
 
     // Les contraintes sont coupées le temps du nettoyage : un ordre de
     // dépendances correct existerait, mais il faudrait le maintenir lui aussi.
-    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+    //
+    // TOUT SUR UNE SEULE CONNEXION, ET C'EST LA RAISON D'ÊTRE DE CE BLOC.
+    // `FOREIGN_KEY_CHECKS` est une variable de SESSION, donc propre à une
+    // connexion ; Prisma, lui, travaille sur un pool. Les trois instructions
+    // enchaînées hors transaction partaient sur des connexions quelconques :
+    // la désactivation sur l'une, les `TRUNCATE` sur une autre, où les
+    // contraintes étaient restées actives. MySQL refusait alors de vider la
+    // première table référencée, avec l'erreur 1701.
+    //
+    // CE DÉFAUT NE SE VOYAIT QU'UNE FOIS SUR DEUX. Sur un poste de
+    // développement, le pool rend presque toujours la même connexion et la
+    // suite passait ; en intégration continue, elle a échoué sur
+    // `demandes_contact`, référencée par `leads`. Un échec intermittent dans
+    // un test de nettoyage fait douter du code métier, qui n'y est pour rien.
+    //
+    // `$transaction` interactive épingle UNE connexion pour tout le bloc. Elle
+    // ne rend pas l'opération atomique — un `TRUNCATE` provoque une validation
+    // implicite en MySQL — mais ce n'est pas ce qu'on lui demande : on veut
+    // que la variable de session vaille encore quelque chose au moment du
+    // `TRUNCATE`.
+    await prisma.$transaction(
+      async (connexion) => {
+        await connexion.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
 
-    for (const { TABLE_NAME } of tables) {
-      await prisma.$executeRawUnsafe(`TRUNCATE TABLE \`${TABLE_NAME}\``);
-    }
+        for (const { TABLE_NAME } of tables) {
+          await connexion.$executeRawUnsafe(`TRUNCATE TABLE \`${TABLE_NAME}\``);
+        }
 
-    await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
+        await connexion.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
+      },
+      // UN DÉLAI EXPLICITE, parce que le défaut de Prisma est de CINQ
+      // SECONDES. Une trentaine de `TRUNCATE` les tient largement sur un poste,
+      // moins sûrement sur une machine d'intégration continue froide — et
+      // l'expiration remplacerait le défaut qu'on vient de corriger par un
+      // autre, tout aussi intermittent.
+      { timeout: 30_000 },
+    );
   }
 
   const environnementInitial = process.env.NODE_ENV;
