@@ -133,8 +133,12 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=40s \
   CMD node -e "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-# LOT 1 — l'image ne sert que l'API. Les conteneurs `worker` (dist/worker.js) et
-# `scheduler` (dist/scheduler.js) du livrable 14 §2 partagent cette image avec
-# une commande différente ; leurs points d'entrée arrivent avec BullMQ et
-# @nestjs/schedule (docs/BACKLOG.md, B-09).
+# CETTE IMAGE SERT DEUX CONTENEURS. `nest build` compile tout `src/`, et le
+# `COPY` ci-dessus prend tout `dist/` : `dist/scheduler.js` est donc déjà là.
+# Le conteneur `scheduler` du livrable 14 §2 ne fait que remplacer cette
+# commande (voir docker-compose.prod.yml). Rien à ajouter ici — et surtout pas
+# une seconde image, qui ferait deux chaînes de construction à tenir alignées.
+#
+# `dist/worker.js` n'existe pas : BullMQ n'est pas installé, et les purges, qui
+# auraient dû y vivre, tournent dans `scheduler` (docs/BACKLOG.md, B-09).
 CMD ["node", "dist/main.js"]

@@ -343,4 +343,129 @@ describe('FAQ éditoriale (intégration)', () => {
       await admin.put('/admin/faq/ordre').send({ ids }).expect(204);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  //  Catégories d'articles — onglet « Catégories » de « Contenu du site »
+  // ---------------------------------------------------------------------------
+
+  /**
+   * UN RÉFÉRENTIEL, PAS UNE CONTRAINTE. `Article.categorie` reste une chaîne
+   * libre : cette liste dit ce que la rédaction se voit PROPOSER. Les tests
+   * portent donc sur ce que la liste garantit — unicité, place en fin de
+   * liste, et le fait qu'un retrait ne touche aucun article — plutôt que sur
+   * une validation qu'elle n'exerce pas.
+   */
+  describe('catégories d’articles', () => {
+    const jetable = () => `Catégorie Test ${Date.now()}${Math.random().toString(36).slice(2, 5)}`;
+
+    const nettoyerJournal = () =>
+      db.journalAudit.deleteMany({ where: { cible_type: 'categorie_article' } });
+
+    it('est lisible sans être connecté — la rédaction en a besoin', async () => {
+      const reponse = await request(app.getHttpServer())
+        .get('/api/v1/categories-articles')
+        .expect(200);
+
+      expect(Array.isArray(reponse.body.data)).toBe(true);
+    });
+
+    it('ajoute une catégorie en fin de liste, et la journalise', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const libelle = jetable();
+
+      const creee = await admin.post('/admin/categories-articles').send({ libelle }).expect(201);
+
+      const liste = (await request(app.getHttpServer()).get('/api/v1/categories-articles')).body
+        .data as { id: string; libelle: string; ordre: number }[];
+
+      // EN FIN DE LISTE : une nouvelle catégorie ne doit pas s'insérer devant
+      // celles que l'administration a déjà ordonnées.
+      expect(liste[liste.length - 1]?.libelle).toBe(libelle);
+
+      const trace = await db.journalAudit.findFirstOrThrow({
+        where: { action: 'categorie_article.creee', cible_id: BigInt(creee.body.data.id) },
+      });
+      expect(trace.role_acteur).toBe('superadmin');
+
+      await admin.delete(`/admin/categories-articles/${creee.body.data.id}`).expect(200);
+      await nettoyerJournal();
+    });
+
+    it('refuse un doublon', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const libelle = jetable();
+
+      const creee = await admin.post('/admin/categories-articles').send({ libelle }).expect(201);
+      await admin.post('/admin/categories-articles').send({ libelle }).expect(409);
+
+      await admin.delete(`/admin/categories-articles/${creee.body.data.id}`).expect(200);
+      await nettoyerJournal();
+    });
+
+    it('refuse un libellé vide ou trop long', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+
+      await admin.post('/admin/categories-articles').send({ libelle: '   ' }).expect(422);
+      await admin
+        .post('/admin/categories-articles')
+        .send({ libelle: 'x'.repeat(61) })
+        .expect(422);
+    });
+
+    /**
+     * RETIRER NE DÉCLASSE RIEN, et c'est le point qui mérite d'être éprouvé :
+     * un administrateur qui renomme une rubrique retire l'ancienne, et les
+     * articles déjà écrits doivent garder leur libellé.
+     */
+    /**
+     * IL FABRIQUE SA PROPRE DONNÉE, et c'est la correction d'une première
+     * version qui empruntait une catégorie existante puis la reposait. Deux
+     * défauts : elle supposait que la catégorie de n'importe quel article
+     * figure au référentiel — faux dès qu'une autre suite crée un article avec
+     * une catégorie libre —, et un échec entre le retrait et la repose
+     * APPAUVRISSAIT la base pour toutes les exécutions suivantes. C'est arrivé.
+     */
+    it('retire sans toucher aux articles, et dit combien en portent le libellé', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const libelle = jetable();
+
+      const creee = await admin.post('/admin/categories-articles').send({ libelle }).expect(201);
+
+      const article = await db.article.create({
+        data: {
+          titre: `Article ${libelle}`,
+          slug: `article-${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+          categorie: libelle,
+          statut: 'brouillon',
+        },
+        select: { id: true, categorie: true },
+      });
+
+      const retrait = await admin
+        .delete(`/admin/categories-articles/${creee.body.data.id}`)
+        .expect(200);
+
+      expect(retrait.body.data.articles_concernes).toBe(1);
+
+      // L'ARTICLE GARDE SON LIBELLÉ : c'est tout l'intérêt d'un référentiel
+      // qui propose au lieu de contraindre.
+      const apres = await db.article.findUniqueOrThrow({ where: { id: article.id } });
+      expect(apres.categorie).toBe(libelle);
+
+      await db.article.delete({ where: { id: article.id } });
+      await nettoyerJournal();
+    });
+
+    it('répond 404 sur une catégorie inconnue', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+
+      await admin.delete('/admin/categories-articles/9999999').expect(404);
+    });
+
+    it('n’ouvre l’écriture qu’à l’administration (RG25)', async () => {
+      const ecole = await connecte('contact@almassira.ma');
+
+      await ecole.post('/admin/categories-articles').send({ libelle: jetable() }).expect(403);
+    });
+  });
 });

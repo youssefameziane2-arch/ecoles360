@@ -28,6 +28,8 @@ interface TableauDeBord {
     vues_par_jour: { jour: string; vues: number }[];
   };
   top_etablissements: { slug: string; vues: number }[];
+  pipeline: { etape: string; total: number }[];
+  dernieres_factures: { id: string; total_ttc: string; emise_le: string }[];
 }
 
 /**
@@ -340,6 +342,60 @@ describe('Tableau de bord de l’administration (intégration)', () => {
     );
 
     expect(dates.length).toBeLessThanOrEqual(6);
+    expect([...dates].sort((a, b) => b - a)).toEqual(dates);
+  });
+
+  // ---------------------------------------------------------------------------
+  //  Pipeline CRM et dernières factures — B-38, B-39
+  // ---------------------------------------------------------------------------
+
+  /**
+   * LES SIX ÉTAPES, TOUJOURS, MÊME À ZÉRO. `groupBy` ne rend que les étapes
+   * peuplées : s'en contenter ferait disparaître une colonne du graphique dès
+   * qu'elle se vide, et la barre d'à côté paraîtrait s'élargir. C'est un
+   * défaut d'affichage qu'aucune erreur ne signalerait.
+   */
+  it('rend les six étapes du pipeline, dans l’ordre, même vides', async () => {
+    const tableau = await lireTableau();
+    const pipeline = tableau.pipeline as { etape: string; total: number }[];
+
+    expect(pipeline.map((ligne) => ligne.etape)).toEqual([
+      'nouveau',
+      'a_contacter',
+      'chaud',
+      'relance',
+      'transforme',
+      'perdu',
+    ]);
+
+    for (const ligne of pipeline) {
+      expect(ligne.total).toBeGreaterThanOrEqual(0);
+    }
+
+    // La somme est le total des prospects : un décompte qui en oublierait une
+    // partie passerait inaperçu sur un écran de barres.
+    const somme = pipeline.reduce((total, ligne) => total + ligne.total, 0);
+    expect(somme).toBe(await db.prospect.count());
+  });
+
+  it('rend les dernières factures, montants en chaînes, la plus récente d’abord', async () => {
+    const tableau = await lireTableau();
+    const factures = tableau.dernieres_factures as {
+      id: string;
+      total_ttc: string;
+      emise_le: string;
+    }[];
+
+    expect(factures.length).toBeLessThanOrEqual(4);
+
+    for (const facture of factures) {
+      expect(typeof facture.id).toBe('string');
+      // UN `Decimal(10,2)` RENDU EN NOMBRE perd des centimes sur les grands
+      // montants, et une facture est l'endroit où cela se verrait.
+      expect(typeof facture.total_ttc).toBe('string');
+    }
+
+    const dates = factures.map((facture) => new Date(facture.emise_le).getTime());
     expect([...dates].sort((a, b) => b - a)).toEqual(dates);
   });
 });

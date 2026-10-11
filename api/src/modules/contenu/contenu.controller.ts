@@ -1,6 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators';
+import { CategoriesArticlesService } from './categories-articles.service';
 import { FaqService } from './faq.service';
 import { ConseillersService } from './conseillers.service';
 import { PagesCmsService } from './pages-cms.service';
@@ -19,6 +20,7 @@ export class ContenuController {
     private readonly faq: FaqService,
     private readonly conseillers: ConseillersService,
     private readonly pages: PagesCmsService,
+    private readonly categories: CategoriesArticlesService,
   ) {}
 
   @Get('conseillers')
@@ -30,6 +32,23 @@ export class ContenuController {
   })
   conseillersJoignables() {
     return this.conseillers.joignables();
+  }
+
+  /**
+   * PUBLIQUE PARCE QUE LA RÉDACTION EN A BESOIN. L'éditeur d'article sert
+   * l'administration, un établissement et un commercial : réserver la liste à
+   * l'un d'eux obligerait les deux autres à taper leur catégorie à la main, et
+   * le référentiel se remplirait de variantes orthographiques. Il n'y a rien à
+   * protéger ici — ce sont les mêmes libellés qu'affiche déjà chaque article
+   * publié.
+   */
+  @Get('categories-articles')
+  @ApiOperation({
+    summary: 'Catégories proposées à la rédaction',
+    description: 'Référentiel, pas contrainte : `Article.categorie` reste une chaîne libre.',
+  })
+  categoriesArticles() {
+    return this.categories.lister();
   }
 
   @Get('faq')

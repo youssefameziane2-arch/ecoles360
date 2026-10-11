@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   chargerCommissions,
@@ -8,6 +9,7 @@ import {
   type CommissionCrm,
   type StatutCommission,
 } from '@/api/crm';
+import { CalendrierRelances, cleLocale } from '@/components/CalendrierRelances';
 import { AvecIdentite, CoquilleEspace } from '@/components/CoquilleEspace';
 import { PipelineCrm } from '@/components/PipelineCrm';
 import { Badge, Button, EmptyState } from '@/ds/composants';
@@ -86,6 +88,7 @@ export function AgendaCommercial() {
 function Agenda() {
   const queryClient = useQueryClient();
   const relances = useQuery({ queryKey: ['crm', 'relances'], queryFn: chargerRelancesDues });
+  const [jour, setJour] = useState<string | null>(null);
 
   const fait = useMutation({
     mutationFn: (id: string) => effectuerRelance(id),
@@ -94,7 +97,9 @@ function Agenda() {
 
   if (relances.isPending) return <p style={texteDoux}>Chargement…</p>;
 
-  if (relances.data?.length === 0) {
+  const toutes = relances.data ?? [];
+
+  if (toutes.length === 0) {
     return (
       <div style={{ background: '#fff', border: '1px solid #EAE6DE', borderRadius: 16 }}>
         <EmptyState
@@ -107,10 +112,28 @@ function Agenda() {
   }
 
   const aujourdhui = Date.now();
+  const visibles = jour
+    ? toutes.filter((relance) => cleLocale(new Date(relance.prevue_le)) === jour)
+    : toutes;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {relances.data?.map((relance) => {
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <CalendrierRelances
+        dates={toutes.map((relance) => relance.prevue_le)}
+        jourSelectionne={jour}
+        onJour={setJour}
+      />
+
+      {/*
+        UN JOUR SANS RELANCE EST UN CAS NORMAL, pas une erreur : on clique un
+        mardi pour vérifier qu'il est libre. L'écran le dit plutôt que de
+        n'afficher qu'une liste vide.
+      */}
+      {visibles.length === 0 && (
+        <p style={texteDoux}>Aucune relance ce jour-là.</p>
+      )}
+
+      {visibles.map((relance) => {
         const enRetard = new Date(relance.prevue_le).getTime() < aujourdhui;
 
         return (

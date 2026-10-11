@@ -198,6 +198,51 @@ describe('Facturation (intégration)', () => {
   });
 
   /**
+   * L'APERÇU EST UNE PROMESSE. L'écran l'affiche sous « Émettre une facture » :
+   * s'il annonçait un montant et que la facture en portait un autre, on
+   * signerait une pièce comptable qu'on n'a pas lue. Ce test compare les deux
+   * sur le même abonnement — c'est le seul moyen de garantir qu'ils ne
+   * dérivent pas.
+   */
+  it('annonce avant d’émettre exactement ce que la facture portera', async () => {
+    const admin = await connecte(ADMIN);
+    const fiche = await ficheNeuve(admin);
+
+    const abonnement = await admin
+      .post(`/admin/etablissements/${fiche.id}/abonnement`)
+      .send({ formule: 'annuel', tarif_mad: 12000 })
+      .expect(201);
+
+    const avant = await admin.get(`/admin/etablissements/${fiche.id}/abonnements`).expect(200);
+    const { apercu } = avant.body.data[0];
+
+    expect(Number(apercu.base_ht)).toBe(12000);
+    expect(Number(apercu.remise_mad)).toBe(1200);
+
+    const facture = await admin
+      .post(`/admin/abonnements/${abonnement.body.data.id}/facture`)
+      .send({})
+      .expect(201);
+
+    expect(Number(apercu.montant_ht)).toBe(Number(facture.body.data.montant_ht));
+    expect(Number(apercu.tva)).toBe(Number(facture.body.data.tva));
+    expect(Number(apercu.total_ttc)).toBe(Number(facture.body.data.total_ttc));
+  });
+
+  it('ne promet aucun montant sur un essai gratuit (RG13)', async () => {
+    const admin = await connecte(ADMIN);
+    const fiche = await ficheNeuve(admin);
+
+    await admin.post(`/admin/etablissements/${fiche.id}/essai-gratuit`).expect(204);
+
+    const lecture = await admin.get(`/admin/etablissements/${fiche.id}/abonnements`).expect(200);
+
+    // NUL, ET NON UN RÉCAPITULATIF À ZÉRO : un essai ne donnera lieu à AUCUNE
+    // facture, pas à une facture de zéro dirham.
+    expect(lecture.body.data[0].apercu).toBeNull();
+  });
+
+  /**
    * LE NUMÉRO EST UNE OBLIGATION COMPTABLE : séquence continue, sans doublon.
    * Deux émissions successives doivent donner deux numéros, et le second doit
    * suivre le premier — c'est ce que le verrou garantit.
@@ -362,5 +407,73 @@ describe('Facturation (intégration)', () => {
       .post(`/admin/etablissements/${fiche.id}/abonnement`)
       .send({ formule: 'mensuel', tarif_mad: -500 })
       .expect(422);
+  });
+
+  // ---------------------------------------------------------------------------
+  //  Commission du commercial apporteur — RG18
+  // ---------------------------------------------------------------------------
+
+  /**
+   * LE TAUX VIENT DU PARAMÈTRE, JAMAIS DU CODE. Il a valu zéro tant qu'aucun
+   * livrable ne le fixait ; le client l'a porté à 8 % le 7 octobre 2026, et il
+   * reste modifiable depuis l'écran « Paramètres ».
+   *
+   * CE TEST NE FIGE PAS LE 8. Il lit le paramètre, puis vérifie que la
+   * commission en découle — une valeur en dur ici tomberait le jour où la
+   * Direction change le taux, et ferait croire à une régression là où il n'y
+   * aurait qu'une décision de gestion.
+   */
+  it('crée la commission au taux du paramètre, en « à valider » (RG18)', async () => {
+    const admin = await connecte(ADMIN);
+    const fiche = await ficheNeuve(admin);
+
+    const commercial = await db.user.findFirstOrThrow({
+      where: { role: { code: 'commercial' } },
+      select: { id: true },
+    });
+
+    // SANS PROSPECT APPORTÉ, PAS DE COMMISSION : c'est le prospect transformé
+    // qui dit qui a vendu. On le fabrique donc explicitement.
+    const prospect = await db.prospect.create({
+      data: {
+        etablissement_nom: 'Apport commercial',
+        contact_nom: 'Contact',
+        telephone: '06 00 00 00 00',
+        commercial_id: commercial.id,
+        etablissement_id: BigInt(fiche.id),
+      },
+    });
+
+    const taux = Number(
+      (await db.parametreFacturation.findUniqueOrThrow({ where: { cle: 'commission_pct' } }))
+        .valeur,
+    );
+
+    expect(taux).toBeGreaterThan(0);
+
+    const abonnement = await admin
+      .post(`/admin/etablissements/${fiche.id}/abonnement`)
+      .send({ formule: 'mensuel', tarif_mad: 2000 })
+      .expect(201);
+
+    const facture = await admin
+      .post(`/admin/abonnements/${abonnement.body.data.id}/facture`)
+      .send({})
+      .expect(201);
+
+    const commission = await db.commission.findFirstOrThrow({
+      where: { facture_id: BigInt(facture.body.data.id) },
+    });
+
+    expect(Number(commission.taux_pct)).toBe(taux);
+    expect(commission.commercial_id).toBe(commercial.id);
+    expect(Number(commission.montant_mad)).toBeCloseTo(2000 * (taux / 100), 2);
+
+    // « À VALIDER », PAS « RÉGLÉE » : la commission naît à l'émission de la
+    // facture, pas à son encaissement, et la Direction la valide ensuite.
+    expect(commission.statut).toBe('a_valider');
+
+    await db.commission.deleteMany({ where: { facture_id: BigInt(facture.body.data.id) } });
+    await db.prospect.delete({ where: { id: prospect.id } });
   });
 });

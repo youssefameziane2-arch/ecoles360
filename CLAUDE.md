@@ -6,6 +6,11 @@ public gratuit pour les parents ; les établissements paient leur visibilité.
 Ce fichier est lu au démarrage de chaque session. Il dit ce qu'on ne peut pas
 deviner en lisant le code.
 
+> **Reprendre le travail : lire `docs/REPRISE.md` d'abord.** Il porte l'état
+> exact du dépôt, la tâche suivante, ce qui attend une décision du client, et
+> les pièges de ce poste. Le tenir à jour à chaque arrêt — un document de
+> reprise périmé est pire que pas de document, parce qu'on le croit.
+
 ---
 
 ## Ce qui ne se négocie pas
@@ -101,10 +106,30 @@ attente répondent 404.
 ## Tests
 
 ```bash
+node scripts/tester.mjs
+```
+
+**DANS LE CONTENEUR, pas depuis Windows.** Le script joue la suite à
+l'intérieur du réseau Docker, où MySQL et Redis se joignent par leur nom de
+service. Tout argument est passé à Jest (`node scripts/tester.mjs
+test/modules/mail.spec.ts`).
+
+La commande historique fonctionne toujours et reste celle du livrable :
+
+```bash
 DATABASE_URL="mysql://ecoles360:motdepasse_dev@127.0.0.1:3306/ecoles360_test" \
 REDIS_URL="redis://127.0.0.1:6379/15" \
 NODE_ENV=test npx jest
 ```
+
+Mais elle joint MySQL par `127.0.0.1:3306`, donc par le **relais de port de
+Docker Desktop**. Une suite complète ouvre et referme des milliers de
+connexions, et ce relais en perd une de loin en loin : `Can't reach database
+server at 127.0.0.1:3306` tombe au milieu d'une exécution, sur une requête
+quelconque, **alors que MySQL n'a rien eu** — conteneur jamais redémarré, 19
+connexions simultanées au plus sur 151, zéro erreur de saturation. Relancer
+suffit, et c'est bien le problème : on doute d'abord de son propre code. Ni la
+CI ni la production ne traversent ce pont.
 
 **Contre une vraie MySQL et une vraie Redis, jamais SQLite** (livrable 13 §1).
 Redis **base 15**, réservée aux tests. `maxWorkers: 1` : les suites partagent

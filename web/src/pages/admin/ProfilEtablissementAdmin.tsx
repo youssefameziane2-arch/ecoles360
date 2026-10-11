@@ -9,6 +9,7 @@ import {
 import { Champ, ZoneTexte } from '@/components/Champs';
 import { ListeEditable } from '@/components/ListeEditable';
 import { Button, Tabs, Toast } from '@/ds/composants';
+import { RESEAUX_SOCIAUX } from '@/lib/liens';
 
 const ONGLETS = [
   { key: 'identite', label: 'Identité' },
@@ -241,7 +242,15 @@ function Formulaire({
               titre="Réseaux sociaux"
               libelleAjout="+ Ajouter un réseau"
               colonnes={[
-                { cle: 'cle', label: 'Plateforme', requise: true, aide: 'facebook' },
+                {
+                  cle: 'cle',
+                  label: 'Plateforme',
+                  requise: true,
+                  aide: 'Choisir une plateforme…',
+                  // La liste fermée que l'API accepte — un nom libre y serait
+                  // refusé en 422.
+                  options: RESEAUX_SOCIAUX,
+                },
                 {
                   cle: 'valeur',
                   label: 'Adresse',

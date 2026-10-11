@@ -2,7 +2,8 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { AppException, ERROR_CODES } from '../../common/errors';
 import { AuditService } from '../../common/audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PropositionStatut, RoleCode, type Prisma } from '../../generated/prisma';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, PropositionStatut, RoleCode, type Prisma } from '../../generated/prisma';
 import type { ProposerFicheDto } from './dto/proposer-fiche.dto';
 
 /**
@@ -69,6 +70,7 @@ export class FicheProposalService {
   constructor(
     private readonly db: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async proposer(
@@ -77,7 +79,7 @@ export class FicheProposalService {
     roleActeur: RoleCode,
     dto: ProposerFicheDto,
   ) {
-    return this.db.$transaction(async (tx) => {
+    const proposition = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM etablissements WHERE id = ${etablissementId} FOR UPDATE`;
 
       const dejaEnAttente = await tx.propositionFiche.findFirst({
@@ -132,6 +134,29 @@ export class FicheProposalService {
 
       return proposition;
     });
+
+    /**
+     * APRÈS LA TRANSACTION, ET SANS POUVOIR LA ROMPRE. La proposition est le
+     * bien : elle attend déjà dans la file, et la pastille de l'écran la
+     * compte. La notification ne fait qu'avancer le moment où on la voit.
+     *
+     * LE NOM DE L'ÉTABLISSEMENT, PAS SON IDENTIFIANT : une notification se lit
+     * hors de l'écran qui donnerait le contexte.
+     */
+    await this.notifications.sansRompre(async () => {
+      const fiche = await this.db.etablissement.findUnique({
+        where: { id: etablissementId },
+        select: { nom: true },
+      });
+
+      await this.notifications.pourAdministration(
+        this.db,
+        NotificationType.proposition_fiche,
+        `${fiche?.nom ?? 'Un établissement'} propose une modification de sa fiche.`,
+      );
+    });
+
+    return proposition;
   }
 
   /** Annulation par l'auteur, tant qu'elle est en attente (avenant 3). */

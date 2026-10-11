@@ -10,8 +10,8 @@
 #  collation utf8mb4 — n'existent que sur le moteur de production.
 #
 #  PÉRIMÈTRE. Le livrable 14 §3 décrit quatre jobs : api · web · images · e2e.
-#  `api` et `web` ont un objet ici. La publication d'images sur ghcr.io et les
-#  parcours Playwright arrivent avec leurs lots (docs/BACKLOG.md, B-10).
+#  `api`, `web` et `images` ont un objet ici. Les parcours Playwright (`e2e`)
+#  attendent un staging déployé (docs/BACKLOG.md, B-10).
 # =============================================================================
 
 name: CI
@@ -19,6 +19,11 @@ name: CI
 on:
   push:
     branches: [main, develop]
+    # Sans cette ligne, la condition `startsWith(github.ref, 'refs/tags/v')`
+    # du job `images` ne peut jamais être vraie : un push de tag ne déclenche
+    # aucune exécution, et la production (déployée sur tag vX.Y.Z, livrable 14
+    # §4) n'aurait jamais d'image à tirer.
+    tags: ['v*']
   pull_request:
 
 # Une nouvelle poussée sur une branche annule l'exécution précédente : inutile
@@ -214,9 +219,39 @@ jobs:
           # permanent de publication ne vit dans le dépôt (livrable 14 §3).
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # ghcr.io REFUSE LES MAJUSCULES dans un chemin d'image, et
+      # `github.repository_owner` rend le propriétaire tel qu'il est écrit.
+      # Cela passe aujourd'hui — `youssefameziane2-arch` n'en porte aucune —
+      # et casserait le jour où le dépôt passerait sous une organisation qui
+      # en porte, avec une erreur de poussée qu'on ne verrait qu'à ce
+      # moment-là. `${VAR,,}` abaisse la casse une fois pour les deux images.
+      - name: Propriétaire du dépôt, en minuscules
+        run: echo "PROPRIETAIRE=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
       # Le contexte est la RACINE pour les deux images : en espace de travail
       # pnpm, le fichier de verrouillage est unique et vit à la racine
       # (docs/BACKLOG.md, B-04).
+      #
+      # DEUX ÉTIQUETTES SUR UN TAG GIT, UNE SEULE SUR `main`.
+      #
+      # Le SHA est l'étiquette du livrable 14 : son `deploy.sh` fait
+      # `SHA="$1"` puis `TAG=$SHA`, et le retour arrière s'écrit
+      # `./deploy.sh <sha-precedent>`. Elle désigne un commit sans ambiguïté
+      # et ne bouge jamais.
+      #
+      # Le tag de version vient s'y ajouter à la demande du client : déployer
+      # en écrivant `TAG=v1.0.0` dans `.env.prod` est plus lisible qu'un SHA
+      # de quarante caractères, et sans cette étiquette le `docker compose
+      # pull` ne trouverait rien.
+      #
+      # SEULEMENT SUR UN TAG GIT, ET C'EST LE POINT DÉLICAT : sur une poussée
+      # vers `main`, `github.ref_name` vaut « main ». On publierait
+      # `ecoles360-api:main`, c'est-à-dire une étiquette FLOTTANTE qui change
+      # de contenu à chaque fusion — exactement ce que le livrable 14 écarte
+      # en interdisant `:latest`. Deux déploiements du même « main » ne
+      # donneraient pas la même image, et un retour arrière ne voudrait plus
+      # rien dire. La chaîne vide produite sinon est ignorée par
+      # `build-push-action`, qui écarte les lignes vides.
       - name: Image API
         uses: docker/build-push-action@v6
         with:
@@ -224,7 +259,9 @@ jobs:
           file: api/Dockerfile
           target: runtime
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/ecoles360-api:${{ github.sha }}
+          tags: |
+            ghcr.io/${{ env.PROPRIETAIRE }}/ecoles360-api:${{ github.sha }}
+            ${{ startsWith(github.ref, 'refs/tags/v') && format('ghcr.io/{0}/ecoles360-api:{1}', env.PROPRIETAIRE, github.ref_name) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -234,6 +271,8 @@ jobs:
           context: .
           file: web/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/ecoles360-web:${{ github.sha }}
+          tags: |
+            ghcr.io/${{ env.PROPRIETAIRE }}/ecoles360-web:${{ github.sha }}
+            ${{ startsWith(github.ref, 'refs/tags/v') && format('ghcr.io/{0}/ecoles360-web:{1}', env.PROPRIETAIRE, github.ref_name) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -65,6 +65,37 @@ export class EnvironmentVariables {
   DATABASE_URL!: string;
 
   /**
+   * Compte SMTP d'envoi — B-53.
+   *
+   * TOUS OPTIONNELS, ET C'EST DÉLIBÉRÉ. Le projet n'a pas encore d'adresse
+   * expéditrice : les rendre obligatoires empêcherait l'API de démarrer et
+   * ferait échouer les 397 tests, pour une fonction dont l'absence se
+   * rattrape — les notifications restent visibles dans le centre.
+   * `MailService` exige les quatre ensemble à l'exécution et se déclare
+   * éteint sinon, en le disant une fois au démarrage.
+   */
+  @IsString()
+  @IsOptional()
+  SMTP_HOST?: string;
+
+  @IsString()
+  @IsOptional()
+  SMTP_PORT?: string;
+
+  @IsString()
+  @IsOptional()
+  SMTP_USER?: string;
+
+  @IsString()
+  @IsOptional()
+  SMTP_PASSWORD?: string;
+
+  /** L'adresse affichée en expéditeur — « contact@ecoles360.com ». */
+  @IsString()
+  @IsOptional()
+  MAIL_FROM?: string;
+
+  /**
    * Secret de signature des cookies de session (livrable 14 §6).
    *
    * Au moins 32 caractères : ce secret protège l'identifiant de session. Le

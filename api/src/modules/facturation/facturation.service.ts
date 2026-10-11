@@ -180,11 +180,11 @@ export class FacturationService {
 
     const tvaPct = await this.parametres.entier('tva_pct', TVA_DEFAUT_PCT);
 
-    const tarif = Number(abonnement.tarif_mad);
-    const remise = Number(abonnement.remise_pct ?? 0);
-    const montantHt = arrondi(tarif * (1 - remise / 100));
-    const tva = arrondi(montantHt * (tvaPct / 100));
-    const totalTtc = arrondi(montantHt + tva);
+    const { montantHt, tva, totalTtc } = montantsFacture({
+      tarif: Number(abonnement.tarif_mad),
+      remisePct: Number(abonnement.remise_pct ?? 0),
+      tvaPct,
+    });
 
     // Le commercial qui a apporté l'affaire, s'il y en a un.
     const prospect = await this.db.prospect.findFirst({
@@ -322,3 +322,30 @@ export class FacturationService {
 
 /** Deux décimales — les montants sont des `Decimal(10,2)` en base. */
 const arrondi = (valeur: number): number => Math.round(valeur * 100) / 100;
+
+/**
+ * Les trois montants d'une facture d'abonnement, à partir du tarif négocié.
+ *
+ * EXPORTÉE, ET C'EST LE POINT. L'écran d'administration montre ces montants
+ * AVANT d'émettre, pour qu'on sache ce qu'on signe ; s'il les recalculait de
+ * son côté, l'aperçu et la pièce comptable dériveraient le jour où la remise
+ * ou la TVA change de règle, et personne ne le verrait avant un écart de
+ * caisse. Un seul calcul, deux usages.
+ *
+ * LA REMISE S'APPLIQUE AVANT LA TVA (RG11) : la taxe porte sur ce qui est
+ * réellement dû, pas sur un prix que le client ne paie pas.
+ */
+export function montantsFacture({
+  tarif,
+  remisePct,
+  tvaPct,
+}: {
+  tarif: number;
+  remisePct: number;
+  tvaPct: number;
+}): { montantHt: number; tva: number; totalTtc: number } {
+  const montantHt = arrondi(tarif * (1 - remisePct / 100));
+  const tva = arrondi(montantHt * (tvaPct / 100));
+
+  return { montantHt, tva, totalTtc: arrondi(montantHt + tva) };
+}

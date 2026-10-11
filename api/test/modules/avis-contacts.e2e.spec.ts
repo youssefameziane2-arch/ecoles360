@@ -68,10 +68,37 @@ describe('Site public — avis et contacts (intégration)', () => {
      * Fabriquer soi-même la donnée dont on dépend, plutôt que d'espérer
      * l'ordre : c'est la règle du projet, et elle a été apprise ici.
      */
-    await db.etablissement.updateMany({
+    const almassira = await db.etablissement.update({
       where: { slug: 'lycee-al-massira-casablanca' },
       data: { statut: 'validee' },
+      select: { id: true },
     });
+
+    /**
+     * ET LA FICHE VALIDÉE NE SUFFISAIT PAS. « En avant » exige TROIS
+     * conditions à la fois : l'avis épinglé, l'avis publié, la fiche validée.
+     * Le `beforeAll` n'en garantissait qu'une, et la suite de modération
+     * dépublie ou dépingle les avis de cette même fiche — d'où un échec
+     * intermittent, selon l'ordre dans lequel Jest ordonne les suites.
+     *
+     * ON ÉPINGLE UN AVIS DÉJÀ PUBLIÉ, ON N'EN PUBLIE PAS. Une première version
+     * forçait `statut: 'publie'` ici, et cassait le test de signalement :
+     * `nb_avis` et `note_moy` sont des COMPTEURS DÉNORMALISÉS que seul le
+     * service de modération recalcule (RG08). Publier un avis par une écriture
+     * directe les laisse en arrière, et le test qui vérifie que la note baisse
+     * après un signalement comparait alors deux chiffres incohérents.
+     *
+     * `en_avant` n'entre dans aucun compteur : l'épingler ne dérange rien.
+     */
+    const epingle = await db.avis.findFirst({
+      where: { etablissement_id: almassira.id, statut: 'publie' },
+      orderBy: { id: 'desc' },
+      select: { id: true },
+    });
+
+    if (epingle) {
+      await db.avis.update({ where: { id: epingle.id }, data: { en_avant: true } });
+    }
   });
 
   // Les plafonds sont serrés (5 dépôts par heure) : sans ce nettoyage, les
@@ -246,6 +273,34 @@ describe('Site public — avis et contacts (intégration)', () => {
       expect(demande.leads.length).toBe(1);
       expect(demande.leads[0]?.candidat_nom).toBe('Parent Avec Lead');
       expect(demande.consentement).toBe(true);
+
+      /**
+       * ET L'ÉTABLISSEMENT EST PRÉVENU. C'est le seul signal qu'une demande
+       * est arrivée : sans lui, elle attend qu'on pense à ouvrir l'écran.
+       *
+       * Le compte propriétaire de la fiche la reçoit ; une secrétaire ne la
+       * reçoit que si elle porte la portée `contacts` (RG05) — une
+       * notification qui mènerait à un 403 serait pire qu'aucune.
+       */
+      const fiche = await db.etablissement.findUniqueOrThrow({
+        where: { slug: SLUG },
+        select: { proprietaire_user_id: true },
+      });
+
+      if (fiche.proprietaire_user_id) {
+        const notification = await db.notification.findFirst({
+          where: { user_id: fiche.proprietaire_user_id, type: 'demande' },
+          orderBy: { id: 'desc' },
+        });
+
+        expect(notification).not.toBeNull();
+        expect(notification?.contenu).toContain('Parent Avec Lead');
+        expect(notification?.canal).toBe('in_app');
+        // `envoyee_le` est posé tout de suite sur ce canal : elle s'affiche à
+        // la prochaine ouverture, donc elle EST envoyée dès l'écriture.
+        expect(notification?.envoyee_le).not.toBeNull();
+        expect(notification?.lue_le).toBeNull();
+      }
     });
   });
 

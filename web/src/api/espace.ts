@@ -267,3 +267,75 @@ export const reordonnerMesPhotos = (ids: string[]) =>
     method: 'PUT',
     body: JSON.stringify({ ids }),
   });
+
+// ---------------------------------------------------------------------------
+//  Abonnement & facturation — maquette `isEtabCredits`
+// ---------------------------------------------------------------------------
+
+export type FormuleAbonnement = 'essai_gratuit' | 'mensuel' | 'annuel';
+export type StatutAbonnement = 'essai' | 'actif' | 'expire' | 'resilie';
+export type StatutFacture = 'non_payee' | 'payee';
+
+export interface AbonnementEspace {
+  formule: FormuleAbonnement;
+  statut: StatutAbonnement;
+  /** Nul sur un essai gratuit — le schéma l'impose. */
+  tarif_mad: string | null;
+  remise_pct: string | null;
+  debut: string;
+  echeance: string;
+}
+
+export interface FactureEspace {
+  id: string;
+  numero: string;
+  objet: string;
+  montant_ht: string;
+  tva: string;
+  total_ttc: string;
+  statut_paiement: StatutFacture;
+  emise_le: string;
+  payee_le: string | null;
+}
+
+export interface FacturationEspaceDonnees {
+  abonnement: AbonnementEspace | null;
+  essai: { statut: StatutAbonnement; debut: string; echeance: string } | null;
+  factures: FactureEspace[];
+}
+
+/**
+ * `GET /mon-espace/facturation` — **403 pour un compte secrétariat**.
+ *
+ * La RG05 ne délègue que `fiches`, `contacts` et `avis` : la facturation n'est
+ * pas une portée. L'écran ne s'affiche donc qu'au compte établissement.
+ */
+export const chargerMaFacturation = () =>
+  apiFetch<FacturationEspaceDonnees>('/mon-espace/facturation');
+
+// ---------------------------------------------------------------------------
+//  Centre de notifications
+// ---------------------------------------------------------------------------
+
+export type TypeNotification =
+  | 'echeance_abonnement'
+  | 'plafond_vue_atteint'
+  | 'demande'
+  | 'moderation'
+  | 'proposition_fiche'
+  | 'inscription';
+
+export interface Notification {
+  id: string;
+  type: TypeNotification;
+  contenu: string;
+  lue_le: string | null;
+  envoyee_le: string | null;
+}
+
+/** Bornées au compte de la session — aucun identifiant en paramètre. */
+export const chargerNotifications = () =>
+  apiFetch<{ notifications: Notification[]; non_lues: number }>('/notifications');
+
+export const marquerNotificationsLues = () =>
+  apiFetch<void>('/notifications/lues', { method: 'PATCH' });

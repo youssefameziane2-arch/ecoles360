@@ -12,6 +12,7 @@ import { Faq } from './pages/Faq';
 import { Blog } from './pages/Blog';
 import { Article } from './pages/Article';
 import { Connexion } from './pages/Connexion';
+import { MotDePasse } from './pages/MotDePasse';
 import { InscriptionEtablissement } from './pages/InscriptionEtablissement';
 import { Introuvable } from './pages/Introuvable';
 import { TableauDeBordEspace } from './pages/espace/TableauDeBord';
@@ -21,6 +22,7 @@ import { DemandesEspacePage } from './pages/espace/DemandesEspace';
 import { EtablissementsAdmin } from './pages/admin/EtablissementsAdmin';
 import { TableauDeBordAdmin } from './pages/admin/TableauDeBordAdmin';
 import { PropositionsAdmin } from './pages/admin/PropositionsAdmin';
+import { ExplorateurBase } from './pages/admin/ExplorateurBase';
 import { ParametresFacturation } from './pages/admin/ParametresFacturation';
 import { FacturationAdmin } from './pages/admin/FacturationAdmin';
 import { CrmAdmin } from './pages/admin/CrmAdmin';
@@ -39,7 +41,8 @@ import { JournalAdmin } from './pages/admin/JournalAdmin';
 import { SecretariatAdmin } from './pages/admin/SecretariatAdmin';
 import { StatistiquesAdmin } from './pages/admin/StatistiquesAdmin';
 import { StatistiquesEspace } from './pages/espace/StatistiquesEspace';
-import { FacturationEspace, StatistiquesCommercial } from './pages/espace/ModulesAVenir';
+import { FacturationEspace } from './pages/espace/FacturationEspace';
+import { StatistiquesCommercial } from './pages/espace/ModulesAVenir';
 
 /**
  * Routage — livrable 12 §3.
@@ -63,6 +66,13 @@ export function App() {
   // porte donc ni l'en-tête ni le pied de page du site public.
   if (pathname === '/connexion') {
     return <Connexion />;
+  }
+
+  // MÊME TRAITEMENT QUE LA CONNEXION, et pour la même raison : on arrive ici
+  // depuis un e-mail, sans session. Un en-tête public inviterait à partir
+  // explorer le site au milieu d'une réinitialisation commencée.
+  if (pathname === '/mot-de-passe') {
+    return <MotDePasse />;
   }
 
   if (connecte) {
@@ -89,6 +99,7 @@ export function App() {
         <Route path="/admin/statistiques" element={<StatistiquesAdmin />} />
         <Route path="/admin/journal" element={<JournalAdmin />} />
         <Route path="/admin/sponsorings" element={<SponsoringsAdmin />} />
+        <Route path="/admin/base" element={<ExplorateurBase />} />
         <Route path="/admin/parametres" element={<ParametresFacturation />} />
 
         <Route path="/commercial" element={<TableauDeBordCommercial />} />

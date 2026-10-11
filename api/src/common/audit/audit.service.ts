@@ -4,10 +4,17 @@ import { AuditSeverite, RoleCode, type Prisma } from '../../generated/prisma';
 
 interface EcritureAudit {
   userId: bigint | null;
-  roleActeur: RoleCode;
+  /**
+   * `systeme` EST UNE VALEUR LÉGITIME, et elle n'est pas dans `RoleCode` :
+   * la colonne est une chaîne, pas l'énumération des rôles. Les purges de la
+   * loi 09-08 s'inscrivent sous ce nom — les attribuer à un administrateur
+   * ferait croire à un acte volontaire.
+   */
+  roleActeur: RoleCode | 'systeme';
   action: string;
   cibleType: string;
-  cibleId: bigint;
+  /** Nul pour une tâche système, qui ne vise aucune ligne en particulier. */
+  cibleId: bigint | null;
   severite?: AuditSeverite;
   details?: Record<string, unknown>;
 }

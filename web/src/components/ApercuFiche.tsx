@@ -3,6 +3,7 @@ import type { FicheEspace } from '@/api/espace';
 import { LIBELLE_TYPE } from '@/api/etablissements';
 import { Badge, Icon, Tabs } from '@/ds/composants';
 import { formaterMad, formaterNombre, formaterNote, rangJour } from '@/lib/formats';
+import { lienExterneSur } from '@/lib/liens';
 
 /**
  * Aperçu de la page profil — écran `isFichePage` de la maquette.
@@ -41,6 +42,12 @@ export function ApercuFiche({ fiche }: { fiche: FicheEspace }) {
 
   const photos = fiche.photos ?? [];
   const photoCourante = photos[photo];
+
+  const reseaux = Object.entries(fiche.socials ?? {}).flatMap(([reseau, url]) => {
+    const lien = lienExterneSur(url);
+
+    return lien ? [[reseau, lien] as const] : [];
+  });
 
   return (
     <div style={{ background: '#fff', border: '1px solid #EAE6DE', borderRadius: 16, overflow: 'hidden' }}>
@@ -331,11 +338,16 @@ export function ApercuFiche({ fiche }: { fiche: FicheEspace }) {
             </div>
           )}
 
-          {fiche.socials && Object.keys(fiche.socials).length > 0 && (
+          {/*
+            L'APERÇU MONTRE CE QUE LE SITE PUBLIEREA, donc il écarte les mêmes
+            liens que lui. Afficher ici un réseau que la fiche publique
+            refusera ferait croire à l'établissement que son lien est en ligne.
+          */}
+          {reseaux.length > 0 && (
             <div style={encadre}>
               <TitreEncadre>Réseaux sociaux</TitreEncadre>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {Object.entries(fiche.socials).map(([reseau, url]) => (
+                {reseaux.map(([reseau, url]) => (
                   <a key={reseau} href={url} target="_blank" rel="noopener noreferrer" style={lienStyle}>
                     {LIBELLE_RESEAU[reseau] ?? reseau}
                   </a>

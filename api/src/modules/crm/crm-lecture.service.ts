@@ -112,6 +112,16 @@ export class CrmLectureService {
 
     return {
       total: parStatut.reduce((somme, ligne) => somme + ligne._count, 0),
+      /**
+       * CE QUI VIENT D'ARRIVER ET QUE PERSONNE N'A ENCORE VU.
+       *
+       * Le formulaire public dépose un prospect en `nouveau` (B-46), et aucun
+       * courriel ne prévient qui que ce soit — il n'y a pas d'envoi d'e-mail
+       * dans le projet. Ce compteur est, pour l'instant, le seul signal : il
+       * s'affiche sur l'entrée « CRM Clients » de la navigation, de sorte
+       * qu'une demande déposée un vendredi soir se voie sans ouvrir l'écran.
+       */
+      nouveaux: compte(ProspectStatut.nouveau),
       en_cours: COLONNES_PIPELINE.filter(
         (s) => s !== ProspectStatut.transforme && s !== ProspectStatut.perdu,
       ).reduce((somme, s) => somme + compte(s), 0),
@@ -128,6 +138,14 @@ export class CrmLectureService {
   }
 
   /** Les relances à faire, les plus anciennes d'abord — l'agenda du commercial. */
+  /**
+   * MALGRÉ SON NOM, ELLE REND TOUTES LES RELANCES NON FAITES — pas seulement
+   * celles dont la date est passée. C'est voulu : l'agenda du commercial en a
+   * besoin pour poser son calendrier du mois, et distinguer « en retard » de
+   * « à venir » est une affaire d'affichage, que l'écran tranche avec la date
+   * du jour. Le compteur `relances_dues` des indicateurs, lui, filtre bien sur
+   * `prevue_le <= maintenant` : les deux ne comptent pas la même chose.
+   */
   async relancesDues(commercialId: bigint | null) {
     return this.db.relance.findMany({
       where: {

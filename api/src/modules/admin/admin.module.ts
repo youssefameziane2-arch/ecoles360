@@ -10,6 +10,8 @@ import { AdminController } from './admin.controller';
 import { AdminEtablissementsService } from './admin-etablissements.service';
 import { ParametresFacturationService } from './parametres-facturation.service';
 import { AuditLectureService } from './audit-lecture.service';
+import { ComptesService } from './comptes.service';
+import { ExplorateurBaseService } from './explorateur-base.service';
 import { SecretariatService } from './secretariat.service';
 import { FacturationModule } from '../facturation/facturation.module';
 import { CrmModule } from '../crm/crm.module';
@@ -47,6 +49,8 @@ import { StatistiquesAdminService } from './statistiques-admin.service';
     TableauDeBordAdminService,
     StatistiquesAdminService,
     SecretariatService,
+    ComptesService,
+    ExplorateurBaseService,
   ],
 })
 export class AdminModule {}

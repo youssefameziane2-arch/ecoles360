@@ -3,6 +3,7 @@ import { AppException, ERROR_CODES } from '../../common/errors';
 import { Page } from '../../common/interceptors';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SponsoringsService } from '../sponsorings/sponsorings.service';
+import { TracesRechercheService } from './traces-recherche.service';
 import { EtablissementStatut, type EtablissementType, type Prisma } from '../../generated/prisma';
 import {
   PAR_PAGE_DEFAUT,
@@ -32,6 +33,7 @@ export class EtablissementsService {
   constructor(
     private readonly db: PrismaService,
     private readonly sponsorings: SponsoringsService,
+    private readonly traces: TracesRechercheService,
   ) {}
 
   /**
@@ -106,6 +108,11 @@ export class EtablissementsService {
             take: placesRestantes,
           })
         : [];
+
+    // SANS `await` : la trace est une statistique d'administration, et le
+    // parent n'a pas à l'attendre pour voir ses résultats. Le service avale
+    // ses propres erreurs — il n'y a donc aucun rejet à rattraper ici.
+    void this.traces.enregistrer(filtres, total);
 
     return new Page([...teteDeLaPage, ...reste].map(versListe), total, page, perPage);
   }

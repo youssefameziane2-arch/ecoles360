@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ArticleStatut, AvisStatut, PropositionStatut } from '../../generated/prisma';
 import { AuditLectureService } from './audit-lecture.service';
+// LE MÊME ORDRE QUE L'ÉCRAN CRM, réutilisé plutôt que recopié : deux listes
+// d'étapes finiraient par diverger, et le tableau de bord montrerait un
+// pipeline rangé autrement que celui qu'on ouvre en cliquant dessus.
+import { COLONNES_PIPELINE as ETAPES_PIPELINE } from '../crm/crm-lecture.service';
 import {
   joursAvant,
   serieJournaliere,
@@ -10,6 +14,9 @@ import {
 
 /** Même fenêtre que le tableau de bord de l'espace établissement. */
 const FENETRE_JOURS = 30;
+
+/** Dernières factures du tableau de bord — la maquette en montre quatre. */
+const DERNIERES_FACTURES = 4;
 
 /** Entrées d'activité récente — la maquette en montre cinq ou six. */
 const ACTIVITE_RECENTE = 6;
@@ -24,11 +31,24 @@ const TOP_ETABLISSEMENTS = 5;
  * par bloc clignote sous les yeux de l'administrateur : toutes les requêtes
  * partent ensemble, et l'écran s'affiche d'un coup.
  *
- * DEUX BLOCS DE LA MAQUETTE N'Y SONT PAS — le pipeline CRM et les derniers
- * encaissements. Leurs modèles existent, aucune route ne les expose encore, et
- * « Encaisser » est une écriture qui touche à la RG14 : ce n'est pas la place
- * d'un écran de lecture (voir BACKLOG). La tuile « Recherches effectuées » est
- * absente aussi : aucune trace ne les compte.
+ * LE PIPELINE CRM ET LES DERNIÈRES FACTURES Y SONT DEPUIS LE 8 OCTOBRE 2026
+ * (B-38, B-39). Ils manquaient parce que ni le CRM ni la facturation
+ * n'existaient ; les deux modules sont construits, et ces blocs ne sont plus
+ * qu'une lecture de plus.
+ *
+ * « ENCAISSER » N'EST PAS ICI, et n'y sera pas. La maquette pose le bouton sur
+ * chaque ligne de facture, mais l'encaissement est une ÉCRITURE qui débloque
+ * la publication d'une fiche (RG14) : il a sa route, sa transaction et sa
+ * trace au journal. Un second chemin depuis un écran de lecture serait un
+ * second endroit où la RG14 pourrait céder. L'écran renvoie vers « Abonnement
+ * & facturation », qui le fait correctement.
+ *
+ * « RECHERCHES EFFECTUÉES » N'A PAS DE PÉRIODE PRÉCÉDENTE, à la différence des
+ * vues et des demandes. La table `traces_recherche` commence le jour de sa
+ * migration : comparer la fenêtre courante à une fenêtre antérieure
+ * annoncerait une hausse de l'infini pendant les trente premiers jours. Le
+ * chiffre est donc rendu seul, comme dans la maquette, qui ne lui met aucune
+ * variation.
  */
 @Injectable()
 export class TableauDeBordAdminService {
@@ -51,8 +71,11 @@ export class TableauDeBordAdminService {
       vuesPrecedentes,
       demandesCourantes,
       demandesPrecedentes,
+      recherchesCourantes,
       vuesParJour,
       classement,
+      pipeline,
+      dernieresFactures,
     ] = await Promise.all([
       // Réutilise la lecture du journal plutôt qu'une seconde requête : même
       // tri, mêmes champs, et l'écran « Journal d'audit » ne peut pas diverger.
@@ -86,6 +109,7 @@ export class TableauDeBordAdminService {
       this.db.demandeContact.count({
         where: { recue_le: { gte: periodePrecedente, lt: depuis } },
       }),
+      this.db.traceRecherche.count({ where: { survenu_le: { gte: depuis } } }),
 
       // Regroupé en SQL : sur toute la plateforme, rapatrier chaque trace pour
       // la compter en mémoire coûterait une ligne transférée par vue.
@@ -105,6 +129,40 @@ export class TableauDeBordAdminService {
         // d'un rechargement à l'autre.
         orderBy: [{ _count: { etablissement_id: 'desc' } }, { etablissement_id: 'asc' }],
         take: TOP_ETABLISSEMENTS,
+      }),
+
+      /**
+       * Pipeline de prospection — `adminPipe` de la maquette (B-38).
+       *
+       * SANS FILTRE DE COMMERCIAL : c'est le tableau de bord de
+       * l'administration, qui voit tout le portefeuille. Le même décompte
+       * borné à un commercial vit dans `CrmLectureService.indicateurs()`, et
+       * les deux ne doivent pas être confondus.
+       */
+      this.db.prospect.groupBy({ by: ['statut_pipeline'], _count: true }),
+
+      /**
+       * Dernières factures — `facturesMini` (B-39).
+       *
+       * LECTURE SEULE ICI. La maquette pose un bouton « Encaisser » sur chaque
+       * ligne ; l'encaissement est une écriture qui débloque la publication
+       * d'une fiche (RG14), et elle a sa route, sa transaction et sa trace au
+       * journal dans `FacturationService`. Ce bloc y renvoie plutôt que de la
+       * rejouer — un second chemin d'encaissement serait un second endroit où
+       * la RG14 pourrait céder.
+       */
+      this.db.facture.findMany({
+        orderBy: { emise_le: 'desc' },
+        take: DERNIERES_FACTURES,
+        select: {
+          id: true,
+          numero: true,
+          objet: true,
+          total_ttc: true,
+          statut_paiement: true,
+          emise_le: true,
+          etablissement: { select: { id: true, nom: true, slug: true } },
+        },
       }),
     ]);
 
@@ -145,6 +203,7 @@ export class TableauDeBordAdminService {
       visites: {
         vues_fiches: { courant: vuesCourantes, precedent: vuesPrecedentes },
         demandes: { courant: demandesCourantes, precedent: demandesPrecedentes },
+        recherches: recherchesCourantes,
         vues_par_jour: serieJournaliere(depuis, maintenant, vuesParJour),
       },
 
@@ -154,6 +213,25 @@ export class TableauDeBordAdminService {
         const fiche = fiches.find((f) => f.id === ligne.etablissement_id);
         return fiche ? [{ ...fiche, vues: ligne._count._all }] : [];
       }),
+
+      /**
+       * LES SIX ÉTAPES SONT TOUJOURS RENDUES, dans l'ordre du pipeline, même à
+       * zéro. `groupBy` ne rend que les étapes peuplées : s'en contenter
+       * ferait disparaître une colonne du graphique dès qu'elle se vide, et la
+       * barre d'à côté paraîtrait s'élargir.
+       */
+      pipeline: ETAPES_PIPELINE.map((etape) => ({
+        etape,
+        total: pipeline.find((ligne) => ligne.statut_pipeline === etape)?._count ?? 0,
+      })),
+
+      dernieres_factures: dernieresFactures.map((facture) => ({
+        ...facture,
+        id: facture.id.toString(),
+        // Décimal rendu en chaîne, comme partout : un `Decimal(10,2)` relu en
+        // nombre JavaScript perd des centimes sur les grands montants.
+        total_ttc: facture.total_ttc.toString(),
+      })),
     };
   }
 }

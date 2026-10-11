@@ -120,6 +120,20 @@ Ces corrections devraient remonter à la source plutôt que vivre ici :
    une ville où aucune école n'est référencée, et ne peut pas choisir celle où
    il y en a. C'est l'argument à donner à l'auteur : un composant ne peut pas
    porter une liste que seule la base connaît.
+6. **`PricingCard` — pas de fente pour le sous-titre ni pour la note.** Le
+   composant expose `name`, `price`, `unit`, `credits`, `features` et `cta`.
+   La maquette `isInscription`, elle, donne à chaque formule un **sous-titre**
+   (« Résiliable à tout moment… ») et une **note** (« Tarif communiqué par
+   votre conseiller »), qui n'ont nulle part où aller. `credits` est en
+   revanche inutile ici — c'est une notion de pack de crédits que l'offre
+   écoles360 ne connaît pas.
+
+   Sans rustine : `FormulesVisibilite` rend le sous-titre et la note **autour**
+   de la carte. Le résultat est fidèle, mais la hiérarchie typographique de la
+   maquette (sous-titre juste sous le titre, à l'intérieur de la carte) n'est
+   pas tenue, et sur la carte en avant le texte passe du fond navy au fond de
+   page. Demande : `tagline`, `subtitle` et `note` optionnels, et `credits`
+   déjà facultatif — ou une fente libre sous `price`.
 
 ## Écarts relevés entre les sources du skill et le bundle
 

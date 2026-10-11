@@ -55,8 +55,33 @@ services:
       # …mais pas les dépendances : `api/node_modules` est un volume nommé, sinon
       # le montage ci-dessus masquerait les liens pnpm posés dans l'image (et,
       # sous Windows ou macOS, y déverserait des binaires de la mauvaise plateforme).
-      # Après modification de api/package.json :
-      #     docker compose -f docker-compose.dev.yml down -v && … up --build
+      # Après modification de api/package.json, le conteneur ne voit pas la
+      # nouvelle dépendance : il faut l'installer DANS le volume.
+      #
+      # ⚠️ NE PAS FAIRE `down -v` : cette commande supprime AUSSI `mysql_data`
+      # et `storage` — toute la base de développement et les photos des fiches.
+      # L'avertissement a sa place ici parce que c'est ce que ce commentaire
+      # conseillait, et que la perte ne se remarque qu'après coup.
+      #
+      # Sans rien détruire, et dans cet ordre :
+      #     docker compose -f docker-compose.dev.yml exec api \
+      #       sh -c "cd /app && corepack pnpm install --filter @ecoles360/api"
+      #     docker compose -f docker-compose.dev.yml restart api
+      #
+      # Le redémarrage compte : `tsc --watch` met en cache ses échecs de
+      # résolution, et continue d'annoncer « Cannot find module » longtemps
+      # après que le paquet est arrivé.
+      #
+      # Après modification de prisma/schema.prisma, le conteneur régénère son
+      # client Prisma à chaque démarrage — `restart api` suffit.
+      #
+      # ⚠️ MAIS IL FAUT Y PENSER, et l'oubli ne ressemble pas à un oubli. Une
+      # valeur ajoutée à une énumération (`PermissionPortee`, `RoleCode`…) est
+      # appliquée en base par la migration et connue du client régénéré SUR
+      # L'HÔTE — pas de celui du conteneur, qui garde l'ancien jusqu'au
+      # redémarrage. L'écran envoie alors la nouvelle valeur, l'API répond
+      # **422 « validation échouée »**, et tout porte à croire à un bogue de
+      # saisie. Redémarrer l'API suffit ; encore faut-il y penser.
       - api_node_modules:/app/api/node_modules
       # Artefacts de build : volumes anonymes, donc PROPRES AU CONTENEUR.
       # L hôte est sous Windows, le conteneur sous Linux, et les deux écrivent

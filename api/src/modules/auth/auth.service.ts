@@ -24,8 +24,14 @@ import type { UtilisateurAuthentifie } from './session.types';
 const HACHE_FACTICE =
   '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHRzb21lc2FsdA$5xLEvKQBOgpuGBLPqLMYQvnBXYRPTcEMFqoW+3xhKFo';
 
-/** Durée de vie d'un jeton de réinitialisation — livrable 7 §6. */
-const TTL_JETON_RESET_MS = 60 * 60 * 1000;
+/**
+ * Durée de vie d'un jeton de réinitialisation — livrable 7 §6.
+ *
+ * EXPORTÉE PARCE QUE L'E-MAIL L'ANNONCE. Le message dit « ce lien est valable
+ * une heure » ; recopier le chiffre dans le modèle produirait, le jour où la
+ * durée change, un message qui promet ce que le jeton ne tient pas.
+ */
+export const TTL_JETON_RESET_MS = 60 * 60 * 1000;
 
 /**
  * Authentification — livrable 11 §2.

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuditService } from '../../common/audit/audit.service';
 import { ContenuController } from './contenu.controller';
+import { CategoriesArticlesService } from './categories-articles.service';
 import { FaqService } from './faq.service';
 import { ConseillersService } from './conseillers.service';
 import { PagesCmsService } from './pages-cms.service';
@@ -15,7 +16,13 @@ import { PagesCmsService } from './pages-cms.service';
  */
 @Module({
   controllers: [ContenuController],
-  providers: [FaqService, ConseillersService, PagesCmsService, AuditService],
-  exports: [FaqService, ConseillersService, PagesCmsService],
+  providers: [
+    FaqService,
+    CategoriesArticlesService,
+    ConseillersService,
+    PagesCmsService,
+    AuditService,
+  ],
+  exports: [FaqService, CategoriesArticlesService, ConseillersService, PagesCmsService],
 })
 export class ContenuModule {}

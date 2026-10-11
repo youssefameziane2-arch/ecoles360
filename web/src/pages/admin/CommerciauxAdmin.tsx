@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { chargerCommerciaux, type CommercialAdmin } from '@/api/crm';
 import { AvecIdentite, CoquilleEspace } from '@/components/CoquilleEspace';
+import { CreationCompte } from '@/components/CreationCompte';
 import { Badge, EmptyState } from '@/ds/composants';
 import { formaterDate, formaterMad } from '@/lib/formats';
 import { useTitrePage } from '@/lib/titre';
@@ -13,10 +14,11 @@ import { useTitrePage } from '@/lib/titre';
  * disparaître des dossiers du décompte et de l'argent dû de la liste des
  * choses à payer — exactement ce qu'on ne veut pas perdre de vue.
  *
- * CET ÉCRAN NE CRÉE PAS DE COMPTE. Qui a le droit d'en créer un, et par quel
- * chemin le mot de passe atteint son titulaire, ne sont écrits nulle part
- * dans les livrables. En attendant, un compte se pose par la commande
- * `compte:creer --role=commercial`.
+ * CET ÉCRAN CRÉE DES COMPTES DEPUIS LE 7 OCTOBRE 2026. Il ne le faisait pas,
+ * faute de savoir qui en avait le droit et par quel chemin le mot de passe
+ * atteindrait son titulaire. La première question est tranchée par les notes
+ * du client ; la seconde reçoit la moins mauvaise réponse disponible — tiré au
+ * sort, affiché une seule fois, à transmettre de la main à la main (B-46).
  */
 export function CommerciauxAdmin() {
   useTitrePage('Commerciaux');
@@ -42,20 +44,20 @@ function Contenu() {
 
   if (commerciaux.isPending) return <p style={texteDoux}>Chargement…</p>;
 
-  if (commerciaux.data?.length === 0) {
-    return (
-      <div style={{ background: '#fff', border: '1px solid #EAE6DE', borderRadius: 16 }}>
-        <EmptyState
-          icon="briefcase"
-          title="Aucun commercial"
-          description="Un compte se crée par la commande « compte:creer --role=commercial »."
-        />
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <CreationCompte role="commercial" />
+
+      {commerciaux.data?.length === 0 && (
+        <div style={{ background: '#fff', border: '1px solid #EAE6DE', borderRadius: 16 }}>
+          <EmptyState
+            icon="briefcase"
+            title="Aucun commercial"
+            description="Créez le premier compte ci-dessus. Sans ligne téléphonique, il n’apparaîtra pas sur la bannière d’aide du site."
+          />
+        </div>
+      )}
+
       {commerciaux.data?.map((commercial) => (
         <Ligne key={commercial.id} commercial={commercial} />
       ))}

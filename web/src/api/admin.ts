@@ -1,16 +1,29 @@
-import { apiFetch } from './client';
+import { apiFetch, apiFetchPage } from './client';
 import type { EntreeAudit } from './audit';
 import type { TypeEtablissement } from './etablissements';
 import type { ChampsModifies } from './espace';
+import type { StatutProspect } from './crm';
 
 /** Back-office admin — livrable 11 §3.4. Réservé au Super Admin (RG25). */
 
 export type StatutEtablissement = 'en_attente' | 'validee' | 'masquee' | 'suspendue';
 
+/**
+ * DEUX FAÇONS DE NE PAS ÊTRE EN LIGNE, et il ne faut pas les confondre
+ * (tranché par le client, 7 octobre 2026) :
+ *
+ * - `masquee` — la fiche est **en cours de mise à jour**. Elle sort du site le
+ *   temps des travaux et y revient. Ce n'est pas une sanction.
+ * - `suspendue` — l'établissement est **retiré du site jusqu'à réactivation**.
+ *
+ * Les libellés le disent, parce que « Masquée » seul ne dit pas pourquoi, et
+ * qu'un administrateur qui lit sa liste doit distinguer une fiche en travaux
+ * d'une fiche sanctionnée sans avoir à ouvrir le journal.
+ */
 export const LIBELLE_STATUT: Record<StatutEtablissement, string> = {
   en_attente: 'En attente',
   validee: 'Publiée',
-  masquee: 'Masquée',
+  masquee: 'En mise à jour',
   suspendue: 'Suspendue',
 };
 
@@ -226,6 +239,8 @@ export interface TableauDeBordAdmin {
   visites: {
     vues_fiches: Comparaison;
     demandes: Comparaison;
+    /** Sans comparaison : la table de traces n'a pas de passé avant sa migration. */
+    recherches: number;
     vues_par_jour: { jour: string; vues: number }[];
   };
   top_etablissements: {
@@ -240,6 +255,17 @@ export interface TableauDeBordAdmin {
     ville: { nom: string };
     vues: number;
   }[];
+  /** Les six étapes, toujours — même à zéro, pour que le graphique ne bouge pas. */
+  pipeline: { etape: StatutProspect; total: number }[];
+  dernieres_factures: {
+    id: string;
+    numero: string;
+    objet: string;
+    total_ttc: string;
+    statut_paiement: StatutPaiement;
+    emise_le: string;
+    etablissement: { id: string; nom: string; slug: string };
+  }[];
 }
 
 export const chargerTableauDeBordAdmin = () =>
@@ -253,7 +279,14 @@ export interface StatistiquesAdmin {
   periode: PeriodeStatistiques;
   granularite: 'jour' | 'semaine' | 'mois';
   depuis: string;
-  indicateurs: { vues_fiches: number; demandes: number; nouveaux_avis: number };
+  indicateurs: {
+    vues_fiches: number;
+    demandes: number;
+    nouveaux_avis: number;
+    recherches: number;
+    /** Demandes ÷ recherches, en proportion. Nul quand il n'y a rien à diviser. */
+    taux_transformation: number | null;
+  };
   courbe: { debut: string; vues: number }[];
   vues_par_type: { type: TypeEtablissement; vues: number }[];
   top_etablissements: {
@@ -268,6 +301,7 @@ export interface StatistiquesAdmin {
     vues: number;
     contacts: number;
   }[];
+  recherches_par_ville: { nom: string; slug: string; recherches: number }[];
   options: { villes: { nom: string; slug: string }[] };
 }
 
@@ -287,12 +321,13 @@ export const chargerStatistiquesAdmin = (filtres: {
 //  Secrétariat — comptes et portées déléguées (RG05, RG25)
 // ---------------------------------------------------------------------------
 
-export type PorteeDeleguee = 'fiches' | 'contacts' | 'avis';
+export type PorteeDeleguee = 'fiches' | 'contacts' | 'avis' | 'blog';
 
 export const LIBELLE_PORTEE: Record<PorteeDeleguee, string> = {
   fiches: 'Fiches',
   contacts: 'Demandes de contact',
   avis: 'Modération des avis',
+  blog: 'Relecture du blog',
 };
 
 /** Ce que chaque portée ouvre réellement — l'écran doit le dire, pas le supposer. */
@@ -300,6 +335,9 @@ export const EFFET_PORTEE: Record<PorteeDeleguee, string> = {
   fiches: 'Voir et proposer des modifications de la fiche.',
   contacts: 'Lire les demandes de parents et les faire avancer.',
   avis: 'Répondre aux avis publiés et les signaler.',
+  // Approuver adopte au passage une catégorie inédite (B-50) : cette portée
+  // enrichit le référentiel que toute la rédaction se verra proposer.
+  blog: 'Relire les articles soumis, les approuver ou les refuser — et adopter leur catégorie.',
 };
 
 export interface CompteSecretariat {
@@ -469,8 +507,76 @@ export interface AbonnementAdmin {
   debut: string;
   echeance: string;
   statut: 'essai' | 'actif' | 'expire' | 'resilie';
+  /**
+   * Ce qu'une facture porterait — calculé par le serveur, jamais par l'écran.
+   *
+   * Nul sur un essai gratuit, qui n'a pas de tarif et ne se facture pas
+   * (RG13).
+   */
+  apercu: {
+    base_ht: string;
+    remise_pct: number;
+    remise_mad: string;
+    montant_ht: string;
+    tva_pct: number;
+    tva: string;
+    total_ttc: string;
+  } | null;
   factures: { id: string; numero: string; total_ttc: string; statut_paiement: StatutPaiement }[];
 }
 
 export const chargerAbonnements = (etablissementId: string) =>
   apiFetch<AbonnementAdmin[]>(`/admin/etablissements/${etablissementId}/abonnements`);
+
+// ---------------------------------------------------------------------------
+//  Création de compte — RG25
+// ---------------------------------------------------------------------------
+
+export interface CompteCree {
+  id: string;
+  email: string;
+  name: string;
+  /**
+   * RENDU UNE SEULE FOIS, et par le serveur seul. Il n'est stocké nulle part
+   * en clair — ni en base, qui n'en garde qu'un hachage Argon2id, ni au
+   * journal d'audit. Recharger l'écran ne le retrouvera pas : c'est à
+   * l'administrateur de le transmettre à son titulaire.
+   */
+  mot_de_passe: string;
+}
+
+export interface NouveauCompte {
+  email: string;
+  nom: string;
+  role: 'secretariat' | 'commercial';
+  telephone?: string;
+  /** Secrétariat seulement — l'API refuse un commercial rattaché. */
+  etablissement_id?: string;
+}
+
+export const creerCompte = (compte: NouveauCompte) =>
+  apiFetch<CompteCree>('/admin/comptes', { method: 'POST', body: JSON.stringify(compte) });
+
+/** Les sessions en cours du titulaire sont détruites (RG25). */
+export const reinitialiserMotDePasse = (id: string) =>
+  apiFetch<{ id: string; email: string; nom: string; mot_de_passe: string }>(
+    `/admin/comptes/${id}/mot-de-passe`,
+    { method: 'POST' },
+  );
+
+// ---------------------------------------------------------------------------
+//  Explorateur de base — lecture seule, six tables
+// ---------------------------------------------------------------------------
+
+export interface TableConsultable {
+  cle: string;
+  libelle: string;
+  /** Colonnes choisies une par une côté serveur — jamais `SELECT *`. */
+  colonnes: string[];
+}
+
+export const chargerCatalogueBase = () => apiFetch<TableConsultable[]>('/admin/base');
+
+/** 422 si la table n'est pas dans la liste fermée — aucun nom arbitraire. */
+export const chargerTableBase = (table: string, page: number) =>
+  apiFetchPage<Record<string, unknown>>(`/admin/base/${table}?page=${page}`);

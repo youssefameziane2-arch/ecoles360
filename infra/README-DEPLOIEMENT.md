@@ -1,7 +1,7 @@
 # Mise en service — VPS Hostinger KVM 2
 
 Procédure d'amorçage d'un serveur neuf, puis exploitation courante.
-Cible du livrable 14 : Ubuntu 24 LTS, Docker Engine, cinq conteneurs,
+Cible du livrable 14 : Ubuntu 24 LTS, Docker Engine, six conteneurs,
 `ecoles360.com` déjà acheté chez Hostinger.
 
 > **Ce document décrit ce qui est construit, pas ce qui est prévu.**
@@ -196,9 +196,11 @@ vivant dans Redis, remplacer le seul conteneur `api` ne déconnecte personne.
 
 ## 6. Sauvegarde
 
-Le livrable 14 §5 confie la sauvegarde de 3 h au conteneur `scheduler`.
-**Ce conteneur n'existe pas** (voir plus bas). En attendant, une tâche cron de
-l'hôte tient le même rôle — RPO 24 h :
+Le livrable 14 §5 confie la sauvegarde de 3 h au conteneur `scheduler`. Ce
+conteneur existe désormais (§7), mais **la sauvegarde reste hors de lui**, et
+c'est délibéré : un dump lancé depuis l'application dépendrait de la bonne
+santé de l'application. Une sauvegarde doit pouvoir se prendre le jour où le
+reste va mal. Elle est donc portée par une tâche cron de l'hôte — RPO 24 h :
 
 ```bash
 crontab -e -u deploy
@@ -221,11 +223,52 @@ la rétention 30/4/12, et le `rsync` du volume `storage` (les photos des fiches)
 
 ---
 
-## 7. Ce qui n'est pas couvert
+## 7. Les purges de la loi 09-08
+
+Le conteneur `scheduler` partage l'image de l'API et n'en diffère que par sa
+commande (`node dist/scheduler.js`). Il n'écoute aucun port. Trois tâches, à
+l'heure de Casablanca :
+
+| Heure | Tâche | Effet |
+|---|---|---|
+| 02 h 00, chaque jour | `purge.demandes` | anonymise les demandes **traitées** depuis plus de 12 mois — nom, téléphone et message partent, la ligne reste |
+| 02 h 30, chaque jour | `purge.traces` | agrège les traces d'audience de plus de 12 mois par fiche, type et jour, **puis** supprime les lignes brutes |
+| 04 h 00, le dimanche | `purge.audit` | supprime les entrées du journal d'audit de plus de 3 ans (RG26) |
+
+**Une seule réplique, jamais plus.** Les purges sont rejouables, mais deux
+répliques écriraient deux entrées de journal par exécution — or c'est ce
+journal qui sert de preuve qu'elles tournent.
+
+### Comment vérifier qu'elles tournent
+
+Ce conteneur n'a pas de `healthcheck` : il ne répond à personne. Ce qui se
+surveille, c'est **la trace qu'il laisse**. Au démarrage :
+
+```bash
+docker compose -f docker-compose.prod.yml logs --tail 20 scheduler
+```
+
+La ligne attendue nomme les trois horaires. Ensuite, et c'est le contrôle qui
+compte, une entrée `purge.*` par nuit dans le journal d'audit — visible depuis
+l'écran « Journal » de l'administration, ou directement :
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T mysql mysql -u root \
+  -p"$(cat secrets/mysql_root.txt)" ecoles360_prod \
+  -e "SELECT action, details, cree_le FROM journal_audits WHERE role_acteur='systeme' ORDER BY id DESC LIMIT 10;"
+```
+
+**Un compteur à zéro est une réponse valable ; l'absence d'entrée, non.** Le
+jour où la CNDP demande la preuve que les durées de conservation sont tenues,
+c'est cette requête qui répond.
+
+---
+
+## 8. Ce qui n'est pas couvert
 
 | Manque | Conséquence |
 |---|---|
-| `worker` et `scheduler` (BullMQ, `@nestjs/schedule`) — B-09 | **Les purges de la loi 09-08 ne tournent pas** : anonymisation des demandes à 12 mois, agrégation des traces, purge du journal à 3 ans (livrable 10 §6.3). C'est une obligation légale, pas une commodité. |
+| `worker` (file BullMQ) — B-09 | Aucune conséquence fonctionnelle aujourd'hui : les seuls traitements de fond prévus sont les purges, et elles tournent dans `scheduler` (§7). Une file redeviendra utile le jour où un traitement durera assez longtemps pour mériter une reprise. |
 | Rendu serveur du site public — B-45 | Le front est une application monopage : Google reçoit une page vide et un paquet JavaScript. Pour un annuaire dont le trafic vient de la recherche, c'est le point le plus coûteux. |
 | Staging (`docker-compose.staging.yml`) | Aucun environnement de recette : toute vérification se fait en local ou en production. |
 | Sauvegarde chiffrée et externalisée | Voir §6. |
@@ -233,7 +276,7 @@ la rétention 30/4/12, et le `rsync` du volume `storage` (les photos des fiches)
 
 ---
 
-## 8. Vérifié, et comment
+## 9. Vérifié, et comment
 
 Les deux images ont été **construites et exécutées** avant d'être proposées —
 elles ne sont pas seulement écrites :

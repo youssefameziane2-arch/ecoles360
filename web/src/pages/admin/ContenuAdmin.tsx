@@ -13,6 +13,7 @@ import {
 import { AvecIdentite, CoquilleEspace } from '@/components/CoquilleEspace';
 import { Badge, Button, Checkbox, Icon, Input, Tabs, Textarea, Toast } from '@/ds/composants';
 import { useTitrePage } from '@/lib/titre';
+import { CategoriesArticlesAdmin } from './CategoriesArticlesAdmin';
 import { PageAProposAdmin } from './PageAProposAdmin';
 import { PageLegaleAdmin } from './PageLegaleAdmin';
 import { CLES_LEGALES, type CleLegale } from '@/api/pages';
@@ -25,10 +26,9 @@ type Message = { tone: 'success' | 'error'; texte: string };
 /**
  * Contenu du site — FAQ publique et page « À propos » (livrable 11 §3.7).
  *
- * DEUX ONGLETS, UN PAR CONTENU PUBLIÉ : chacun a sa propre publication et sa
- * propre trace au journal ; les empiler sur une page obligerait à défiler
- * toute la FAQ pour atteindre les coordonnées. Les catégories d'articles de la
- * maquette attendent une migration, elles n'ont pas d'onglet.
+ * UN ONGLET PAR CONTENU PUBLIÉ : chacun a sa propre publication et sa propre
+ * trace au journal ; les empiler sur une page obligerait à défiler toute la
+ * FAQ pour atteindre les coordonnées.
  *
  * ÉCRAN DESSINÉ SANS RÉFÉRENCE : la maquette montre la FAQ côté visiteur, pas
  * son écran de gestion. Il reprend donc les conventions des autres écrans du
@@ -62,6 +62,7 @@ export function ContenuAdmin() {
 const ONGLETS = [
   { key: 'faq', label: 'Questions fréquentes' },
   { key: 'a-propos', label: 'Page « À propos »' },
+  { key: 'categories', label: 'Catégories d’articles' },
   { key: 'mentions-legales', label: 'Mentions légales' },
   { key: 'confidentialite', label: 'Confidentialité' },
   { key: 'cookies', label: 'Cookies' },
@@ -75,6 +76,7 @@ function Onglets() {
       <Tabs tabs={ONGLETS} value={onglet} onChange={setOnglet} />
       {onglet === 'faq' && <Faq />}
       {onglet === 'a-propos' && <PageAProposAdmin />}
+      {onglet === 'categories' && <CategoriesArticlesAdmin />}
       {/*
         Les trois pages légales partagent un composant : elles ne diffèrent
         que par leur clé CMS. `key` le remonte pour que React remplace

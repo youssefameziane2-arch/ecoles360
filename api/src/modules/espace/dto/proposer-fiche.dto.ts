@@ -10,9 +10,53 @@ import {
   IsUrl,
   MaxLength,
   Min,
+  Validate,
   ValidateIf,
   ValidateNested,
+  ValidatorConstraint,
+  type ValidatorConstraintInterface,
 } from 'class-validator';
+
+/** Les plateformes que la maquette affiche — `socDefs` du site public. */
+const RESEAUX_CONNUS = ['facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'web'] as const;
+
+/**
+ * Valide `socials` : clés connues, valeurs en http(s).
+ *
+ * UN VALIDATEUR SUR MESURE PARCE QUE LA FORME EST UN DICTIONNAIRE. Les
+ * décorateurs de `class-validator` portent sur des champs déclarés ; ici les
+ * clés SONT la donnée. La seule autre voie aurait été de remplacer l'objet par
+ * six champs nommés — ce qui aurait cassé le format déjà stocké en base et
+ * déjà lu par la fiche publique.
+ */
+@ValidatorConstraint({ name: 'reseauxSociauxValides' })
+export class ReseauxSociauxValides implements ValidatorConstraintInterface {
+  validate(valeur: unknown): boolean {
+    if (valeur === undefined || valeur === null) return true;
+    if (typeof valeur !== 'object' || Array.isArray(valeur)) return false;
+
+    return Object.entries(valeur as Record<string, unknown>).every(([cle, lien]) => {
+      if (!(RESEAUX_CONNUS as readonly string[]).includes(cle)) return false;
+      if (typeof lien !== 'string') return false;
+      // Vider un réseau est une façon légitime de le retirer.
+      if (lien.trim() === '') return true;
+
+      try {
+        // `new URL` plutôt qu'une expression régulière : c'est l'analyseur du
+        // navigateur, donc exactement ce qui décidera du sort de l'`href`.
+        const url = new URL(lien);
+
+        return (url.protocol === 'http:' || url.protocol === 'https:') && lien.length <= 300;
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  defaultMessage(): string {
+    return `Les réseaux sociaux acceptent ${RESEAUX_CONNUS.join(', ')}, avec une adresse http ou https.`;
+  }
+}
 
 /** Un chiffre clé de la fiche — `{ label, valeur }` (livrable 12 §5). */
 export class ChiffreCleDto {
@@ -186,9 +230,27 @@ export class ProposerFicheDto {
   @IsObject()
   horaires?: Record<string, string>;
 
-  @ApiPropertyOptional({ description: 'Liens des réseaux sociaux, par plateforme.' })
+  /**
+   * Liens des réseaux sociaux — plateformes connues, adresses web seules.
+   *
+   * CES VALEURS DEVIENNENT DES `href` SUR LE SITE PUBLIC, et c'est pourquoi
+   * elles ne peuvent plus être un objet quelconque. Un `@IsObject()` seul
+   * laissait passer `{"facebook": "javascript:…"}` : la fiche passait bien par
+   * la file de propositions (RG20), mais l'administrateur y relit un nom de
+   * plateforme, pas une URL. Le lien partait alors sur chaque visite de la
+   * page publique.
+   *
+   * LES CLÉS SONT UNE LISTE FERMÉE. Libres, elles produisaient des pastilles
+   * au nom choisi par l'établissement — « Contactez-nous ! » en guise de
+   * réseau social — et rien n'empêchait d'en poser cinquante.
+   */
+  @ApiPropertyOptional({
+    description: 'Liens des réseaux sociaux, par plateforme connue. Adresses http ou https.',
+    example: { facebook: 'https://facebook.com/mon-ecole' },
+  })
   @IsOptional()
   @IsObject()
+  @Validate(ReseauxSociauxValides)
   socials?: Record<string, string>;
 
   @ApiPropertyOptional({ type: [AutreProjetDto] })

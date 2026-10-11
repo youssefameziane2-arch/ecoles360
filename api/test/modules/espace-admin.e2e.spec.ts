@@ -166,6 +166,76 @@ describe('Espace connecté et administration (intégration)', () => {
       await etablissement.get('/mon-espace/avis').expect(200);
       await etablissement.get('/mon-espace/demandes').expect(200);
     });
+
+    /**
+     * LA FACTURATION N'EST PAS UNE PORTÉE DÉLÉGUÉE. La RG05 n'en connaît que
+     * trois — `fiches`, `contacts`, `avis` — et une secrétaire à qui l'on a
+     * confié la boîte de contacts n'a pas à lire ce que son école paie.
+     *
+     * Ce n'est donc PAS un 403 de portée manquante : il n'existe aucune portée
+     * à accorder. C'est le rôle qui tranche, et le `@Roles` de la méthode
+     * surcharge celui de la classe. Sans cette surcharge, le contrôleur étant
+     * déclaré `@Roles(etablissement, secretariat)`, la route serait ouverte aux
+     * deux — et rien à l'écran ne l'aurait signalé.
+     */
+    it('refuse la facturation à un compte secrétariat, même largement doté (RG05)', async () => {
+      const sara = await connecte('sara.s@ecoles360.com');
+
+      await sara.get('/mon-espace/demandes').expect(200);
+      await sara.get('/mon-espace/facturation').expect(403);
+    });
+
+    it('sert la facturation au compte établissement', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+
+      const reponse = await etablissement.get('/mon-espace/facturation').expect(200);
+
+      expect(reponse.body.data).toHaveProperty('abonnement');
+      expect(reponse.body.data).toHaveProperty('essai');
+      expect(Array.isArray(reponse.body.data.factures)).toBe(true);
+    });
+
+    /**
+     * LES MONTANTS SONT DES CHAÎNES, comme les identifiants. Un `Decimal(10,2)`
+     * rendu en nombre JavaScript perd des centimes sur les grands montants, et
+     * une facture est exactement l'endroit où cela se verrait.
+     */
+    it('rend les montants en chaînes, jamais en nombres', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const reponse = await etablissement.get('/mon-espace/facturation').expect(200);
+
+      for (const facture of reponse.body.data.factures) {
+        expect(typeof facture.total_ttc).toBe('string');
+        expect(typeof facture.montant_ht).toBe('string');
+        expect(typeof facture.id).toBe('string');
+      }
+
+      // `?.` NE SUFFIT PAS ICI : sans abonnement, `abonnement?.tarif_mad` vaut
+      // `undefined`, qui est bien `!== null` — la condition passait et le test
+      // déréférençait un nul. La base n'étant pas remise à zéro, une autre
+      // suite peut très bien avoir expiré cet abonnement entre-temps.
+      const tarif = reponse.body.data.abonnement?.tarif_mad;
+
+      if (tarif !== null && tarif !== undefined) {
+        expect(typeof tarif).toBe('string');
+      }
+    });
+
+    /** Chaque école ne voit que SES factures — la portée vient de la session. */
+    it('ne rend que les factures de l’établissement de la session', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const fiche = await db.etablissement.findUniqueOrThrow({ where: { slug: SLUG } });
+
+      const reponse = await etablissement.get('/mon-espace/facturation').expect(200);
+      const numeros = reponse.body.data.factures.map((f: { numero: string }) => f.numero);
+
+      const siennes = await db.facture.findMany({
+        where: { etablissement_id: fiche.id },
+        select: { numero: true },
+      });
+
+      expect(new Set(numeros)).toEqual(new Set(siennes.map((f) => f.numero)));
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -191,6 +261,54 @@ describe('Espace connecté et administration (intégration)', () => {
         where: { etablissement_id: avant.id, statut: 'en_attente' },
       });
       expect(proposition.champs_modifies).toHaveProperty('description');
+    });
+
+    /**
+     * UN LIEN DE RÉSEAU SOCIAL DEVIENT UN `href` SUR LE SITE PUBLIC.
+     *
+     * Le champ n'était validé que comme objet : un établissement pouvait
+     * proposer `{"facebook": "javascript:…"}`. La file de propositions (RG20)
+     * n'y changeait rien — l'administrateur y relit un nom de plateforme, pas
+     * une adresse — et le lien partait ensuite à chaque visite de la fiche.
+     *
+     * Les clés sont elles aussi bornées : libres, elles produisaient des
+     * pastilles au nom choisi par l'établissement, en nombre illimité.
+     */
+    it.each([
+      ['un schéma exécutable', { facebook: 'javascript:alert(1)' }],
+      ['une adresse sans protocole', { facebook: 'facebook.com/mon-ecole' }],
+      ['une plateforme inconnue', { 'Appelez-nous !': 'https://exemple.ma' }],
+      ['autre chose qu’une chaîne', { facebook: 42 }],
+    ])('refuse %s dans les réseaux sociaux', async (_libelle, socials) => {
+      const etablissement = await connecte('contact@almassira.ma');
+
+      const refus = await etablissement
+        .post('/mon-espace/fiche/propositions')
+        .send({ socials })
+        .expect(422);
+
+      expect(refus.body.code).toBe(ERROR_CODES.VALIDATION_ECHOUEE);
+    });
+
+    it('accepte une adresse http(s) sur une plateforme connue', async () => {
+      const avant = await sansPropositionEnAttente();
+      const etablissement = await connecte('contact@almassira.ma');
+
+      const socials = { facebook: 'https://facebook.com/mon-ecole', web: '' };
+
+      await etablissement.post('/mon-espace/fiche/propositions').send({ socials }).expect(201);
+
+      const proposition = await db.propositionFiche.findFirstOrThrow({
+        where: { etablissement_id: avant.id, statut: 'en_attente' },
+      });
+
+      // Vider un réseau reste une façon légitime de le retirer : la chaîne
+      // vide passe, elle ne produit simplement aucun lien.
+      //
+      // `champs_modifies` garde un AVANT et un APRÈS par champ — c'est ce que
+      // l'administrateur relit pour décider (RG20), pas la seule valeur
+      // proposée.
+      expect(proposition.champs_modifies).toMatchObject({ socials: { apres: socials } });
     });
 
     /**
@@ -694,6 +812,201 @@ describe('Espace connecté et administration (intégration)', () => {
 
       const etablissement = await connecte('contact@almassira.ma');
       await etablissement.get('/admin/audit').expect(403);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  //  Explorateur de base — lecture seule
+  // ---------------------------------------------------------------------------
+
+  /**
+   * CE QUI SE TESTE ICI N'EST PAS QUE L'ÉCRAN AFFICHE, mais qu'il N'AFFICHE
+   * PAS. Un explorateur générique est l'endroit exact où une fuite passe
+   * inaperçue : personne ne relit la liste des colonnes d'un écran qui marche.
+   *
+   * Ces trois assertions doivent survivre à toutes les évolutions du schéma.
+   * Le jour où quelqu'un ajoute un jeton à `users`, elles sont ce qui empêche
+   * qu'il s'affiche.
+   */
+  describe('explorateur de base', () => {
+    it('ne rend que les six tables de la liste fermée', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const reponse = await admin.get('/admin/base').expect(200);
+
+      const cles = (reponse.body.data as { cle: string }[]).map((t) => t.cle);
+
+      expect(cles).toEqual([
+        'etablissements',
+        'utilisateurs',
+        'avis',
+        'articles',
+        'factures',
+        'leads',
+      ]);
+    });
+
+    /**
+     * UNE TABLE HORS LISTE EST UN 422, pas un 404 : ce n'est pas une ressource
+     * absente, c'est un paramètre refusé. La nuance compte — un 404 inviterait
+     * à chercher la bonne orthographe.
+     */
+    it.each(['users', 'permissions', 'journal_audits', 'password_reset_tokens'])(
+      'refuse la table « %s », hors de la liste consultable',
+      async (table) => {
+        const admin = await connecte('direction@ecoles360.com');
+
+        await admin.get(`/admin/base/${table}`).expect(422);
+      },
+    );
+
+    it('NE REND JAMAIS le hachage de mot de passe d’un compte', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const reponse = await admin.get('/admin/base/utilisateurs').expect(200);
+
+      const brut = JSON.stringify(reponse.body.data);
+
+      expect(brut).not.toContain('$argon2');
+      expect(brut).not.toContain('passwordHash');
+      expect(brut).not.toContain('password_hash');
+    });
+
+    it('NE REND JAMAIS le contact d’un auteur d’avis (loi 09-08)', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const reponse = await admin.get('/admin/base/avis').expect(200);
+
+      for (const ligne of reponse.body.data as Record<string, unknown>[]) {
+        expect(ligne).not.toHaveProperty('auteur_contact');
+      }
+    });
+
+    /**
+     * NI TÉLÉPHONE NI ADRESSE SUR UN LEAD. Ce sont les coordonnées d'un
+     * parent, et c'est l'établissement propriétaire qui a le droit de les lire
+     * (RG23). Un explorateur sert à compter et à vérifier, pas à extraire un
+     * fichier de prospection.
+     */
+    it('NE REND NI téléphone NI adresse sur un lead (RG23)', async () => {
+      const admin = await connecte('direction@ecoles360.com');
+      const reponse = await admin.get('/admin/base/leads').expect(200);
+
+      for (const ligne of reponse.body.data as Record<string, unknown>[]) {
+        expect(ligne).not.toHaveProperty('tel');
+        expect(ligne).not.toHaveProperty('email');
+        expect(ligne).not.toHaveProperty('whatsapp');
+      }
+    });
+
+    it('n’est ouvert qu’à l’administration (RG25)', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+
+      await etablissement.get('/admin/base').expect(403);
+      await etablissement.get('/admin/base/utilisateurs').expect(403);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  //  Centre de notifications
+  // ---------------------------------------------------------------------------
+
+  /**
+   * CE QUI SE TESTE, C'EST LA PORTÉE. Une notification est bornée à son
+   * destinataire par `user_id`, et il n'existe aucun paramètre qui permette
+   * d'en désigner un autre — mais c'est le genre d'invariant qu'une
+   * refonte casse sans bruit.
+   */
+  describe('centre de notifications', () => {
+    it('refuse l’anonyme', async () => {
+      await request(app.getHttpServer()).get('/api/v1/notifications').expect(401);
+    });
+
+    it('ne rend que les notifications de la session, et compte les non lues', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const compte = await db.user.findUniqueOrThrow({
+        where: { email: 'contact@almassira.ma' },
+        select: { id: true },
+      });
+
+      const autre = await db.user.findFirstOrThrow({
+        where: { email: { not: 'contact@almassira.ma' } },
+        select: { id: true },
+      });
+
+      // Une pour moi, une pour quelqu'un d'autre : seule la mienne doit sortir.
+      const mienne = await db.notification.create({
+        data: {
+          user_id: compte.id,
+          type: 'demande',
+          contenu: 'Notification de test — la mienne.',
+          canal: 'in_app',
+          envoyee_le: new Date(),
+        },
+      });
+
+      const voisine = await db.notification.create({
+        data: {
+          user_id: autre.id,
+          type: 'demande',
+          contenu: 'Notification de test — celle du voisin.',
+          canal: 'in_app',
+          envoyee_le: new Date(),
+        },
+      });
+
+      const reponse = await etablissement.get('/notifications').expect(200);
+      const ids = (reponse.body.data.notifications as { id: string }[]).map((n) => n.id);
+
+      expect(ids).toContain(mienne.id.toString());
+      expect(ids).not.toContain(voisine.id.toString());
+      expect(reponse.body.data.non_lues).toBeGreaterThan(0);
+
+      await db.notification.deleteMany({ where: { id: { in: [mienne.id, voisine.id] } } });
+    });
+
+    /**
+     * MARQUER LUES NE TOUCHE QUE LES SIENNES. Un `updateMany` dont le `where`
+     * perdrait son `user_id` viderait les notifications de toute la
+     * plateforme, et rien ne le signalerait.
+     */
+    it('marque ses propres notifications lues, et seulement les siennes', async () => {
+      const etablissement = await connecte('contact@almassira.ma');
+      const compte = await db.user.findUniqueOrThrow({
+        where: { email: 'contact@almassira.ma' },
+        select: { id: true },
+      });
+      const autre = await db.user.findFirstOrThrow({
+        where: { email: { not: 'contact@almassira.ma' } },
+        select: { id: true },
+      });
+
+      const mienne = await db.notification.create({
+        data: {
+          user_id: compte.id,
+          type: 'demande',
+          contenu: 'À marquer lue.',
+          canal: 'in_app',
+          envoyee_le: new Date(),
+        },
+      });
+      const voisine = await db.notification.create({
+        data: {
+          user_id: autre.id,
+          type: 'demande',
+          contenu: 'Ne doit pas bouger.',
+          canal: 'in_app',
+          envoyee_le: new Date(),
+        },
+      });
+
+      await etablissement.patch('/notifications/lues').expect(204);
+
+      expect(
+        (await db.notification.findUniqueOrThrow({ where: { id: mienne.id } })).lue_le,
+      ).not.toBeNull();
+      expect(
+        (await db.notification.findUniqueOrThrow({ where: { id: voisine.id } })).lue_le,
+      ).toBeNull();
+
+      await db.notification.deleteMany({ where: { id: { in: [mienne.id, voisine.id] } } });
     });
   });
 });

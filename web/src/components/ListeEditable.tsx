@@ -7,6 +7,15 @@ export interface ColonneListe {
   requise?: boolean;
   aide?: string;
   lignes?: number;
+  /**
+   * Valeurs admises : la colonne devient une liste déroulante.
+   *
+   * POSÉE PARCE QUE LE SERVEUR REFUSE DÉJÀ LE RESTE. Les plateformes des
+   * réseaux sociaux sont une liste fermée côté API : laisser taper « Twitter »
+   * à la main produisait un 422 après coup, sur un écran qui n'avait rien
+   * annoncé. Mieux vaut ne proposer que ce qui sera accepté.
+   */
+  options?: readonly { readonly valeur: string; readonly libelle: string }[];
 }
 
 /**
@@ -101,6 +110,35 @@ export function ListeEditable({
                     onChange={(e) => majLigne(rang, colonne.cle, e.target.value)}
                     style={{ ...saisie, resize: 'vertical', padding: '9px 11px', height: 'auto' }}
                   />
+                </label>
+              ) : colonne.options ? (
+                <label key={colonne.cle} style={{ display: 'block' }}>
+                  <span style={etiquette}>
+                    {colonne.label}
+                    {colonne.requise && <span style={{ color: '#C42B38' }}> *</span>}
+                  </span>
+                  <select
+                    value={ligne[colonne.cle] ?? ''}
+                    onChange={(e) => majLigne(rang, colonne.cle, e.target.value)}
+                    style={{ ...saisie, cursor: 'pointer' }}
+                  >
+                    <option value="">{colonne.aide ?? 'Choisir…'}</option>
+                    {/*
+                      UNE VALEUR DÉJÀ ENREGISTRÉE HORS LISTE RESTE AFFICHÉE.
+                      Sans cette option, un réseau saisi avant que la liste ne
+                      se ferme disparaîtrait du menu, et l'enregistrement
+                      suivant l'effacerait sans que personne ne l'ait demandé.
+                    */}
+                    {ligne[colonne.cle] &&
+                      !colonne.options.some((o) => o.valeur === ligne[colonne.cle]) && (
+                        <option value={ligne[colonne.cle]}>{ligne[colonne.cle]} (à corriger)</option>
+                      )}
+                    {colonne.options.map((option) => (
+                      <option key={option.valeur} value={option.valeur}>
+                        {option.libelle}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               ) : (
                 <label key={colonne.cle} style={{ display: 'block' }}>

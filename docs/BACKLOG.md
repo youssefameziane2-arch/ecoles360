@@ -25,6 +25,36 @@ passe les tests, et n'est fausse que par rapport à ce que le client voulait.
 
 ---
 
+## Décisions prises par délégation — 6 octobre 2026
+
+Délégation reçue : « décide pour moi s'il y a quelque chose à choisir ».
+
+**Elle ne porte pas sur tout.** Un développeur peut déléguer SES choix — la
+forme d'un écran, le découpage d'un composant, l'ordre d'un lot. Il ne peut pas
+déléguer ceux du client : une règle de gestion, un prix, la rémunération de
+quelqu'un. Inventer l'une de ces règles produit un défaut qui compile, passe
+les tests, et ne se découvre qu'à la recette. La ligne est tracée ici.
+
+### Tranché, et fait
+
+| | |
+|---|---|
+| **`worker` BullMQ abandonné** | Les purges tournent dans `scheduler`. Motif et coût de l'écart : B-09. |
+| **`trustStats` : deux chiffres remplacés** | « Parents par mois » n'est tracé par rien (B-40) ; une note moyenne de tout le catalogue vaudrait, au démarrage, la note de la seule école notée. Remplacés par le nombre de types (RG02) et la gratuité. Afficher les valeurs de la maquette aurait publié des chiffres faux. |
+| **« Villes couvertes »** | Compte les villes portant une fiche validée, non le référentiel. Ce n'était pas un arbitrage mais un défaut : 12 annoncées pour 6 réelles. |
+| **Formules de visibilité sans montants** | Pas une décision non plus, en définitive : **la maquette l'écrit** (« Tarif communiqué par votre conseiller »), et le schéma range le tarif dans le contrat, jamais dans une grille publique. |
+
+### Non tranché, et pourquoi
+
+| | |
+|---|---|
+| **`masquee` vs `suspendue`** | ~~Question posée au client~~ — **tranché le 7 octobre 2026**, voir B-47. |
+| **Taux de commission** | ~~Reste à 0~~ — **fixé à 8 % par le client le 7 octobre 2026**, et modifiable depuis l'écran « Paramètres ». Voir B-48. |
+| **« Taux de contact » (B-42)** | Numérateur et dénominateur indéfinis, et aucun rapport des nombres de la maquette ne donne son 1,5 %. La tuile reste omise. |
+| **Définition d'une « visite » (B-40)** | Session ou page vue : la maquette ne le dit pas, et le choix change la facturation à la vue (RG12). |
+
+---
+
 ## Ouvert — à arbitrer
 
 ### B-01 · Sonde `/health` : profondeur des cinq files BullMQ
@@ -116,7 +146,29 @@ diffèrent que par leur commande : `dist/main.js`, `dist/worker.js`, `dist/sched
 `@nestjs/schedule` sont hors périmètre.
 **Proposition :** ajouter `src/worker.ts` et `src/scheduler.ts` au lot des files.
 Aucune modification du Dockerfile ne sera nécessaire.
-**Statut :** planifié — lot BullMQ.
+
+**Fait pour `scheduler`, abandonné pour `worker`.** `@nestjs/schedule@4` est
+installé (la version 12 exige Nest 11), `src/scheduler.ts` monte un contexte
+sans serveur HTTP, et `docker-compose.prod.yml` déclare le conteneur. Les trois
+purges de la loi 09-08 tournent — 02 h 00, 02 h 30, dimanche 04 h 00, heure de
+Casablanca (voir `infra/README-DEPLOIEMENT.md` §7).
+
+**ÉCART ASSUMÉ AVEC LE LIVRABLE :** il confie ces traitements à une file BullMQ
+`maintenance` consommée par un conteneur `worker`. Ils s'exécutent directement
+dans `scheduler`. Ces purges sont idempotentes, tournent une fois par jour et
+durent quelques secondes : une file ajouterait un conteneur, un état de job
+dans Redis et une mécanique de reprise pour un bénéfice nul à cette échelle.
+Les déplacer dans une file plus tard ne change pas une ligne de
+`PurgesService`. `worker` redeviendra utile le jour où un traitement durera
+assez longtemps pour mériter une reprise — l'envoi d'e-mails en lot, par
+exemple, qui n'existe pas encore.
+
+**Ce que l'écart coûte :** aucune reprise automatique si une purge échoue en
+cours de route. Elle est rejouable sans dommage (totaux écrits en `set`, jamais
+en `increment` ; les lignes déjà anonymisées sont exclues du décompte), donc
+l'exécution suivante rattrape. Ce qui manque, c'est l'alerte : une purge qui
+échoue n'est visible que par l'absence de son entrée au journal d'audit.
+**Statut :** fait pour `scheduler` ; `worker` abandonné, motif ci-dessus.
 
 ### B-10 · Jobs CI `web`, `images` et `e2e`
 **Source :** L14 §3 — quatre jobs : `api` · `web` · `images` · `e2e`.
@@ -490,7 +542,7 @@ journalisée sous le rôle réel de l'acteur (elle l'était sous « établisseme
 en dur). Le secrétariat reste fermé.
 **Statut :** corrigé.
 
-## B-38 — Tableau de bord admin : « Pipeline CRM Clients » non construit
+## B-38 — Tableau de bord admin : « Pipeline CRM Clients » — fait
 
 La maquette (`isAdminDash`, liste `adminPipe`) pose en bas du tableau de bord
 le pipeline de prospection : une barre par étape, avec son effectif. Le modèle
@@ -502,9 +554,18 @@ règles de portée (un commercial ne voit que ses prospects).
 **À faire :** route de lecture `GET /admin/prospects` (ou un agrégat par étape
 dans `/admin/tableau-de-bord`), puis le bloc. L'écran « CRM Clients » en
 bénéficierait d'abord.
-**Statut :** planifié — lot CRM (avenant n° 1).
+**Fait le 8 octobre 2026.** Le CRM étant construit, le bloc n'était plus qu'une
+lecture de plus : un `groupBy` par étape dans `/admin/tableau-de-bord`.
 
-## B-39 — Tableau de bord admin : « Derniers encaissements », « Encaisser » et « Reçu »
+LES SIX ÉTAPES SONT TOUJOURS RENDUES, même à zéro. `groupBy` ne rend que les
+étapes peuplées ; s'en contenter ferait disparaître une colonne du graphique
+dès qu'elle se vide, et la barre d'à côté paraîtrait s'élargir. L'ordre est
+celui de `COLONNES_PIPELINE`, réutilisé et non recopié — deux listes d'étapes
+finiraient par diverger, et le tableau de bord montrerait un pipeline rangé
+autrement que celui qu'on ouvre en cliquant dessus.
+**Statut :** fait.
+
+## B-39 — Tableau de bord admin : « Dernières factures » — fait, « Encaisser » écarté
 
 La maquette (`facturesMini`) liste les dernières factures, avec deux boutons :
 **Encaisser** sur une facture impayée, **Reçu** sur une facture payée. Le
@@ -517,50 +578,89 @@ au journal (RG15) et ses tests de concurrence ; la poser en passant sur un
 tableau de bord de lecture serait l'exposer sans ces garanties. Le reçu HTML,
 lui, sort de l'enveloppe (`@SansEnveloppe()`, livrable 11 §3.2).
 
-**À faire :** le module de facturation (écran `isAdminFact`), puis un agrégat
-« derniers encaissements » dans `/admin/tableau-de-bord`.
-**Statut :** planifié — lot facturation.
+**Fait le 8 octobre 2026 — la lecture seulement.** Les quatre dernières
+factures sont rendues par `/admin/tableau-de-bord`, avec leur établissement,
+leur montant et leur statut de paiement.
 
-## B-40 — Recherches et visites du site : aucune source
+« ENCAISSER » N'EST PAS REPRIS, et ne le sera pas depuis cet écran. Le
+raisonnement de l'entrée reste exact : c'est une écriture qui débloque la
+publication d'une fiche (RG14), avec sa transaction et sa trace au journal. Un
+second chemin depuis un tableau de bord de lecture serait un second endroit où
+la règle pourrait céder. Le bloc renvoie vers « Abonnement & facturation », qui
+le fait correctement.
 
-Deux écrans d'administration dessinent des chiffres que rien ne compte.
+Le reçu reste à faire, et il est bloqué ailleurs : il porte des mentions
+légales obligatoires — raison sociale, RC/ICE — encore `[À COMPLÉTER]`.
+**Statut :** lecture faite ; « Encaisser » volontairement hors de cet écran ;
+reçu bloqué par les mentions légales.
 
-**Tableau de bord (`isAdminDash`).** Le bloc « Visites du site » pose trois
-tuiles : recherches effectuées, vues de fiches, demandes envoyées. Les deux
-dernières sont servies ; la tuile « Recherches » est omise.
+## B-40 — Recherches tracées ; les « visites du site » restent à définir
 
-**Statistiques (`isAdminStats`).** Six indicateurs et cinq blocs. Sont servis,
-et commandés par les filtres période / ville / type : vues de fiches, demandes
-envoyées, nouveaux avis, la courbe, les vues par type d'établissement, le
-classement. Sont omis :
-- les tuiles **« Visites du site »** et **« Recherches effectuées »** ;
-- la tuile **« Taux de transformation »** — la maquette la calcule en
-  demandes ÷ recherches (4 812 / 74 210 = 6,5 %) : sans recherches, pas de
-  dénominateur ;
-- le bloc **« Recherches par ville »** (`statCities`).
+Deux moitiés, et une seule dépendait d'un arbitrage.
 
-La courbe « Visites du site » porte donc les **vues de fiches**, et son
-en-tête le dit.
+### Fait — les recherches (8 octobre 2026)
 
-**Pourquoi rien n'est affiché à zéro :** l'enum `EvenementType` ne connaît que
-`appel | whatsapp | vue | vue_sponsorisee`. Aucune recherche, aucune visite
-de page n'est tracée. Un zéro ferait croire que personne ne cherche.
+Migration `20261008230000_traces_recherche` : une **table dédiée**, et non une
+valeur de plus dans `EvenementType`. L'enum aurait obligé à rendre
+`evenement_traces.etablissement_id` nullable — une recherche ne porte sur
+aucune fiche —, donc à relâcher une contrainte `NOT NULL` qui protège toutes
+les autres traces ; et « Recherches par ville » a besoin de la ville
+**cherchée**, que `evenement_traces` n'aurait eu aucun endroit où mettre.
 
-**Ce qu'il faudrait :**
-1. une migration additive — soit une valeur `recherche` dans `EvenementType`
-   avec `etablissement_id` rendu nullable pour elle (une recherche ne porte sur
-   aucune fiche), soit une table dédiée qui garderait aussi la ville et le
-   type cherchés, dont « Recherches par ville » a besoin ;
-2. le traçage côté front, au lancement d'une recherche — au mieux, comme les
-   autres traces : un échec ne doit jamais gêner le parent ;
-3. les tuiles, le bloc, et la part des recherches dans la courbe.
+`traces_recherche` ne garde que `ville_id`, `type`, `nb_resultats` et
+`survenu_le`. **Ni terme saisi, ni utilisateur, ni adresse IP** : les écrans ne
+demandent rien d'autre, et ce qu'on ne garde pas ne fuit pas. Deux tests
+gardent cette décision — l'un vérifie la liste exacte des colonnes, l'autre
+qu'une recherche par nom ne laisse le nom tapé nulle part.
 
-« Visites du site » demande en plus de trancher ce qu'est une visite (une
-session ? une page vue ?), ce que la maquette ne dit pas.
+L'enregistrement est **côté serveur**, dans `EtablissementsService.rechercher`,
+et non par une route que le front appellerait : celle-ci aurait laissé le
+navigateur **déclarer** son nombre de résultats, un chiffre client atterrissant
+dans un écran d'administration. Il est écrit sans `await` et avale ses erreurs
+— un parent qui cherche une école n'a pas à voir échouer une statistique.
 
-La migration passe par la relecture locale (SESSIONS-CLOUD.md).
-**Statut :** à trancher — la forme de la trace (valeur d'enum ou table
-dédiée) et la définition d'une visite.
+Une recherche est **un critère, pas un affichage** : la page de résultats se
+charge sans filtre au premier rendu, et chaque page suivante rappelle la même
+route. On n'enregistre qu'un premier écran portant au moins un critère.
+
+Servis depuis : la tuile « Recherches effectuées » du tableau de bord (sans
+variation — la table n'a pas de passé avant sa migration), et sur l'écran
+« Statistiques » les tuiles « Recherches effectuées » et « Taux de
+transformation » (nul, et non zéro, quand il n'y a rien à diviser) plus le bloc
+« Recherches par ville » (`BarChart` du bundle, six villes, sans le format
+« k » de la maquette qui ferait lire « 0k » sur de vraies valeurs).
+
+**Un défaut du site public corrigé au passage.** Les deux champs « Budget » de
+l'écran de résultats écrivaient dans l'URL à chaque touche : taper « 15000 »
+envoyait cinq requêtes, dont quatre portaient des bornes que personne n'avait
+voulues (1, 15, 150, 1 500 MAD/an). Invisible tant que rien ne comptait les
+recherches ; depuis, cela gonflait la tuile et faussait le taux. Les champs
+attendent maintenant 600 ms de silence. Vérifié : une saisie de cinq chiffres
+produit une trace, non cinq.
+
+Purge à douze mois (`purge:recherches`, 2 h 45) : rien à agréger avant, la
+période la plus longue de l'écran étant de douze mois. Ce n'est pas une
+obligation légale — la table ne désigne personne — mais une table de traces
+sans borne finit par peser, et il n'y a ainsi qu'une durée à expliquer.
+
+**Limite assumée :** le taux de transformation devient indicatif dès qu'un type
+est filtré. Une recherche n'est typée que si le parent a coché un cycle :
+chercher « Casablanca » sans cycle puis demander un lycée compte au numérateur
+et pas au dénominateur, et le rapport peut dépasser 100 % sur un type donné. Il
+est rendu tel quel — borner le chiffre le rendrait faux sans le rendre juste.
+
+### Reste — « Visites du site »
+
+La courbe porte toujours les **vues de fiches**, et son en-tête le dit.
+
+Ce qui manque n'est pas du code mais une **définition** : une visite est-elle
+une session, un visiteur unique du jour, ou une page vue ? Les trois chiffres
+diffèrent d'un ordre de grandeur, et le choix touche la facturation à la vue
+(RG12). Choisir à la place du client produirait un indicateur qui compile,
+passe les tests, et ne se découvre faux qu'à la recette.
+
+**Statut :** recherches faites ; définition d'une visite **à trancher** par le
+client.
 
 ## B-41 — Traces d'audience : `une` jamais émise, une vue comptée deux fois
 
@@ -738,3 +838,607 @@ livrable 14 est déjà respectée — un service `web` derrière le proxy —,
 précisément pour que ce jour-là rien d'autre ne bouge.
 
 **Statut :** à arbitrer — client (avant ou après l'ouverture au public).
+
+## B-46 — Formulaire public d'inscription : ce qu'il ouvre, et ce qu'il reste à faire
+
+Posé le 7 octobre 2026. `POST /inscriptions` est, avec les routes des parents,
+**la seule écriture ouverte à tout internet**. Ce qu'elle refuse compte donc
+plus que ce qu'elle enregistre, et c'est ce que la suite de tests éprouve :
+consentement 09-08 obligatoire, numéro marocain, formule connue, type parmi les
+sept (RG02), et surtout `forbidNonWhitelisted` — sans lui, n'importe qui
+s'attribuerait un dossier (`commercial_id`), le déclarerait transformé
+(`statut_pipeline`) ou le rattacherait à la fiche d'une autre école.
+
+**Une colonne ajoutée :** `prospects.consentement`, par défaut `false`.
+Exiger un consentement sans le conserver revient à ne pas pouvoir le prouver,
+et le journal d'audit n'y suffisait pas — il est purgé à trois ans (RG26) quand
+un prospect vit plus longtemps. `false` signifie « non recueilli par ce canal »,
+jamais « refusé » : les prospects saisis au téléphone par un commercial ont pu
+consentir de vive voix sans que rien ne l'enregistre.
+
+**L'adresse IP n'est PAS conservée**, bien que la colonne existe au journal.
+Une IP est une donnée personnelle, et la garder trois ans pour une demande
+légitime contredirait la minimisation appliquée partout ailleurs. La limitation
+de débit — trois par heure, plus serré que les cinq d'un parent — suffit à
+freiner les envois automatisés.
+
+**Ce qui reste ouvert :**
+
+1. **Personne n'est prévenu — atténué, pas réglé.** Il n'y a toujours aucun
+   envoi d'e-mail dans le projet. Ce qui existe désormais : l'entrée « CRM
+   Clients » du menu porte une **pastille comptant les prospects jamais
+   ouverts** (`indicateurs.nouveaux`), visible depuis n'importe quel écran de
+   l'administration ou de l'espace commercial. Une demande déposée un vendredi
+   soir se voit donc dès la première connexion, au lieu d'attendre que
+   quelqu'un pense à ouvrir le CRM.
+
+   **Ce que cela ne remplace pas :** il faut toujours se connecter pour la
+   voir. Un courriel — au conseiller attribué, et un accusé au demandeur —
+   reste le vrai besoin, et demande une configuration SMTP, donc des secrets et
+   une décision d'hébergement.
+2. **Aucun accusé n'est envoyé au demandeur.** Il voit « Demande envoyée ! » à
+   l'écran, et plus rien ensuite. Même cause.
+3. **Les doublons ne sont pas détectés.** Un directeur qui s'y reprend à deux
+   fois crée deux prospects. Dédoublonner sur le téléphone est tentant, mais
+   deux établissements d'un même groupe partagent parfois une ligne — la règle
+   appartient au client.
+
+**Statut :** fait pour la route et l'écran ; notification et accusé `à faire`,
+dédoublonnage `à trancher` (le client décide de la règle).
+
+## B-47 — `masquee` et `suspendue` : ce qui les sépare
+
+Le statut `masquee` existait au schéma depuis le livrable 10 (§2.3), l'API
+l'acceptait, et **aucun bouton ne le posait** : rien, nulle part, ne disait ce
+qui le distinguait de `suspendue`. Deux lectures tenaient, sans le même acteur
+ni le même effet sur la facturation ; la question a donc été posée plutôt que
+devinée.
+
+**Tranché par le client, le 7 octobre 2026 :**
+
+| Statut | Ce qu'il veut dire |
+|---|---|
+| `masquee` | la fiche est **en cours de mise à jour**. Elle sort du site le temps des travaux et y revient. Ce n'est pas une sanction. |
+| `suspendue` | l'établissement est **retiré du site jusqu'à réactivation**. |
+
+**Ce qu'ils ont en commun, et qui ne fléchit pas :** ni l'un ni l'autre n'est
+public — une fiche qui n'est pas `validee` répond **404, jamais 403** (RG03).
+Une fiche simplement en travaux ne fait pas exception : confirmer son existence
+révélerait qu'une école est inscrite, et dans quel état.
+
+**Revenir en ligne repasse par RG14.** C'était la tentation à écarter : traiter
+« ce n'était qu'une mise à jour » comme un laissez-passer remettrait en ligne
+une fiche dont l'abonnement a expiré pendant les travaux. Le contrôle
+d'abonnement encaissé s'applique à toute transition vers `validee`, d'où
+qu'elle vienne.
+
+**Ce qui a été construit :** le bouton « Masquer le temps d'une mise à jour »
+côté administration, à côté de « Suspendre » — les deux coexistent, car choisir
+à la place de l'administrateur ferait écrire « suspendu » au journal là où il
+voulait dire « en travaux », et ce journal est la mémoire de ce qui a été
+décidé (RG15). Le bouton de retour se nomme par l'état d'où il vient :
+« Remettre en ligne » ou « Réactiver ». Le libellé de statut devient « En mise
+à jour », et l'espace de l'école remplace son « Non publiée » commun par la
+raison exacte — elle n'a pas à téléphoner pour l'apprendre.
+
+**Resté ouvert :** l'école ne peut pas masquer sa propre fiche. La règle reçue
+dit ce que le statut signifie, pas qui a le droit de le poser, et RG20 veut que
+l'établissement propose et que l'admin publie. Lui donner ce bouton serait une
+écriture directe sur sa fiche — à trancher avec le client si le besoin se
+présente.
+**Statut :** tranché par le client ; construit. Qui peut masquer : `à trancher`.
+
+## B-48 — Taux de commission : 8 %, et modifiable
+
+Il valait **zéro** depuis l'origine, volontairement : aucun livrable ne fixait
+ce taux, et l'inventer revenait à décider ce que touche un commercial. Tant
+qu'il valait zéro, l'émission d'une facture ne créait aucune commission.
+
+**Tranché par le client le 7 octobre 2026 : 8 %, modifiable par l'admin.**
+
+Le mécanisme existait déjà et n'a pas changé : `commission_pct` est un
+`ParametreFacturation`, lu à chaque émission de facture, et l'écran
+« Paramètres » le modifie. Ce qui change est la valeur de départ.
+
+**Deux endroits, et il fallait les deux :**
+
+1. le semis, pour une base neuve ;
+2. une migration, pour les bases déjà semées — le semis pose les paramètres en
+   `update: {}` et ne réécrit donc jamais une valeur existante, précisément
+   pour qu'un `db:seed` de routine n'efface pas une décision de gestion.
+
+**La migration a dû être réécrite, et c'est la leçon à retenir.** Écrite
+d'abord en simple `UPDATE … WHERE valeur = '0'`, elle n'a rien trouvé sur la
+base de développement : **la ligne n'y existait pas du tout**, cette base ayant
+été semée avant l'ajout du paramètre. Le taux serait resté au repli de zéro,
+aucune commission n'aurait été créée, et **rien ne l'aurait signalé** — ni une
+erreur, ni un écran. Elle est devenue un `INSERT … ON DUPLICATE KEY UPDATE`
+qui crée la ligne si elle manque et ne relève que le zéro si elle existe.
+
+**Ce que la migration ne fait pas, volontairement :**
+
+- elle ne touche pas une valeur déjà réglée à la main depuis l'écran. Une
+  migration de données ne doit jamais défaire un geste humain plus récent
+  qu'elle ;
+- elle ne recalcule aucune commission déjà émise. `Commission.taux_pct` garde
+  le taux en vigueur au moment de la facture ; le réécrire changerait
+  rétroactivement ce qui est dû à quelqu'un.
+
+Le test de facturation **lit le paramètre** plutôt que d'attendre 8 : figer la
+valeur ferait tomber la suite le jour où la Direction change le taux, et
+ferait croire à une régression là où il n'y aurait qu'une décision de gestion.
+**Statut :** tranché par le client ; construit.
+
+## B-49 — Création de compte : qui crée, et comment le mot de passe arrive
+
+Les écrans « Secrétariat » et « Commerciaux » listaient, suspendaient et
+déléguaient des portées, mais **ne créaient aucun compte**. Deux questions
+sans réponse l'empêchaient, et la seconde reste ouverte.
+
+**Qui a le droit de créer — tranché, et pas par nous.** Les notes manuscrites
+du client du 28 septembre 2026 l'écrivent : *« l'admin, lorsqu'il ajoute le
+secrétaire, il lui donne du privilège »*. C'est l'administration, et elle
+seule.
+
+**Comment le mot de passe atteint son titulaire — toujours pas tranché.** Il
+est tiré au sort par le serveur et **affiché une seule fois** à
+l'administrateur, qui le transmet. Ce n'est pas la bonne réponse : un lien de
+première connexion envoyé par courriel vaudrait mieux. Mais il n'y a aucun
+envoi d'e-mail dans ce projet (B-46), et c'est exactement la convention déjà
+posée par `compte:creer` en ligne de commande. **À reprendre le jour où le
+SMTP existe.**
+
+Ce que la route refuse, et pourquoi :
+
+| Refus | Motif |
+|---|---|
+| rôle `superadmin` | le compte de recours se pose depuis le serveur, pas depuis un écran joignable par internet |
+| rôle `etablissement` | il naît avec la revendication d'une fiche (RG04), qui a ses propres règles |
+| rattacher un commercial à une école | aucune de ses routes ne lit ce champ ; le poser laisserait croire, en relisant la base, qu'un commercial « est » à une école |
+| réinitialiser un `superadmin` | un administrateur qui pourrait réinitialiser un autre administrateur prendrait son compte |
+
+**Un secrétariat naît sans aucune portée** (RG05) : lui en accorder d'office
+déciderait à sa place ce que l'administrateur délègue, alors que c'est
+précisément le geste que l'écran lui demande ensuite, ligne par ligne.
+
+**La réinitialisation détruit les sessions en cours.** Réinitialiser parce
+qu'un mot de passe a fuité, puis laisser vivre la session ouverte avec lui, ne
+protégerait de rien — même exigence que la suspension (RG25).
+
+**Le mot de passe n'est jamais journalisé.** Le journal garde qui a créé quel
+compte, pour quel rôle ; il ne garde pas le secret. Un test le vérifie
+explicitement, parce que c'est le genre de fuite qu'on n'aperçoit jamais en
+relisant un écran.
+**Statut :** construit. Envoi du mot de passe par courriel : `à faire`, bloqué
+par l'absence de SMTP (B-46).
+
+
+## B-50 — Demandes de catégorie d'article : tranché, et construit
+
+La maquette dessine un bloc de demandes (`catRequests`) : des propositions de
+catégorie venues d'un établissement ou d'une secrétaire, avec un bouton
+« Approuver » et un compteur en attente. Elle ne disait ni qui pouvait
+demander, ni ce qui se passe au refus, ni ce que devient l'article pendant ce
+temps.
+
+**Tranché par le client le 7 octobre 2026 :** *« n'importe qui peut demander
+une catégorie, c'est lors de la révision du blog par l'admin — avant
+publication sur le site — qu'on la valide ou non »*.
+
+**Il n'y a donc PAS de file de demandes à part**, et c'est l'essentiel de la
+règle. Une catégorie inédite voyage avec l'article qui l'emploie ; la même
+relecture tranche les deux. Un second circuit aurait fait deux files d'attente
+pour un seul arbitrage — ce que le code pressentait déjà, avant même la règle.
+
+**Ce qui a été construit :**
+
+- approuver un article dont la catégorie est inconnue l'**ajoute au
+  référentiel**, dans la même transaction. Avant ce changement, la catégorie
+  restait « employée mais non proposée » : l'article partait en ligne et la
+  rédaction suivante ne la voyait nulle part ;
+- refuser n'adopte rien ;
+- le journal d'audit porte `categorie_adoptee` sur l'approbation concernée.
+  Sans cela, une catégorie serait un jour apparue dans la liste sans qu'on
+  sache qui l'avait introduite ;
+- l'écran de relecture signale « **Nouvelle catégorie** » sur un article en
+  attente dont le libellé est inédit. Le relecteur ne tranche pas que la
+  publication : il adopte un libellé que toute la rédaction se verra proposer.
+  L'adoption ne devait pas être silencieuse.
+
+**Resté ouvert, et mineur :** la règle dit « l'admin ou la secrétaire ». Les
+décisions sur le blog sont aujourd'hui réservées au superadmin ; ouvrir la
+relecture au secrétariat demanderait une quatrième portée déléguée (RG05 n'en
+connaît que trois : `fiches`, `contacts`, `avis`). À confirmer si le besoin se
+présente.
+**Statut :** tranché par le client ; construit.
+
+## B-51 — `blog` : quatrième portée déléguée au secrétariat
+
+**Tranché par le client le 7 octobre 2026**, en réponse à la question laissée
+ouverte par B-50 : *« superadmin et lui-même l'admin, et c'est un privilège
+qu'il peut céder à la secrétaire lors de l'ajout »*.
+
+Deux choses dans cette phrase :
+
+1. **`superadmin` EST l'admin.** Il n'y a pas deux rôles d'administration à
+   distinguer — la question ne se posera plus ;
+2. **la relecture du blog devient délégable**, exactement comme les trois
+   autres portées de la RG05 : accordée au cas par cas, à la création du compte
+   ou plus tard, et révocable.
+
+**Ce que la portée ouvre :** voir les articles soumis, les approuver ou les
+refuser. Et, par ricochet, **adopter une catégorie inédite** (B-50) : une
+secrétaire à qui l'on confie cette portée enrichit le référentiel que toute la
+rédaction se verra proposer. C'est voulu — c'est le même geste que celui de
+l'administrateur, pas un sous-ensemble —, et l'écran de délégation le dit.
+
+**Le journal porte désormais le rôle RÉEL du décideur.** `decider()` écrivait
+`superadmin` en dur ; une décision prise par une secrétaire aurait été
+attribuée à un administrateur. C'est précisément ce qu'un journal d'audit
+existe pour empêcher.
+
+**Migration additive :** une valeur ajoutée en fin d'énumération MySQL ne
+réécrit aucune ligne et ne verrouille pas la table. Aucun compte existant ne
+reçoit la portée : un secrétariat déjà créé continue exactement comme avant.
+
+**Dans la navigation**, l'entrée « Relecture du blog » est marquée
+`reserveeAuSecretariat`. Sans ce drapeau, elle serait apparue AUSSI chez les
+établissements : le filtre de portée ne s'applique qu'au secrétariat, et une
+entrée sans portée exigée passe pour tout le monde. Un établissement aurait eu
+un lien vers le back-office.
+**Statut :** tranché par le client ; construit.
+
+## B-52 — Explorateur de base : ce qu'il ne montre pas
+
+Écran `isAdminDb`, construit le 8 octobre 2026. Six tables en lecture seule —
+établissements, utilisateurs, avis, articles, factures, leads — paginées.
+
+**C'EST L'ÉCRAN OÙ UNE FUITE PASSE INAPERÇUE.** Un explorateur générique qui
+marche n'est jamais relu : personne ne vérifie la liste de ses colonnes six
+mois plus tard. Trois décisions de conception en découlent.
+
+**Aucune requête libre, aucun nom de table en paramètre.** Le service connaît
+six clés et une fonction de lecture par clé ; rien n'est interpolé dans une
+requête. Un explorateur qui prendrait un nom de table serait une injection SQL
+avec une interface. Une clé hors liste répond **422** — pas 404 : ce n'est pas
+une ressource absente, c'est un paramètre refusé.
+
+**Chaque colonne est énumérée, jamais `SELECT *`.** C'est la seule protection
+qui tienne dans le temps : une colonne ajoutée au schéma demain n'apparaîtra
+pas sans qu'on l'ait voulu. Avec `SELECT *`, le jour où quelqu'un ajoute un
+jeton à `users`, il s'affiche — et personne ne s'en aperçoit.
+
+**Trois champs volontairement absents**, et l'écran le dit à l'utilisateur
+plutôt que de le taire :
+
+| Écarté | Pourquoi |
+|---|---|
+| `users.passwordHash` | un hachage Argon2id n'a rien à faire sur un écran, même pour un administrateur : le voir ne sert à rien, le copier sert à quelqu'un |
+| `avis.auteur_contact` | l'adresse ou le téléphone d'un parent. Le site public ne le rend jamais (loi 09-08) ; un explorateur n'est pas une raison de le rendre |
+| `leads.tel`, `email`, `whatsapp` | les coordonnées d'un parent appartiennent à l'établissement qui a reçu le lead (RG23). L'administration arbitre, elle ne démarche pas — et cet écran ne doit pas servir à extraire un fichier de prospection |
+
+Quatre tests gardent ces absences, et une cinquième vérifie qu'`users`,
+`permissions`, `journal_audits` et `password_reset_tokens` sont bien hors de la
+liste consultable.
+**Statut :** construit.
+
+## B-53 — Envoi d'e-mail : ce qu'il faut du client, et ce qui n'en dépend pas
+
+**À RAPPELER AU CLIENT** — demandé le 8 octobre 2026.
+
+Il n'y a aucun envoi de courriel dans le projet. `.env.example` prévoit déjà
+les cinq réglages, en commentaire :
+
+```
+SMTP_HOST=        # smtp.hostinger.com, smtp.gmail.com…
+SMTP_PORT=587
+SMTP_USER=        # le compte de la boîte expéditrice
+SMTP_PASSWORD=    # son mot de passe — chez Gmail, un « mot de passe d'application »
+MAIL_FROM=        # l'adresse affichée : contact@ecoles360.com
+```
+
+**CE N'EST PAS LE VPS QUI BLOQUE**, contrairement à ce qui a été dit une fois
+dans une session. Le VPS n'est que l'endroit où ces identifiants vivront en
+production (`.env.prod`, hors dépôt). Le code d'envoi s'écrit et s'éprouve en
+local avec n'importe quel compte de messagerie.
+
+**Ce qu'il faut du client :** une boîte expéditrice (`@ecoles360.com` de
+préférence) et ses paramètres. Si elle n'existe pas, c'est une démarche de
+quelques minutes chez l'hébergeur du domaine.
+
+**Le mot de passe ne transite pas par une conversation** : il s'écrit
+directement dans `.env`, ignoré par Git.
+
+**CE QUI N'ATTEND PAS L'E-MAIL :** le canal `in_app` de la table
+`Notification`. Voir B-54.
+**Statut :** à confirmer — client (adresse expéditrice et identifiants SMTP).
+
+## B-54 — Centre de notifications : la table qui n'avait jamais servi
+
+La table `Notification` existait depuis le livrable 10 §2.20 — cinq types,
+deux canaux (`in_app`, `email`) — et **pas une ligne n'y avait jamais été
+écrite**. Le produit comptait sur le hasard : qu'un administrateur ouvre le
+bon écran au bon moment, qu'une école pense à regarder ses demandes.
+
+**Construit le 8 octobre 2026, canal `in_app` seulement.** L'envoi de courriel
+demande un compte SMTP que le projet n'a pas (B-53) ; le canal est porté par
+la colonne, et le jour où il existe, c'est un second enregistrement par
+notification — rien du service ne change.
+
+**Quatre des cinq types sont câblés :**
+
+| Type | Déclencheur | Destinataires |
+|---|---|---|
+| `demande` | une demande de contact déposée sur une fiche | le compte propriétaire, et les secrétariats portant `contacts` |
+| `moderation` | un avis déposé, en attente | toute l'administration |
+| `proposition_fiche` | une proposition de modification (RG20) | toute l'administration |
+| `echeance_abonnement` | **la tâche de 08 h 00**, selon `rappel_echeance_j` | l'école (portée `fiches`) et l'administration |
+
+**`plafond_vue_atteint` reste à faire** — il suppose la facturation à la vue
+(RG12), dont le modèle `PaiementVue` existe mais qu'aucun code n'alimente.
+
+**LE PARAMÈTRE `rappel_echeance_j` SERT ENFIN.** Il était réglable depuis
+l'écran « Paramètres » depuis le premier jour, semé à 7 jours, et **aucune
+ligne de code ne le lisait**. Un abonnement expirait, la fiche cessait de
+pouvoir être validée (RG14), et personne n'avait été prévenu.
+
+**Décisions qui méritent d'être retenues :**
+
+- **La portée commande la diffusion** (RG05). Une secrétaire à qui l'on a
+  confié les avis n'est pas alertée d'une demande de contact : la
+  notification mènerait à un écran qui lui répondrait 403 ;
+- **écrire une notification ne peut jamais rompre ce qui la déclenche.** Une
+  demande enregistrée dont la notification échoue reste une demande. L'inverse
+  serait absurde — d'où `sansRompre()`, hors transaction ;
+- **l'avis en attente prévient l'administration, pas l'école.** Un avis non
+  modéré n'existe pas encore pour elle (RG06), et le contenu de la
+  notification ne recopie ni le nom de l'auteur ni son texte : une
+  notification se lit hors de l'écran de modération ;
+- **le rappel ne part qu'une fois** par abonnement et par fenêtre. La tâche
+  tourne chaque nuit ; sans garde elle aurait réécrit le même rappel sept
+  nuits de suite. Le garde est la fenêtre elle-même, pas un drapeau au schéma
+  qu'il aurait fallu remettre à zéro au renouvellement ;
+- **08 h 00, pas la nuit** comme les purges. Un rappel est fait pour être lu.
+**Statut :** construit, canal `in_app`. `email` attend B-53 ;
+`plafond_vue_atteint` attend la facturation à la vue (RG12).
+
+## B-55 — `socials` : une URL non validée dans un `href` public
+
+Relevé le 9 octobre 2026 en préparant les réseaux sociaux de la page À propos,
+sur du code déjà en production dans la branche.
+
+**Ce qui était ouvert.** `ProposerFicheDto.socials` n'était validé que par
+`@IsObject()` : ni les clés, ni les valeurs. Un compte établissement pouvait
+donc proposer `{"facebook": "javascript:…"}`. La file de propositions (RG20)
+n'y changeait rien — l'administrateur y relit un NOM DE PLATEFORME, pas une
+adresse —, et une fois publiée la fiche posait ce lien dans un `href` sur
+chaque visite de la page publique. React rend un `href="javascript:…"` sans
+broncher ; il se contente d'un avertissement en développement, que personne ne
+lit en production.
+
+Le même DTO sert les deux chemins d'écriture, celui de l'espace et celui de
+l'administration : le corriger une fois ferme les deux.
+
+**Trois barrières, et c'est voulu.**
+
+1. `ReseauxSociauxValides` — clés dans une liste fermée (les six de la
+   maquette), valeurs analysées par `new URL` et bornées à `http`/`https`.
+   `new URL` plutôt qu'une expression régulière : c'est l'analyseur du
+   navigateur, donc exactement ce qui décidera du sort de l'`href`.
+2. `lienExterneSur` côté front — les liens saisis AVANT cette validation
+   dorment en base, et une donnée déjà stockée ne redevient pas sûre parce
+   qu'on a corrigé l'entrée. L'aperçu de l'espace applique le même filtre :
+   montrer un lien que la fiche publique refusera ferait croire à
+   l'établissement qu'il est en ligne.
+3. L'écran d'administration ne propose plus qu'une liste déroulante. Laisser
+   taper « Twitter » produisait un 422 après coup, sur un écran qui n'avait
+   rien annoncé. Une valeur déjà enregistrée hors liste reste affichée,
+   signalée « à corriger » — sans quoi l'enregistrement suivant l'effacerait
+   sans que personne ne l'ait demandé.
+
+**Au passage, `site_web`.** `@IsUrl` accepte « www.ecole.ma » sans protocole.
+Posé tel quel dans un `href`, le navigateur en fait un lien RELATIF et le
+parent atterrit sur une page d'erreur du site. Même filtre : sans adresse
+absolue, pas de lien plutôt qu'un lien mort.
+
+Cinq tests, dont quatre refus (schéma exécutable, adresse sans protocole,
+plateforme inconnue, valeur non textuelle).
+
+**Statut :** fait.
+
+## B-56 — Envoi de courriel : construit, et éteint jusqu'au compte SMTP
+
+Fait le 9 octobre 2026. B-53 ne demandait pas que du client : il n'y avait
+aucun code d'envoi dans le projet. Il y en a maintenant, et il attend les cinq
+réglages sans rien bloquer entre-temps.
+
+**Le service existe même sans compte SMTP, et c'est la décision qui gouverne
+le reste.** Si l'absence de réglages empêchait l'API de démarrer, il aurait
+fallu attendre le client pour écrire une ligne. Non configuré, `MailService`
+se déclare éteint, le dit UNE fois au démarrage, et refuse poliment chaque
+envoi. C'est aussi ce qui permet aux 410 tests de tourner sans serveur de
+messagerie — une suite qui tenterait une connexion sortante échouerait en CI.
+Les quatre réglages sont exigés ENSEMBLE : un hôte sans identifiants
+construirait un transport qui échoue au premier envoi, en production.
+
+**La table `notifications` EST la file, pas BullMQ.** Même écart assumé que
+pour les purges, et pour la même raison : elle est déjà durable, reprenable
+après un redémarrage, et visible par l'administrateur dans un écran qu'il a
+déjà. BullMQ demanderait un conteneur, un état de job dans Redis et une
+seconde source de vérité sur ce qui est parti.
+
+Chaque notification écrit donc DEUX lignes : `in_app`, datée tout de suite
+puisqu'elle s'affiche dès qu'elle existe, et `email`, laissée en attente.
+L'expéditeur la reprend **hors transaction** — tenir une session SMTP dans un
+`BEGIN` allongerait le verrou sous la main d'un serveur extérieur, et un
+`ROLLBACK` ensuite laisserait un message parti pour un fait qui n'a pas eu
+lieu. La cloche ne montre que `in_app` : afficher les deux doublerait chaque
+ligne et compterait deux non-lues pour un seul événement.
+
+**Migration `20261009120000_notifications_envoi_mail`** : `cree_le` (sans date
+de création, « en attente depuis plus de deux heures » ne s'écrit pas) et
+`tentatives` (une adresse supprimée échouerait toutes les minutes pour
+toujours et noierait les vraies erreurs). Les lignes existantes reçoivent leur
+`cree_le` depuis `envoyee_le`, leur vraie date, plutôt que l'instant de la
+migration.
+
+**Six modèles**, écrits à la main : cinq pour les types de notification, un
+pour la réinitialisation de mot de passe. Pas de moteur de gabarits pour six
+messages de deux phrases. Chacun porte le lien vers l'écran qui permet
+d'agir — et pas le même selon qu'on est administration ou établissement,
+sinon le destinataire atterrit sur un 403. Sujet volontairement neutre : il
+voyage en clair dans les journaux de tous les serveurs relais, le nom d'un
+parent n'y a rien à faire. Texte ET HTML, toujours : un message en HTML seul
+part au courrier indésirable chez la plupart des hébergeurs.
+
+Treize tests unitaires, sans base ni réseau. Vérifié en plus bout en bout
+contre la vraie base avec un hôte injoignable : deux lignes écrites, l'`in_app`
+datée, l'`email` en attente, `tentatives` à 1 après l'échec, et la cloche
+affichant bien une seule ligne.
+
+**Ce qui reste à faire quand le compte existe :** décommenter les cinq lignes
+de `.env`, redémarrer. Rien d'autre.
+
+**La réinitialisation de mot de passe est branchée** (B-57). J'avais écrit
+ici qu'elle n'avait pas de route publique : c'était faux, les deux routes
+existaient depuis le lot 3. Il ne manquait que l'envoi.
+
+**Statut :** fait, éteint. Attend l'adresse expéditrice (B-53).
+
+## B-57 — « Mot de passe oublié » : il manquait une ligne, pas un circuit
+
+Fait le 9 octobre 2026. J'avais annoncé qu'il fallait construire le circuit de
+jetons. **C'était faux** : `POST /auth/mot-de-passe-oublie` et
+`POST /auth/reset-mot-de-passe` existaient depuis le lot 3, avec jeton haché
+en SHA-256, usage unique, expiration à une heure, invalidation des jetons
+précédents et révocation des sessions Redis (RG25). Tout cela marchait et
+n'était éprouvé par personne, faute de dernier maillon.
+
+Le maillon manquant tenait en une instruction du contrôleur : `void jeton;`.
+Le jeton était créé, puis jeté.
+
+**L'envoi ne s'attend pas, et c'est une mesure de sécurité.** Tout ce
+formulaire est bâti pour ne pas dire si une adresse existe — même réponse, même
+message dans les deux cas. Attendre l'envoi aurait défait ce travail par la
+bande : la réponse aurait mis une seconde quand le compte existe et dix
+millisecondes sinon, et il aurait suffi de chronométrer pour reconstituer
+l'annuaire des comptes. L'envoi part donc en parallèle de la réponse.
+
+**Il ne passe pas par la file `notifications`**, contrairement aux cinq autres
+messages : il s'adresse à quelqu'un qui n'est pas connecté, et l'afficher dans
+une cloche qu'il ne peut pas ouvrir n'aurait aucun sens. Il ne peut pas non
+plus attendre jusqu'à une minute — le jeton ne vaut qu'une heure, et qui ne
+voit rien arriver redemande un lien, ce qui invalide le premier.
+
+**Deux écrans.** « Mot de passe oublié » et « Lien envoyé » sont des étapes de
+la carte de connexion, pas des routes, comme la maquette (`isStepReset`,
+`isStepResetSent`) : lui donner une URL créerait une page qu'on peut mettre en
+favori, pour un détour de dix secondes. Le formulaire de connexion est masqué
+plutôt que démonté — qui clique par réflexe puis revient n'a pas à retaper son
+adresse.
+
+Le troisième écran, `/mot-de-passe`, **n'est pas dans la maquette** : le
+prototype s'arrête à « Lien envoyé » parce qu'il n'envoie rien. Le lien doit
+bien atterrir quelque part. Il reprend la carte de connexion à l'identique, et
+annonce la règle de composition AVANT la saisie — l'API l'exige, et la
+découvrir après avoir tapé deux fois son mot de passe est une mauvaise façon
+de l'apprendre.
+
+**Aucune vérification préalable du jeton**, bien que ce soit tentant pour
+afficher « lien expiré » avant la saisie : ce serait un oracle, une route qui
+répond oui ou non sur un jeton, essayable en boucle.
+
+Vérifié de bout en bout dans le navigateur : demande, lien, nouveau mot de
+passe, connexion avec le nouveau (200) et refus de l'ancien (401). Le compte de
+démonstration a été restauré ensuite.
+
+**Statut :** fait. Les messages partent dès que le compte SMTP existe (B-53).
+
+## B-58 — Les tests tournent dans le conteneur, pas depuis Windows
+
+Fait le 9 octobre 2026, après deux pannes identiques en une session.
+
+**Le symptôme.** Au milieu d'une exécution, sur une requête quelconque :
+`Can't reach database server at 127.0.0.1:3306`. Une suite échoue, la
+suivante passe, et relancer suffit.
+
+**Ce que la mesure dit.** MySQL n'a rien eu : conteneur jamais redémarré,
+en marche depuis trois jours, pas de `OOMKilled`, **19 connexions simultanées
+au plus sur 151 autorisées**, `Connection_errors_max_connections` à zéro,
+quatre échecs de connexion en trois jours. Rien n'est saturé et le serveur
+n'est jamais tombé.
+
+**La cause.** Les tests tournaient sous Windows et joignaient MySQL par
+`127.0.0.1:3306`, donc par le relais de port de Docker Desktop — un pont entre
+Windows et la machine virtuelle Linux. Une suite complète ouvre et referme des
+milliers de connexions (2 816 déconnexions brutales comptées), et ce relais en
+perd une de loin en loin.
+
+**Ce que ça ne touche pas.** Ni la production, où l'API joint `mysql:3306` sur
+le réseau Docker interne — le `127.0.0.1:3306` de `docker-compose.prod.yml`
+n'est publié que pour les sauvegardes en SSH —, ni l'intégration continue, qui
+tourne sous Linux sans machine virtuelle intermédiaire. **Seule l'exécution des
+tests depuis Windows traversait ce pont.**
+
+**La correction.** `scripts/tester.mjs` joue la suite À L'INTÉRIEUR du
+conteneur `api`, où MySQL et Redis se joignent par leur nom de service. Plus
+de relais, plus rien à perdre. Les sources viennent toujours du poste
+(`./api` est monté), donc on teste bien le code qu'on vient d'écrire, et le
+client Prisma convient aux deux mondes — `binaryTargets` déclare `native` ET
+`linux-musl-openssl-3.0.x`.
+
+```bash
+node scripts/tester.mjs                             # toute la suite
+node scripts/tester.mjs test/modules/mail.spec.ts   # une suite
+node scripts/tester.mjs -t "garde le sujet neutre"  # un cas
+```
+
+**Un défaut corrigé dans le script lui-même avant de le livrer.** Les
+arguments étaient recollés avec des espaces : `-t "garde le sujet neutre"`
+arrivait au shell comme quatre mots, Jest prenait « garde » pour le filtre et
+le reste pour des chemins. Il ne plantait pas — il exécutait autre chose en
+annonçant un succès, ce qui est pire. Chaque argument est désormais protégé.
+
+La commande historique du livrable 13 reste valable et documentée ; elle est
+simplement moins fiable sur ce poste.
+
+**Statut :** fait. 411 tests verts dans le conteneur.
+
+### B-59 · GHCR crée les paquets en privé : le serveur ne pourra pas tirer
+
+**Source :** L14 §4 — `deploy.sh` fait `docker compose pull` sans `docker login`.
+**Constat :** GHCR crée tout nouveau paquet en **privé**. La CI publiera sans
+problème — elle s'authentifie avec `GITHUB_TOKEN` — mais le VPS recevra un
+refus d'authentification au tirage, et le déploiement s'arrêtera là. Le
+livrable ne traite nulle part l'accès au registre au moment du tirage : le
+trou est dans le livrable, pas seulement dans le code.
+**Proposition :** deux issues, et le choix n'est pas que technique.
+*(a)* Rendre les paquets publics — simple, rien à poser sur le VPS, mais le
+code compilé de l'API et du front d'un produit **payant** devient
+téléchargeable par tout internet, concurrents compris.
+*(b)* Authentifier le VPS par `docker login ghcr.io` avec un jeton portant
+`read:packages` — les images restent privées ; coût : un secret de plus à
+gérer et à renouveler, et une étape que `deploy.sh` doit documenter.
+**Préférence du client, exprimée le 10 octobre 2026 :** *(b)*, authentifier le
+VPS plutôt que rendre les paquets publics. Son argument est plus fin que
+« privé vaut mieux que public » : **l'image API porte le code serveur, quand
+l'image web ne contient que ce qui est déjà servi aux visiteurs.** Les deux
+n'ont donc pas la même valeur de secret, et c'est l'API qui justifie à elle
+seule de garder le registre fermé.
+
+*(Corollaire que cet argument ouvre, et que personne n'a demandé : rien
+n'oblige à traiter les deux paquets pareil. `ecoles360-web` pourrait être
+public et `ecoles360-api` privé — le VPS s'authentifierait quand même, donc
+le gain serait mince. Noté pour mémoire, pas proposé.)*
+
+**LE VRAI RISQUE N'EST PAS LA FUITE, C'EST L'EXPIRATION.** Un jeton
+`read:packages` a une date de fin ; le jour où il expire, `docker compose
+pull` échoue sur le VPS, et la panne survient au pire moment — pendant un
+déploiement, souvent un correctif urgent, avec un message d'authentification
+qu'on prend d'abord pour une erreur de registre. **La date d'expiration doit
+être inscrite dans la procédure de déploiement**, pas seulement dans la tête
+de celui qui a créé le jeton.
+
+**Statut :** à trancher — client. Préférence exprimée pour *(b)*, **décision
+finale ouverte** : elle ne se joue qu'au premier déploiement, quand le VPS
+existera et que le coût réel de chaque option se verra.

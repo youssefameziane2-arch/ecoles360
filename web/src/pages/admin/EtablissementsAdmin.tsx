@@ -31,11 +31,25 @@ import { AbonnementEtablissement } from './AbonnementEtablissement';
 const STATUTS: StatutEtablissement[] = ['en_attente', 'validee', 'suspendue', 'masquee'];
 const TYPES = Object.keys(LIBELLE_TYPE) as TypeEtablissement[];
 
+/**
+ * `masquee` EN GRIS, `suspendue` EN ROUGE : la couleur dit laquelle des deux
+ * est une sanction. Une fiche en cours de mise à jour revient d'elle-même ;
+ * une fiche suspendue attend une décision.
+ */
 const TON_STATUT: Record<StatutEtablissement, 'amber' | 'green' | 'red' | 'grey'> = {
   en_attente: 'amber',
   validee: 'green',
   suspendue: 'red',
   masquee: 'grey',
+};
+
+/** Le geste de retour en ligne, nommé par l'état d'où l'on vient. */
+const LIBELLE_RETOUR: Record<StatutEtablissement, string> = {
+  en_attente: 'Valider',
+  masquee: 'Remettre en ligne',
+  suspendue: 'Réactiver',
+  // Jamais affiché : le bouton ne paraît que sur une fiche non validée.
+  validee: 'Valider',
 };
 
 /**
@@ -366,6 +380,13 @@ function LigneEtablissement({
           </Button>
         )}
 
+        {/*
+          LE LIBELLÉ DIT D'OÙ L'ON REVIENT. Remettre en ligne une fiche qu'on
+          avait masquée pour la mettre à jour n'est pas le même geste que lever
+          une suspension : le premier est une routine, le second annule une
+          sanction. Un seul mot pour les deux effacerait la différence dans le
+          journal comme dans la tête de l'administrateur.
+        */}
         {etablissement.statut !== 'validee' && (
           <Button
             variant="success"
@@ -373,19 +394,40 @@ function LigneEtablissement({
             disabled={enCours}
             onClick={() => onAction(() => changerStatutEtablissement(etablissement.id, 'validee'))}
           >
-            {etablissement.statut === 'en_attente' ? 'Valider' : 'Réactiver'}
+            {LIBELLE_RETOUR[etablissement.statut]}
           </Button>
         )}
 
+        {/*
+          MASQUER ET SUSPENDRE SORTENT TOUS DEUX LA FICHE DU SITE, et c'est
+          leur seul point commun. « Masquée » dit qu'elle est en cours de mise
+          à jour et reviendra ; « Suspendue » qu'elle est retirée jusqu'à
+          réactivation. Les deux boutons existent donc côte à côte : choisir à
+          la place de l'administrateur ferait écrire « suspendu » au journal là
+          où il voulait dire « en travaux », et ce journal est la mémoire de ce
+          qui a été décidé (RG15).
+        */}
         {etablissement.statut === 'validee' && (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={enCours}
-            onClick={() => onAction(() => changerStatutEtablissement(etablissement.id, 'suspendue'))}
-          >
-            Suspendre
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={enCours}
+              onClick={() => onAction(() => changerStatutEtablissement(etablissement.id, 'masquee'))}
+            >
+              Masquer le temps d’une mise à jour
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={enCours}
+              onClick={() =>
+                onAction(() => changerStatutEtablissement(etablissement.id, 'suspendue'))
+              }
+            >
+              Suspendre
+            </Button>
+          </>
         )}
 
         {/*

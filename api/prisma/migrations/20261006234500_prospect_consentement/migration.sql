@@ -1,0 +1,22 @@
+-- `prospects.consentement` — loi 09-08, RG09.
+--
+-- Le formulaire public d'inscription collecte le nom, le téléphone et parfois
+-- l'adresse d'une personne réelle : le directeur d'un établissement. La loi
+-- 09-08 exige son consentement, et EXIGER UN CONSENTEMENT SANS LE CONSERVER
+-- revient à ne pas pouvoir le prouver. `DemandeContact` porte déjà la même
+-- colonne, pour la même raison.
+--
+-- Le journal d'audit n'aurait pas suffi : il est purgé à trois ans (RG26),
+-- quand un prospect peut vivre plus longtemps. La preuve doit vivre à côté de
+-- la donnée qu'elle couvre.
+--
+-- DÉFAUT `false`, ET C'EST EXACT : les prospects déjà en base ont été saisis
+-- par un commercial, au téléphone ou sur le terrain. Leur consentement a pu
+-- être donné de vive voix, mais il n'a été enregistré nulle part — et écrire
+-- `true` par défaut affirmerait une preuve que nous n'avons pas. `false`
+-- signifie « non recueilli par ce canal », pas « refusé ».
+--
+-- Changement ADDITIF : colonne avec valeur par défaut, aucune reprise de
+-- données, aucune ligne invalidée.
+
+ALTER TABLE `prospects` ADD COLUMN `consentement` BOOLEAN NOT NULL DEFAULT false;

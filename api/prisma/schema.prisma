@@ -146,8 +146,33 @@ model Ville {
 
   etablissements Etablissement[]
   sponsorings    Sponsoring[]
+  recherches     TraceRecherche[]
 
   @@map("villes")
+}
+
+/// Trace de recherche — B-40, tuiles « Recherches » et bloc « par ville ».
+///
+/// UNE TABLE À PART, pas une valeur de plus dans `EvenementType` : une
+/// recherche ne porte sur aucune fiche, et l'y ranger aurait obligé à rendre
+/// `evenement_traces.etablissement_id` nullable — relâchant une contrainte qui
+/// protège toutes les autres traces.
+///
+/// AUCUN TERME LIBRE, NI UTILISATEUR, NI IP. Seules la ville et le type
+/// cherchés sont conservés : ce sont les seuls champs que les écrans
+/// demandent, et ce qu'on ne garde pas ne fuit pas.
+model TraceRecherche {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  ville_id     BigInt?  @db.UnsignedBigInt
+  type         String?  @db.VarChar(40)
+  nb_resultats Int      @default(0) @db.UnsignedInt
+  survenu_le   DateTime @default(now()) @db.Timestamp(0)
+
+  ville Ville? @relation(fields: [ville_id], references: [id], onDelete: SetNull)
+
+  @@index([survenu_le], map: "idx_rech_periode")
+  @@index([ville_id, survenu_le], map: "idx_rech_ville")
+  @@map("traces_recherche")
 }
 
 /// 03 — NiveauFiliere (RG02) — distinct des six types d'établissement.
@@ -278,6 +303,7 @@ model Etablissement {
   avis              Avis[]
   demandes          DemandeContact[]
   traces            EvenementTrace[]
+  statistiquesJour  StatistiqueJournaliere[]
   abonnements       Abonnement[]
   paiementsVue      PaiementVue[]
   factures          Facture[]
@@ -623,6 +649,10 @@ model Prospect {
   message          String?        @db.Text
   source           ProspectSource @default(formulaire)
   statut_pipeline  ProspectStatut @default(nouveau)
+  /// Consentement 09-08 (RG09). `false` signifie « non recueilli par ce
+  /// canal » — un prospect saisi au téléphone par un commercial —, jamais
+  /// « refusé ». Le formulaire public, lui, REFUSE la demande sans lui.
+  consentement     Boolean        @default(false)
   cree_le          DateTime       @default(now()) @db.Timestamp(0)
 
   etablissement Etablissement? @relation(fields: [etablissement_id], references: [id], onDelete: SetNull)
@@ -748,26 +778,40 @@ model Permission {
   @@map("permissions")
 }
 
+/// Portées déléguables au secrétariat — RG05.
+///
+/// `blog` EST LA QUATRIÈME, ajoutée le 7 octobre 2026 à la demande du client :
+/// la relecture du blog « est un privilège que l'admin peut céder à la
+/// secrétaire lors de l'ajout ». Elle ouvre la décision sur les articles
+/// soumis — et donc, par ricochet, l'adoption d'une catégorie inédite (B-50).
 enum PermissionPortee {
   fiches
   contacts
   avis
+  blog
 }
 
 /// 20 — Notification : plafond de vues (RG12), échéance (RG14), demandes,
 /// modération, propositions (RG20).
 model Notification {
-  id          BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
-  user_id     BigInt             @db.UnsignedBigInt
-  type        NotificationType
-  contenu     String             @db.VarChar(255)
-  canal       NotificationCanal
-  envoyee_le  DateTime?          @db.Timestamp(0)
-  lue_le      DateTime?          @db.Timestamp(0)
+  id         BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt            @db.UnsignedBigInt
+  type       NotificationType
+  contenu    String            @db.VarChar(255)
+  canal      NotificationCanal
+  cree_le    DateTime          @default(now()) @db.Timestamp(0)
+  /// Nul sur le canal `email` tant que le courriel n'est pas parti — c'est ce
+  /// qui fait de la table une file d'envoi (B-53). Sur `in_app`, posé à
+  /// l'écriture : la notification EST délivrée dès qu'elle existe.
+  envoyee_le DateTime?         @db.Timestamp(0)
+  /// Envois échoués. Borne l'acharnement sur une adresse qui n'existe plus.
+  tentatives Int               @default(0) @db.UnsignedTinyInt
+  lue_le     DateTime?         @db.Timestamp(0)
 
   user User @relation("NotificationUser", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, lue_le], map: "idx_notif_centre")
+  @@index([canal, envoyee_le, tentatives], map: "idx_notif_a_envoyer")
   @@map("notifications")
 }
 
@@ -777,6 +821,9 @@ enum NotificationType {
   demande
   moderation
   proposition_fiche
+  /// Référencement demandé depuis le site public (RG17) — mène au CRM, pas à
+  /// l'écran des établissements comme `demande`.
+  inscription
 }
 
 enum NotificationCanal {
@@ -795,7 +842,10 @@ model JournalAudit {
   role_acteur String         @db.VarChar(20)
   action      String         @db.VarChar(60) // etablissement.valide, avis.rejete…
   cible_type  String         @db.VarChar(60)
-  cible_id    BigInt         @db.UnsignedBigInt
+  /// NULLABLE DEPUIS LES PURGES : une tâche système qui anonymise un lot de
+  /// demandes ne vise aucune ligne en particulier. Y mettre 0 ferait un
+  /// identifiant magique que personne ne saurait relire dans deux ans.
+  cible_id    BigInt?        @db.UnsignedBigInt
   severite    AuditSeverite  @default(info)
   details     Json?
   adresse_ip  String?        @db.VarChar(45)
@@ -976,6 +1026,28 @@ enum ArticleStatut {
   refuse
 }
 
+/// Catégories proposées à la rédaction — onglet « Catégories » de l'écran
+/// « Contenu du site ».
+///
+/// AUCUNE RELATION VERS `Article`, VOLONTAIREMENT. `Article.categorie` reste
+/// une chaîne : en faire une clé étrangère aurait imposé de migrer chaque
+/// ligne existante et de décider, pour chacune, vers quelle catégorie pointer.
+/// Rien ne joint sur la catégorie dans le produit — on filtre dessus. Cette
+/// table est le référentiel de ce que l'écran PROPOSE, pas une contrainte sur
+/// ce qui existe. Retirer une catégorie ne déclasse donc aucun article : elle
+/// cesse seulement d'être offerte à la rédaction.
+/// PAS DE `slug` : rien ne le lit. Le blog filtre sur le libellé, et le jour
+/// où une URL en aura besoin, `common/texte/slug.ts` le fabriquera — la
+/// normalisation NFD y existe déjà, là où MySQL ne sait pas replier un accent.
+model CategorieArticle {
+  id      BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  libelle String   @unique @db.VarChar(60)
+  ordre   Int      @default(0) @db.UnsignedInt
+  cree_le DateTime @default(now()) @db.Timestamp(0)
+
+  @@map("categories_articles")
+}
+
 /// 29 — FaqItem (RG27) : FAQ réordonnable, l'ordre étant recalculé de façon
 /// contiguë par CmsService à chaque réordonnancement.
 model FaqItem {
@@ -1015,4 +1087,37 @@ model PageCms {
   modificateur User? @relation("PageCmsModificateur", fields: [modifiee_par], references: [id], onDelete: SetNull)
 
   @@map("pages_cms")
+}
+
+// =============================================================================
+//  §2.13 — Agrégats d'audience (loi 09-08, livrable 10 §6.3)
+// =============================================================================
+
+/// 25 — StatistiqueJournaliere.
+///
+/// NÉE DE LA PURGE, PAS D'UN BESOIN D'AFFICHAGE. `evenement_traces` est à fort
+/// volume et doit être purgée à 12 mois (RG10) : sans agrégat, purger
+/// effacerait l'historique d'audience d'un établissement — exactement ce qu'il
+/// paie pour voir. La purge agrège donc avant de supprimer, et ce qui reste
+/// est une ligne par fiche, par type et par jour, sans aucune donnée
+/// individuelle.
+///
+/// AUCUNE DONNÉE PERSONNELLE ICI, et c'est le point : `evenement_traces` n'en
+/// portait déjà pas (ni IP ni identifiant de navigateur), l'agrégat encore
+/// moins. La minimisation de la loi 09-08 est satisfaite par construction.
+model StatistiqueJournaliere {
+  id               BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  etablissement_id BigInt        @db.UnsignedBigInt
+  type             EvenementType
+  jour             DateTime      @db.Date
+  total            Int           @default(0) @db.UnsignedInt
+
+  etablissement Etablissement @relation(fields: [etablissement_id], references: [id], onDelete: Cascade)
+
+  /// L'unicité rend la purge REJOUABLE : une seconde exécution sur la même
+  /// journée met à jour la ligne au lieu d'en créer une seconde, et le total
+  /// ne double pas.
+  @@unique([etablissement_id, type, jour], map: "uq_stat_jour")
+  @@index([jour], map: "idx_stat_jour")
+  @@map("statistiques_journalieres")
 }

@@ -60,6 +60,25 @@ export function formaterDate(iso: string): string {
 }
 
 /**
+ * Mois d'une chaîne `AAAA-MM` : `« octobre 2026 »`.
+ *
+ * EN UTC, ET C'EST LA RAISON D'ÊTRE DE CETTE FONCTION. L'API rend le mois en
+ * `toISOString().slice(0, 7)` ; relu par `new Date('2026-10')`, le 1er octobre
+ * à minuit UTC devient le 30 septembre au Maroc en heure d'été, et l'écran
+ * annoncerait le mois précédent. Le jour est forcé au 15 pour que le fuseau ne
+ * puisse pas déborder de part ni d'autre.
+ */
+export function formaterMois(mois: string): string {
+  const date = new Date(`${mois}-15T12:00:00Z`);
+
+  return Number.isNaN(date.getTime())
+    ? '—'
+    : new Intl.DateTimeFormat('fr-MA', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+        date,
+      );
+}
+
+/**
  * Date et heure : `« 12 sept. 2026 · 14:32 »`.
  *
  * Le journal d'audit a besoin de L'HEURE, pas seulement du jour : départager

@@ -66,11 +66,11 @@ de document : il compte ce qu'il y a DANS chaque écran, pas les écrans.
 | Résultats de recherche | `/etablissements` | ✅ carte Leaflet comprise — reste la seule bascule « sponsorisé », qu'aucun paramètre d'API ne sait filtrer |
 | Fiche établissement | `/etablissements/:slug` | ✅ onglet Équipe compris — édité depuis l'espace, via la file de propositions (RG20) |
 | Page ville | `/villes/:slug` | ✅ quartiers populaires compris |
-| À propos | `/a-propos` | 🟡 servie par le CMS (`a-propos`), équipe et bloc contact compris — manquent la bande de chiffres (`trustStats`), l'image de l'histoire, la carte et les réseaux sociaux, qui n'ont aucune source |
+| À propos | `/a-propos` | 🟡 servie par le CMS (`a-propos`), équipe, bloc contact et bande de chiffres compris — manquent l'image de l'histoire, la carte et les réseaux sociaux, qui n'ont aucune source |
 | FAQ | `/faq` | ✅ |
 | Blog | `/blog` | ✅ |
 | Article | `/blog/:slug` | ✅ |
-| Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité — demandent une route publique de tarifs |
+| Inscription établissement | `/inscription-etablissement` | 🟡 formules de visibilité, trois étapes et formulaire en 2 étapes compris, le prospect arrive dans le CRM — manquent les témoignages de directeurs et la FAQ qui leur est destinée, qui n'ont pas de source |
 | Connexion | `/connexion` | ✅ écart assumé : formulaire unique au lieu des 2 étapes |
 | Mentions légales | `/mentions-legales` | 🟡 8 rubriques rédigées et semées — restent 3 `[À COMPLÉTER]` : raison sociale, RC/ICE, directeur de publication, hébergeur |
 | Confidentialité | `/confidentialite` | 🟡 11 rubriques rédigées — restent 2 `[À COMPLÉTER]`, dont le **numéro de déclaration CNDP**, qui suppose une démarche et non une saisie |
@@ -89,25 +89,25 @@ appelé mais jamais dessiné).
 
 ---
 
-## Administration — 15 écrans attendus, 6 complets
+## Administration — 15 écrans attendus, 13 complets
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
-| Établissements | `isAdminEtab` | `/admin/etablissements` | 🟡 création, galerie, essai gratuit (RG13), validation et **suspension** ✅ — une école qui se retire sort donc du site public. Reste 🟡 pour `masquee` : le statut existe au schéma, l'API l'accepte, aucun bouton ne le pose, et **ce qui le distingue de `suspendue` n'est défini nulle part** |
+| Établissements | `isAdminEtab` | `/admin/etablissements` | ✅ création, galerie, essai gratuit (RG13), validation, **masquage** et **suspension**. Le client a tranché le 7 octobre 2026 ce qui sépare les deux (B-47) : `masquee` = fiche en cours de mise à jour, `suspendue` = retrait jusqu'à réactivation. Ni l'une ni l'autre n'est publique — 404, jamais 403 (RG03) — et revenir en ligne repasse par le contrôle d'abonnement (RG14) |
 | Page profil (relecture) | `isAdminPend` | `/admin/propositions` | ✅ |
 | Avis — modération | `isAdminAvisAll` | `/admin/avis` | ✅ |
 | Blog | `isBlogList` | `/admin/blog` | ✅ |
 | Article (éditeur) | `isBlogDetail` | `/admin/blog` | ✅ |
 | Journal d'audit | `isAdminJournal` | `/admin/journal` | ✅ |
-| Contenu du site | `isAdminContent` | `/admin/contenu` | 🟡 FAQ, page « À propos » et les **trois pages légales** (onglets) — manquent les catégories d'articles, qui demandent une migration |
-| Tableau de bord | `isAdminDash` | `/admin` | 🟡 activité, à traiter, visites (30 j), top établissements — manquent le pipeline CRM (B-38), les encaissements (B-39) et la tuile « Recherches » (B-40) |
-| CRM Clients | `isAdminCrm` | `/admin/crm` | ✅ indicateurs, pipeline en 6 colonnes (RG17), relances, attribution des dossiers (RG18) |
-| Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, vues de fiches, demandes, nouveaux avis, courbe, vues par type, top établissements — manquent les visites, les recherches, le taux de transformation et « Recherches par ville » (B-40) |
-| Abonnement & facturation | `isAdminFact` | `/admin/facturation` | 🟡 indicateurs, historique, encaissement ✅ · ouverture d'abonnement et émission de facture depuis la fiche ✅ — manque le **détail de facture** (`isAdminFactDetail`) |
-| Facture (détail) | `isAdminFactDetail` | — | ❌ formules, essai, remise, reçu |
-| Secrétariat | `isAdminUsers` | `/admin/secretariat` | 🟡 comptes et rattachement, portées déléguées (RG05), suspension qui coupe les sessions (RG25) — manquent la **création de compte** et la **réinitialisation de mot de passe** : qui a le droit de créer un compte et comment le mot de passe parvient à son titulaire ne sont écrits nulle part |
-| Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | 🟡 portefeuilles, transformations, taux, relances dues, commissions — manque la **création de compte**, qui se fait par `compte:creer --role=commercial` |
-| Base de données | `isAdminDb` | — | ❌ explorateur lecture seule (pas dans la navigation actuelle) |
+| Contenu du site | `isAdminContent` | `/admin/contenu` | ✅ FAQ, page « À propos », les **trois pages légales** et les **catégories d'articles** (onglets). Les *demandes* de catégorie de la maquette restent à définir : qui demande, ce qui se passe au refus, et si le demandeur est prévenu — tranché le 7 octobre 2026 : pas de file séparée, la catégorie inédite s'adopte en approuvant l'article qui l'emploie (B-50) |
+| Tableau de bord | `isAdminDash` | `/admin` | ✅ activité, à traiter, visites (30 j), top établissements, **pipeline CRM** et **dernières factures** (B-38, B-39). « Encaisser » renvoie à l'écran de facturation plutôt que d'ouvrir un second chemin vers la RG14. **Recherches effectuées** servie depuis que les recherches sont tracées (B-40) |
+| CRM Clients | `isAdminCrm` | `/admin/crm` | ✅ indicateurs, pipeline en 6 colonnes (RG17), relances, attribution des dossiers (RG18), **pastille des prospects jamais ouverts** dans le menu — seul signal qu'une demande du formulaire public est arrivée, faute d'envoi d'e-mail (B-46) |
+| Statistiques | `isAdminStats` | `/admin/statistiques` | 🟡 filtres période / ville / type, cinq indicateurs sur six — **recherches** et **taux de transformation** compris —, courbe, **« Recherches par ville »**, vues par type, top établissements. Manquent les seules « visites du site », faute de définition et non de code (B-40) |
+| Abonnement & facturation | `isAdminFact` | `/admin/facturation` | ✅ indicateurs, historique, encaissement · ouverture d'abonnement et émission de facture depuis la fiche. (Cette ligne annonçait le détail de facture manquant quand la ligne suivante le disait fait — **onzième contradiction de ce relevé**, levée le 9 octobre 2026 : le détail vit sous la fiche, dans « Établissements ».) |
+| Facture (détail) | `isAdminFactDetail` | sous la fiche, dans « Établissements » | 🟡 **formules, essai et remise sont faits** par le panneau `AbonnementEtablissement` — choix de la formule, tarif négocié, remise annuelle (RG11), émission et encaissement. **récapitulatif avant émission** depuis le 9 octobre 2026 — objet, base HT, remise, total HT, TVA, total TTC, calculés par le serveur avec le code qui émet, et éprouvés identiques à la facture produite. Jusque-là on émettait une pièce comptable sans en connaître le montant. Ne manque que le **reçu**, bloqué : il porte des mentions légales obligatoires (raison sociale, RC/ICE) encore `[À COMPLÉTER]` |
+| Secrétariat | `isAdminUsers` | `/admin/secretariat` | ✅ **quatre portées déléguées** depuis le 7 octobre 2026, la relecture du blog comprise (B-51) · **création de compte** et **réinitialisation de mot de passe** comprises, avec rattachement, portées déléguées (RG05) et suspension qui coupe les sessions (RG25). Le mot de passe est tiré au sort et affiché **une seule fois** — un lien de première connexion par courriel vaudrait mieux, mais il n'y a aucun envoi d'e-mail dans le projet (B-46) |
+| Commerciaux | `isAdminCommerciaux` | `/admin/commerciaux` | ✅ **création de compte** comprise, portefeuilles, transformations, taux, relances dues, commissions. Un commercial sans téléphone n'apparaît pas sur la bannière d'aide du site, et l'écran le dit |
+| Base de données | `isAdminDb` | `/admin/base` | ✅ six tables en **lecture seule**, colonnes énumérées une par une — jamais `SELECT *`. Sont écartés le hachage de mot de passe, le contact d'un auteur d'avis (loi 09-08) et le téléphone d'un lead, qui appartient à l'établissement (RG23). Aucune requête libre : une table hors liste répond 422 |
 
 **Hors maquette, construits en plus** : Sponsoring (`/admin/sponsorings`) et
 Paramètres de facturation (`/admin/parametres`) — écrans dessinés sans
@@ -115,7 +115,7 @@ référence, à la demande du client.
 
 ---
 
-## Espace établissement — 5 / 7
+## Espace établissement — 6 / 7
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
@@ -125,7 +125,7 @@ référence, à la demande du client.
 | Blog | `isBlogList` | `/espace/blog` | ✅ |
 | Article (éditeur) | `isBlogDetail` | `/espace/blog` | ✅ |
 | Statistiques | `isEtabStats` | `/espace/statistiques` | 🟡 vues du mois, clics « Appeler », contacts WhatsApp (écart au mois précédent à date), vues mensuelles, origine des contacts — manque « Taux de contact », sans définition (B-42) |
-| Abonnement & facturation | `isEtabCredits` | `/espace/facturation` | ❌ formules, factures, conseiller |
+| Abonnement & facturation | `isEtabCredits` | `/espace/facturation` | ✅ formule en cours, vues du mois, les trois formules avec le badge de l'état réel, factures et conseiller. **Lecture seule** — ni souscription ni paiement sur la plateforme. **Refusé au secrétariat** : la RG05 ne délègue que `fiches`, `contacts` et `avis`, et la facturation n'en est pas une |
 | CRM Leads | `isCrm` | — | ⛔ hors périmètre |
 
 **Hors maquette, construit en plus** : Demandes de contact (`/espace/demandes`).
@@ -151,18 +151,24 @@ Servi par **les mêmes écrans que l'établissement**, filtrés par portée dél
 
 ---
 
-## Espace commercial — 2 / 6 écrans complets
+## Espace commercial — 3 / 5 écrans complets
 
-**La navigation et les six routes existent** (`/commercial/…`, thème
-`commercial` de `SidebarNav`) : un commercial se connecte et arrive dans son
-espace. Le blog est construit ; les cinq autres entrées mènent à une page
-d'attente qui nomme ce qu'elle contiendra — le CRM n'expose encore aucune
-route à ce rôle.
+**Les cinq routes existent** (`/commercial/…`, thème `commercial` de
+`SidebarNav`) : un commercial se connecte et arrive dans son espace. **Quatre
+écrans sur cinq sont construits**, dont trois complets — agenda, mes leads et
+blog. Seul « Statistiques » reste une page d'attente, et elle attend une
+DÉFINITION, pas du travail : ce qu'un commercial doit lire des chiffres d'une
+fiche n'est écrit nulle part.
+
+(Ce tableau portait DEUX lignes pour `isAgenda`, l'une ✅ et l'autre 🟡 —
+**douzième contradiction du relevé**, levée le 9 octobre 2026 après lecture de
+`CalendrierRelances.tsx` : le calendrier existe. La ligne périmée annonçait un
+écran à faire qui était fait, et le texte ci-dessus comptait « transferts &
+commissions » parmi les complets quand sa propre ligne le disait partiel.)
 
 | Écran | Clé maquette | Route | État |
 |---|---|---|---|
-| Tableau de bord | `isCommercialDash` | `/commercial` | 🟡 son portefeuille et ses indicateurs — la maquette y met aussi les transferts, qui ne sont pas définis |
-| Agenda & tâches | `isAgenda` | `/commercial/agenda` | 🟡 relances dues, retards signalés, « c’est fait » (RG17) — manquent le calendrier et la synchronisation Google Agenda |
+| Agenda & tâches | `isAgenda` | `/commercial/agenda` | ✅ **calendrier du mois** (lundi en tête, pastille sur les jours chargés, filtrage au clic), relances dues, retards signalés, « c'est fait » (RG17) — reste la synchronisation Google Agenda, qui demande un compte de service |
 | Mes leads | `isCrm` | `/commercial/leads` | ✅ pipeline borné à son portefeuille par le serveur, relances comprises |
 | Transferts & commissions | `isTransferts` | `/commercial/transferts` | 🟡 commissions par facture et par statut (RG18) — le **transfert de dossier** entre commerciaux n’est défini nulle part |
 | Statistiques | `isEtabStats` (bloc partagé avec l'établissement) | `/commercial/statistiques` | ❌ page d'attente — la maquette y remet les chiffres d'une fiche ; ce qu'un commercial doit y lire (son portefeuille ?) n'est pas dit |
@@ -171,14 +177,14 @@ route à ce rôle.
 
 ## Récapitulatif
 
-| Périmètre | Fait | Reste |
-|---|---|---|
-| Site public | 9 | 0 + 4 partiels — dont 2 pages légales, rédigées mais portant des mentions à compléter |
-| Administration | 6 | 2 + 7 partiels |
-| Établissement | 5 | 1 + 1 partiel |
-| Secrétariat | 5 | 0 |
-| Commercial | 2 | 1 + 3 partiels |
-| **Total** | **27** | **4 + 15 partiels** |
+| Périmètre | Complets | Partiels | Restants |
+|---|---|---|---|
+| Site public (13) | 9 | 4 — dont 2 pages légales en attente de mentions, et la 3ᵉ de l'image, carte et réseaux sociaux | 0 |
+| Administration (15) | 13 | 2 | 0 |
+| Établissement (7) | 6 | 1 — statistiques | 0 (+1 hors périmètre) |
+| Secrétariat (5) | 5 | 0 | 0 |
+| Commercial (5) | 3 | 1 | 1 — statistiques, en attente de définition |
+| **Total (45)** | **36** | **8** | **1** |
 
 Ces nombres sont **recomptés depuis les tableaux ci-dessus**, pas tenus à la
 main : un écran passé de ❌ à 🟡 sans que le récapitulatif suive a déjà fait
@@ -236,7 +242,7 @@ node docs/sections.mjs "docs/handoff/écoles360.dc.html" isHome
 | Compteur « N établissements » | ✅ |
 | `skeletons` pendant le chargement | ✅ |
 | `results` — cartes du design system | ✅ |
-| **Bascule « Carte »** — vue cartographique | ❌ |
+| Bascule « Carte » — vue cartographique | ✅ `CarteResultats` (Leaflet + OpenStreetMap), avec le bouton « Carte » de chaque résultat qui y situe la fiche. **Cette ligne disait ❌ alors que la ligne 66 disait ✅** — vérifié dans `Resultats.tsx` le 7 octobre 2026 |
 | Pagination `pages` | ✅ |
 | `emptyState` + « Réinitialiser les filtres » | ✅ |
 
@@ -250,7 +256,7 @@ Filières · Équipements · Tarifs · Équipe · Avis.
 | Galerie `gallery`, badges, spécifications | ✅ |
 | Onglets `Tabs`, `detCycles`, `detChiffres`, `det_filieres` | ✅ |
 | `equipementsFiche`, `detTarifs`, `detFacilites` | ✅ |
-| **`detTeam` — onglet Équipe** | ❌ |
+| `detTeam` — onglet Équipe | ✅ servi par `equipe`, édité depuis l'espace via la file de propositions (RG20). **Cette ligne disait ❌ alors que la ligne 67 disait ✅ du même écran** — vérifié dans `Fiche.tsx` le 7 octobre 2026 |
 | Avis : `avisDist`, `avisStarChips`, `avisSortOptions`, `avisList` | ✅ |
 | Dépôt d'avis : formulaire étoiles + « Soumettre mon avis » | ✅ |
 | **« Utile (n) » — vote d'utilité sur un avis** | ❌ |
@@ -275,7 +281,7 @@ Filières · Équipements · Tarifs · Équipe · Avis.
 |---|---|
 | « Notre mission » + H1 | ✅ `accroche`, `mission` |
 | « Notre histoire » | ✅ `histoire` — sans l'image, qui n'a pas de source |
-| **`trustStats` — bande de chiffres** | ❌ aucune source ; les chiffres de la maquette (« 1 200 établissements, 24 villes ») ne sont pas ceux de la base |
+| `trustStats` — bande de chiffres | ✅ `BandeauChiffres`, partagé avec l'accueil. Deux des quatre chiffres de la maquette sont **remplacés, pas inventés** : rien ne trace les « parents par mois » (B-40), et une note moyenne de tout le catalogue vaudrait, au démarrage, la note de la seule école notée. À leur place, le nombre de types (RG02) et la gratuité — vrais le premier jour comme le millième |
 | « Ce qui nous guide / Nos valeurs » + `aboutValues` | ✅ `valeurs` |
 | « Nos engagements » — hors maquette | ✅ `engagements` : le texte de l'ancienne page, relu par le client (sponsoring, avis, loi 09-08) |
 | « Les visages / L'équipe écoles360 » + `teamAv` | ✅ `equipe`, rendu par `TeamMember` ; semé vide, section masquée tant que le back-office ne l'a pas remplie |
@@ -291,12 +297,14 @@ l'autre.
 
 | Bloc | État |
 |---|---|
-| H1 + « Commencer l'inscription » | ✅ |
-| `benefits` | ✅ |
-| **« Formules de visibilité » + `plans`, bascule Mensuel / Annuel −10 %** | ❌ |
-| `insSteps3` — les trois étapes | ✅ |
-| « On s'occupe de tout par téléphone » / « Vous préférez écrire ? » | 🟡 |
-| Formulaire en 2 étapes + « Demande envoyée ! » | ✅ |
+| H1 + « Commencer l'inscription » | ✅ les boutons des trois formules mènent au formulaire |
+| `benefits` | ✅ sous deux cartes (« gratuitement » / « ce que l'abonnement ajoute ») |
+| « Formules de visibilité » + `plans`, bascule Mensuel / Annuel −10 % | ✅ `FormulesVisibilite`, trois `PricingCard` du design system. **Sans montants — c'est la maquette qui le veut** : elle écrit « Tarif communiqué par votre conseiller ». La bascule ne calcule rien, elle annonce la remise de 10 % (RG11). Sous-titre et note rendus autour de la carte, faute de fente (CORRECTIFS.md §6) |
+| `insSteps3` — les trois étapes | ✅ posées entre les formules et le formulaire, comme la maquette. Les « 48 h » sont un engagement : le même délai est promis par la réponse de `POST /inscriptions`, et les deux doivent changer ensemble |
+| « On s'occupe de tout par téléphone » / « Vous préférez écrire ? » | 🟡 un bloc « Comment s'inscrire » donne les deux canaux, sans les deux titres de la maquette |
+| Formulaire en 2 étapes + « Demande envoyée ! » | ✅ `FormulaireInscription` sur `POST /inscriptions`, route publique d'un module à part — jamais une exception au milieu de `CrmController`, qui est entièrement derrière la session. Le prospect naît « nouveau », sans commercial (RG17) et sans fiche. Consentement 09-08 obligatoire, trois demandes par heure, et le 429 est dit en français. Vérifié de bout en bout : formulaire rempli dans le navigateur, prospect relu en base |
+| `insTestimonials` — « La parole aux directeurs » | ❌ aucune source ; les témoignages de la maquette sont fictifs |
+| `insFaqItems` — questions fréquentes | ❌ la FAQ du CMS est celle des parents ; celle-ci s'adresse aux directeurs |
 
 ---
 

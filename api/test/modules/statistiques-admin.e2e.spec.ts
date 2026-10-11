@@ -23,7 +23,13 @@ type Periode = '7j' | '30j' | '90j' | '12m';
 interface Statistiques {
   periode: Periode;
   granularite: 'jour' | 'semaine' | 'mois';
-  indicateurs: { vues_fiches: number; demandes: number; nouveaux_avis: number };
+  indicateurs: {
+    vues_fiches: number;
+    demandes: number;
+    nouveaux_avis: number;
+    recherches: number;
+    taux_transformation: number | null;
+  };
   courbe: { debut: string; vues: number }[];
   vues_par_type: { type: string; vues: number }[];
   top_etablissements: {
@@ -33,6 +39,7 @@ interface Statistiques {
     contacts: number;
     ville: { slug: string };
   }[];
+  recherches_par_ville: { nom: string; slug: string; recherches: number }[];
   options: { villes: { slug: string; nom: string }[] };
 }
 
@@ -138,6 +145,7 @@ describe('Statistiques de l’administration (intégration)', () => {
   }
 
   const ilYA = (jours: number) => new Date(Date.now() - jours * 24 * 3600 * 1000);
+  const somme = (valeurs: number[]) => valeurs.reduce((total, valeur) => total + valeur, 0);
 
   /** Pose une vue sur la fiche de démonstration, et la retire en fin de test. */
   async function avecVue<T>(jours: number, corps: () => Promise<T>): Promise<T> {
@@ -284,7 +292,6 @@ describe('Statistiques de l’administration (intégration)', () => {
       ['12m', 'mois'],
     ])('rend une courbe dont la somme est le total — %s', async (periode, granularite) => {
       const stats = await lire(`?periode=${periode}`);
-      const somme = (valeurs: number[]) => valeurs.reduce((total, v) => total + v, 0);
 
       expect(stats.granularite).toBe(granularite);
       expect(somme(stats.courbe.map((point) => point.vues))).toBe(stats.indicateurs.vues_fiches);
@@ -296,6 +303,139 @@ describe('Statistiques de l’administration (intégration)', () => {
       const debuts = stats.courbe.map((point) => point.debut);
       expect([...debuts].sort()).toEqual(debuts);
       expect(new Set(debuts).size).toBe(debuts.length);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  //  Recherches — B-40
+  // ---------------------------------------------------------------------------
+
+  describe('recherches', () => {
+    /**
+     * Pose une trace de recherche, et la retire en fin de test.
+     *
+     * ÉCRITE DIRECTEMENT, SANS PASSER PAR LA ROUTE PUBLIQUE : celle-ci trace
+     * sans attendre son écriture, et un test qui lirait aussitôt lirait
+     * parfois avant. L'enregistrement par la recherche est éprouvé ailleurs —
+     * dans la suite du site public, avec une attente.
+     */
+    async function avecRecherche<T>(
+      villeSlug: string | null,
+      jours: number,
+      corps: () => Promise<T>,
+    ): Promise<T> {
+      const ville = villeSlug
+        ? await db.ville.findUniqueOrThrow({ where: { slug: villeSlug } })
+        : null;
+
+      const trace = await db.traceRecherche.create({
+        data: { ville_id: ville?.id ?? null, type: null, nb_resultats: 3, survenu_le: ilYA(jours) },
+      });
+
+      try {
+        return await corps();
+      } finally {
+        await db.traceRecherche.delete({ where: { id: trace.id } });
+      }
+    }
+
+    it('compte la recherche dans sa ville, et nulle part ailleurs', async () => {
+      const { options } = await lire();
+      const premiere = options.villes[0]!;
+      const seconde = options.villes[1]!;
+
+      const [avantToutes, avantPremiere, avantSeconde] = await Promise.all([
+        lire(),
+        lire(`?ville=${premiere.slug}`),
+        lire(`?ville=${seconde.slug}`),
+      ]);
+
+      await avecRecherche(premiere.slug, 1, async () => {
+        const [toutes, dansPremiere, dansSeconde] = await Promise.all([
+          lire(),
+          lire(`?ville=${premiere.slug}`),
+          lire(`?ville=${seconde.slug}`),
+        ]);
+
+        expect(toutes.indicateurs.recherches).toBe(avantToutes.indicateurs.recherches + 1);
+        expect(dansPremiere.indicateurs.recherches).toBe(avantPremiere.indicateurs.recherches + 1);
+        expect(dansSeconde.indicateurs.recherches).toBe(avantSeconde.indicateurs.recherches);
+      });
+    });
+
+    it('exclut une recherche antérieure à la période', async () => {
+      const avant = await lire('?periode=7j');
+
+      await avecRecherche(null, 10, async () => {
+        const [sept, trente] = await Promise.all([lire('?periode=7j'), lire('?periode=30j')]);
+
+        expect(sept.indicateurs.recherches).toBe(avant.indicateurs.recherches);
+        expect(trente.indicateurs.recherches).toBeGreaterThanOrEqual(1);
+      });
+    });
+
+    it('écarte du classement par ville une recherche sans ville, sans l’écarter du total', async () => {
+      const avant = await lire();
+      const avantParVille = somme(avant.recherches_par_ville.map((l) => l.recherches));
+
+      await avecRecherche(null, 1, async () => {
+        const apres = await lire();
+
+        expect(apres.indicateurs.recherches).toBe(avant.indicateurs.recherches + 1);
+        // Le classement ne bouge pas : une recherche sans ville n'a pas de
+        // ligne où figurer, et le total la compte déjà.
+        expect(somme(apres.recherches_par_ville.map((l) => l.recherches))).toBe(avantParVille);
+      });
+    });
+
+    it('classe les villes par recherches décroissantes, six au plus', async () => {
+      const stats = await lire();
+      const comptes = stats.recherches_par_ville.map((ligne) => ligne.recherches);
+
+      expect(stats.recherches_par_ville.length).toBeLessThanOrEqual(6);
+      expect([...comptes].sort((a, b) => b - a)).toEqual(comptes);
+      expect(somme(comptes)).toBeLessThanOrEqual(stats.indicateurs.recherches);
+
+      for (const ligne of stats.recherches_par_ville) {
+        expect(ligne.recherches).toBeGreaterThan(0);
+        expect(stats.options.villes.map((v) => v.slug)).toContain(ligne.slug);
+      }
+    });
+
+    it('rend un taux de transformation nul plutôt qu’un zéro quand rien n’a été cherché', async () => {
+      const stats = await lire();
+
+      if (stats.indicateurs.recherches === 0) {
+        expect(stats.indicateurs.taux_transformation).toBeNull();
+      } else {
+        expect(stats.indicateurs.taux_transformation).toBeCloseTo(
+          stats.indicateurs.demandes / stats.indicateurs.recherches,
+          10,
+        );
+      }
+    });
+
+    /**
+     * LA MINIMISATION EST UNE PROPRIÉTÉ DU SCHÉMA, et c'est pour cela qu'elle
+     * est éprouvée ici. Rien n'empêcherait d'ajouter un jour une colonne
+     * `terme`, `ip` ou `user_id` « pour mieux comprendre les recherches » : ce
+     * test fait échouer la suite ce jour-là, et oblige à reprendre la décision
+     * plutôt qu'à la défaire par inadvertance.
+     */
+    it('ne garde ni terme saisi, ni utilisateur, ni adresse IP', async () => {
+      const colonnes = await db.$queryRaw<{ nom: string }[]>`
+        SELECT COLUMN_NAME AS nom
+          FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'traces_recherche'
+      `;
+
+      expect(colonnes.map((colonne) => colonne.nom).sort()).toEqual([
+        'id',
+        'nb_resultats',
+        'survenu_le',
+        'type',
+        'ville_id',
+      ]);
     });
   });
 

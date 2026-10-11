@@ -204,13 +204,17 @@ export class ReferentielsSeeder {
         libelle: 'Durée légale de conservation des factures',
       },
       {
-        // À ZÉRO VOLONTAIREMENT : aucun livrable ne fixe ce taux, et l'inventer
-        // reviendrait à décider ce que touche un commercial. Tant qu'il vaut
-        // zéro, l'émission d'une facture ne crée aucune commission (RG18) ; la
-        // Direction pose la valeur depuis l'écran « Paramètres ».
+        // 8 % — FIXÉ PAR LE CLIENT LE 7 OCTOBRE 2026. Il valait zéro jusque-là,
+        // volontairement : aucun livrable ne posait ce taux, et l'inventer
+        // revenait à décider ce que touche un commercial.
+        //
+        // CE N'EST PAS UNE CONSTANTE POUR AUTANT. La valeur reste modifiable
+        // depuis l'écran « Paramètres », et `update: {}` ci-dessous garantit
+        // qu'un re-seed ne réécrit jamais une décision de gestion prise après
+        // coup. Le 8 n'est donc que le point de départ d'une base neuve.
         cle: 'commission_pct',
-        valeur: '0',
-        libelle: 'Taux de commission du commercial apporteur (RG18) — à fixer par la Direction',
+        valeur: '8',
+        libelle: 'Taux de commission du commercial apporteur (RG18)',
       },
     ];
 

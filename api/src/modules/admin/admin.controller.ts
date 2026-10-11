@@ -18,7 +18,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles, Utilisateur } from '../../common/decorators';
+import { Roles, Scopes, Utilisateur } from '../../common/decorators';
 import { AppException, ERROR_CODES } from '../../common/errors';
 import { POIDS_MAX_OCTETS, type FichierTeleverse } from '../../common/stockage/stockage.service';
 import {
@@ -26,6 +26,7 @@ import {
   AvisStatut,
   EtablissementStatut,
   FactureStatut,
+  PermissionPortee,
   RoleCode,
   type EtablissementType,
 } from '../../generated/prisma';
@@ -36,6 +37,7 @@ import { ParametresFacturationService } from './parametres-facturation.service';
 import { AuditLectureService } from './audit-lecture.service';
 import { TableauDeBordAdminService } from './tableau-de-bord-admin.service';
 import { StatistiquesAdminService } from './statistiques-admin.service';
+import { CreerCompteDto } from './dto/creer-compte.dto';
 import { StatistiquesAdminDto } from './dto/statistiques-admin.dto';
 import { SponsoringsService } from '../sponsorings/sponsorings.service';
 import { ArticlesService } from '../articles/articles.service';
@@ -46,6 +48,8 @@ import { RedigerArticleAdminDto } from '../articles/dto/rediger-article-admin.dt
 import { ModerationAvisService } from '../avis/moderation.service';
 import { DecisionAvisDto } from '../avis/dto/decision-avis.dto';
 import { BasculeEnAvantDto } from '../avis/dto/bascule-en-avant.dto';
+import { CategoriesArticlesService } from '../contenu/categories-articles.service';
+import { CategorieArticleDto } from '../contenu/dto/categorie-article.dto';
 import { FaqService } from '../contenu/faq.service';
 import { FaqItemDto } from '../contenu/dto/faq-item.dto';
 import { OrdreFaqDto } from '../contenu/dto/ordre-faq.dto';
@@ -62,6 +66,8 @@ import { BadgesEtablissementDto } from './dto/badges-etablissement.dto';
 import { CreerEtablissementDto } from './dto/creer-etablissement.dto';
 import { PorteeSecretariatDto } from './dto/portee-secretariat.dto';
 import { StatutCompteDto } from './dto/statut-compte.dto';
+import { ComptesService } from './comptes.service';
+import { ExplorateurBaseService } from './explorateur-base.service';
 import { SecretariatService } from './secretariat.service';
 import { CrmService } from '../crm/crm.service';
 import { CrmLectureService } from '../crm/crm-lecture.service';
@@ -97,6 +103,9 @@ export class AdminController {
     private readonly moderationAvis: ModerationAvisService,
     private readonly photosService: PhotosService,
     private readonly secretariat: SecretariatService,
+    private readonly comptes: ComptesService,
+    private readonly categoriesArticles: CategoriesArticlesService,
+    private readonly explorateur: ExplorateurBaseService,
     private readonly crm: CrmService,
     private readonly crmLecture: CrmLectureService,
     private readonly facturation: FacturationService,
@@ -492,6 +501,47 @@ export class AdminController {
     return this.secretariat.lister();
   }
 
+  /**
+   * LA RÉPONSE PORTE LE MOT DE PASSE, UNE SEULE FOIS. Il est tiré au sort par
+   * le serveur et n'est stocké nulle part en clair — la base n'en garde qu'un
+   * hachage Argon2id, et le journal d'audit n'en garde rien du tout. C'est
+   * l'administrateur qui le transmet.
+   *
+   * CE N'EST PAS LA MEILLEURE RÉPONSE POSSIBLE : un lien de première connexion
+   * envoyé par courriel vaudrait mieux. Il n'y a aucun envoi d'e-mail dans ce
+   * projet (B-46), et cette convention est celle déjà posée par `compte:creer`
+   * en ligne de commande.
+   */
+  @Post('comptes')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Créer un compte de secrétariat ou de commercial (RG25)',
+    description:
+      'Le mot de passe est tiré au sort et rendu UNE SEULE FOIS. ' +
+      'Un secrétariat naît sans aucune portée déléguée : elles s’accordent ensuite, une par une (RG05).',
+  })
+  @ApiResponse({ status: 201, description: 'Compte créé, mot de passe à transmettre.' })
+  @ApiResponse({ status: 409, description: 'Un compte existe déjà avec cette adresse.' })
+  creerCompte(@Utilisateur() utilisateur: UtilisateurAuthentifie, @Body() dto: CreerCompteDto) {
+    return this.comptes.creer(dto, utilisateur.userId);
+  }
+
+  @Post('comptes/:id/mot-de-passe')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Réinitialiser le mot de passe d’un compte de personnel',
+    description:
+      'Les sessions en cours sont détruites : laisser vivre une session ouverte ' +
+      'avec un mot de passe que l’on réinitialise ne protégerait de rien (RG25).',
+  })
+  @ApiResponse({ status: 403, description: 'Compte administrateur — passer par « compte:creer ».' })
+  reinitialiserMotDePasse(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.comptes.reinitialiser(BigInt(id), utilisateur.userId);
+  }
+
   @Patch('secretariat/:id/portee')
   @ApiOperation({
     summary: 'Accorder ou révoquer une portée déléguée (RG05)',
@@ -582,6 +632,40 @@ export class AdminController {
    * qu'on peut retoucher ne prouve rien. Les écritures viennent uniquement
    * d'`AuditService`, appelé dans la transaction de l'action qu'il trace.
    */
+  // ---------------------------------------------------------------------------
+  //  Explorateur de base — écran `isAdminDb`, LECTURE SEULE
+  // ---------------------------------------------------------------------------
+
+  @Get('base')
+  @ApiOperation({
+    summary: 'Tables consultables et leurs colonnes',
+    description: 'Liste fermée de six tables. Aucune requête libre, aucun nom de table arbitraire.',
+  })
+  catalogueBase() {
+    return this.explorateur.catalogue();
+  }
+
+  /**
+   * LA TABLE VIENT D'UNE LISTE FERMÉE, jamais du paramètre. Le service choisit
+   * une fonction de lecture par clé ; rien n'est interpolé dans une requête.
+   * Un explorateur qui prendrait un nom de table serait une injection SQL
+   * avec une interface.
+   */
+  @Get('base/:table')
+  @ApiOperation({
+    summary: 'Lignes d’une table, paginées',
+    description:
+      'Colonnes énumérées une par une — jamais `SELECT *`. Le hachage de mot de passe et le ' +
+      'contact d’un auteur d’avis ne sortent pas (loi 09-08).',
+  })
+  @ApiResponse({ status: 422, description: 'Table hors de la liste consultable.' })
+  lireBase(
+    @Param('table') table: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
+  ) {
+    return this.explorateur.lire(table, page);
+  }
+
   @Get('audit')
   @ApiOperation({
     summary: 'Journal d’audit, du plus récent au plus ancien',
@@ -646,10 +730,25 @@ export class AdminController {
     return this.moderationAvis.basculerEnAvant(BigInt(id), dto.en_avant, utilisateur.userId);
   }
 
+  /**
+   * OUVERTE AU SECRÉTARIAT QUI PORTE LA PORTÉE `blog` — RG05, étendue par le
+   * client le 7 octobre 2026 : la relecture du blog « est un privilège que
+   * l'admin peut céder à la secrétaire lors de l'ajout ».
+   *
+   * LE `@Roles` DE LA MÉTHODE SURCHARGE CELUI DE LA CLASSE, qui réserve tout
+   * `/admin` au superadmin. Le `@Scopes` ajoute la seconde condition :
+   * `ScopesGuard` laisse passer un superadmin sans portée — son périmètre les
+   * englobe — et exige la portée de tout autre rôle. Les deux décorateurs sont
+   * donc nécessaires, et aucun ne suffit seul.
+   */
   @Get('articles')
+  @Roles(RoleCode.superadmin, RoleCode.secretariat)
+  @Scopes(PermissionPortee.blog)
   @ApiOperation({
     summary: 'Articles du blog, filtrables par statut',
-    description: 'Sans filtre : tout le circuit, brouillons des établissements compris.',
+    description:
+      'Sans filtre : tout le circuit, brouillons des établissements compris. ' +
+      'Ouverte au secrétariat portant la portée « blog » (RG05).',
   })
   articles(@Query('statut') statut?: ArticleStatut) {
     return this.articlesService.listerPourAdmin(statut);
@@ -697,10 +796,21 @@ export class AdminController {
     return this.articlesService.supprimerParAdmin(BigInt(id), utilisateur.userId);
   }
 
+  /**
+   * MÊME PORTÉE QUE LA LECTURE, ET C'EST LE POINT. Confier la relecture du
+   * blog sans la décision n'aurait aucun sens : la secrétaire verrait la file
+   * sans pouvoir la vider. Approuver adopte au passage une catégorie inédite
+   * (B-50) — elle enrichit donc le référentiel de toute la rédaction, comme le
+   * ferait l'administrateur. C'est le même geste, pas un sous-ensemble.
+   */
   @Patch('articles/:id')
+  @Roles(RoleCode.superadmin, RoleCode.secretariat)
+  @Scopes(PermissionPortee.blog)
   @ApiOperation({
     summary: 'Approuver ou refuser un article soumis',
-    description: 'Le motif est obligatoire au refus et rendu à l’auteur (livrable 11 §3.5).',
+    description:
+      'Le motif est obligatoire au refus et rendu à l’auteur (livrable 11 §3.5). ' +
+      'Ouverte au secrétariat portant la portée « blog » (RG05).',
   })
   @ApiResponse({ status: 409, description: 'Article qui n’est pas en attente de validation.' })
   deciderArticle(
@@ -708,7 +818,7 @@ export class AdminController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: DecisionArticleDto,
   ) {
-    return this.articlesService.decider(BigInt(id), dto, utilisateur.userId);
+    return this.articlesService.decider(BigInt(id), dto, utilisateur.userId, utilisateur.role);
   }
 
   @Patch('articles/:id/a-la-une')
@@ -730,6 +840,43 @@ export class AdminController {
   @ApiOperation({ summary: 'FAQ éditoriale — questions dépubliées comprises' })
   faq() {
     return this.faqService.listerPourAdmin();
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Catégories d'articles — onglet « Catégories » de « Contenu du site »
+  // ---------------------------------------------------------------------------
+
+  @Post('categories-articles')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Ajouter une catégorie à la liste proposée à la rédaction',
+    description:
+      'La liste est un référentiel, pas une contrainte : `Article.categorie` reste une chaîne libre.',
+  })
+  @ApiResponse({ status: 409, description: 'Cette catégorie existe déjà.' })
+  creerCategorieArticle(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Body() dto: CategorieArticleDto,
+  ) {
+    return this.categoriesArticles.creer(dto.libelle, utilisateur.userId);
+  }
+
+  /**
+   * LA RÉPONSE DIT COMBIEN D'ARTICLES GARDENT CE LIBELLÉ. Retirer une
+   * catégorie encore portée est permis — c'est le cas courant quand on renomme
+   * une rubrique — mais l'administrateur doit savoir ce qu'il laisse derrière.
+   */
+  @Delete('categories-articles/:id')
+  @ApiOperation({
+    summary: 'Retirer une catégorie de la liste proposée',
+    description: 'Ne déclasse aucun article : elle cesse seulement d’être offerte à la rédaction.',
+  })
+  @ApiResponse({ status: 404, description: 'Catégorie inconnue.' })
+  supprimerCategorieArticle(
+    @Utilisateur() utilisateur: UtilisateurAuthentifie,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.categoriesArticles.supprimer(BigInt(id), utilisateur.userId);
   }
 
   @Post('faq')

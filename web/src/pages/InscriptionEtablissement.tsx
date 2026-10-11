@@ -1,20 +1,25 @@
 import { Link } from 'react-router-dom';
+import { FormulaireInscription } from '@/components/FormulaireInscription';
+import { FormulesVisibilite } from '@/components/FormulesVisibilite';
+import { useConseillerAffiche } from '@/components/MobilierAssistance';
+import { lienTelephone } from '@/lib/telephone';
 import { useTitrePage } from '@/lib/titre';
 
 /** Adresse de contact commercial — reprise partout où un établissement doit nous joindre. */
 const EMAIL = 'etablissements@ecoles360.com';
-const TEL = '+212 5 22 00 00 00';
 
 /**
  * Inscrire son établissement — livrable 1 (offre) et livrable 12 §5.
  *
- * PAS DE FORMULAIRE ICI, DÉLIBÉRÉMENT. La création de prospect est une route
- * du back-office commercial (lot 5) : aucune API publique ne l'accepte
- * aujourd'hui. Afficher un formulaire qui n'enverrait rien — ou qui afficherait
- * « nous vous recontacterons » sans que personne ne soit prévenu — coûterait
- * exactement ce que cette page cherche à gagner : la confiance d'un directeur
- * d'établissement. On donne donc les deux canaux qui fonctionnent vraiment
- * aujourd'hui, et le formulaire prendra leur place quand la route existera.
+ * LE FORMULAIRE EXISTE DEPUIS QUE LA ROUTE EXISTE. Il a longtemps manqué, et
+ * c'était volontaire : afficher un formulaire qui n'enverrait rien — ou qui
+ * dirait « nous vous recontacterons » sans que personne ne soit prévenu —
+ * aurait coûté exactement ce que cette page cherche à gagner, la confiance
+ * d'un directeur d'établissement. `POST /inscriptions` l'enregistre désormais
+ * comme prospect « nouveau » dans le pipeline commercial (RG17).
+ *
+ * LES CANAUX DIRECTS RESTENT, SOUS LE FORMULAIRE. Un directeur qui préfère
+ * appeler ne doit pas avoir à remplir onze champs pour obtenir un numéro.
  */
 export function InscriptionEtablissement() {
   useTitrePage(
@@ -22,8 +27,13 @@ export function InscriptionEtablissement() {
     'Référencez gratuitement votre établissement privé sur écoles360 et recevez les demandes des parents.',
   );
 
+  // Le même conseiller que la bannière flottante : deux numéros sur une page
+  // laisseraient le directeur choisir celui qui ne répond pas.
+  const { numero: numeroConseiller } = useConseillerAffiche();
+
   return (
-    <div className="conteneur section" style={{ maxWidth: 780 }}>
+    <>
+      <div className="conteneur section" style={{ maxWidth: 780 }}>
       <h1 className="titre-section">Inscrire mon établissement</h1>
       <p className="sous-titre-section">
         Le référencement de base est gratuit. Vous ne payez que si vous voulez aller plus loin.
@@ -59,7 +69,22 @@ export function InscriptionEtablissement() {
         </p>
       </section>
 
-      <section style={{ ...carte, background: '#1D3557', border: 'none' }}>
+      </div>
+
+      {/* Pleine largeur : les trois cartes de la maquette ne tiennent pas dans
+          la colonne de 780 du reste de la page. */}
+      <FormulesVisibilite
+        onChoisir={() =>
+          document.getElementById('formulaire')?.scrollIntoView({ behavior: 'smooth' })
+        }
+      />
+
+      <TroisEtapes />
+
+      <FormulaireInscription />
+
+      <div className="conteneur section" style={{ maxWidth: 780, paddingTop: 0 }}>
+      <section style={{ ...carte, background: '#1D3557', border: 'none', marginTop: 24 }}>
         <h2 style={{ ...sousTitre, color: '#fff' }}>Comment s&rsquo;inscrire</h2>
         <p style={{ ...paragraphe, color: '#C6D2E2' }}>
           Écrivez-nous en indiquant le nom de votre établissement, sa ville et un numéro où vous
@@ -78,18 +103,25 @@ export function InscriptionEtablissement() {
           >
             {EMAIL}
           </a>
-          <a
-            href={`tel:${TEL.replace(/[^\d+]/g, '')}`}
-            style={{
-              font: "600 14px/1 'Inter', sans-serif",
-              color: '#fff',
-              border: '1px solid #3C5478',
-              borderRadius: 10,
-              padding: '13px 20px',
-            }}
-          >
-            {TEL}
-          </a>
+          {/* LE NUMÉRO VIENT DES CONSEILLERS, PAS D'UNE CONSTANTE. Il y avait
+              ici « +212 5 22 00 00 00 », qui ne sonne nulle part : un directeur
+              d'établissement l'aurait composé. Sans conseiller en base, le
+              bouton disparaît — mieux vaut un seul canal qui répond que deux
+              dont l'un raccroche. */}
+          {numeroConseiller && (
+            <a
+              href={lienTelephone(numeroConseiller)}
+              style={{
+                font: "600 14px/1 'Inter', sans-serif",
+                color: '#fff',
+                border: '1px solid #3C5478',
+                borderRadius: 10,
+                padding: '13px 20px',
+              }}
+            >
+              {numeroConseiller}
+            </a>
+          )}
         </div>
       </section>
 
@@ -99,7 +131,76 @@ export function InscriptionEtablissement() {
           Connectez-vous à votre espace
         </Link>
       </p>
-    </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * `insSteps3` de la maquette — ce qui se passe après l'envoi.
+ *
+ * LES QUARANTE-HUIT HEURES SONT UN ENGAGEMENT, pas une décoration. La maquette
+ * les écrit, et la réponse de l'API le répète déjà au demandeur (« un
+ * conseiller vous rappelle sous 48 heures ouvrées ») : les deux doivent dire
+ * la même chose, sans quoi l'un des deux ment. Si le délai change, il change
+ * ici ET dans `InscriptionsService`.
+ */
+function TroisEtapes() {
+  const etapes = [
+    {
+      rang: '1',
+      titre: 'Créez votre fiche',
+      texte: 'Remplissez les informations de votre établissement en quelques minutes.',
+    },
+    {
+      rang: '2',
+      titre: 'Validation sous 48 h',
+      texte: 'Nos équipes vérifient et publient votre fiche rapidement.',
+    },
+    {
+      rang: '3',
+      titre: 'Gagnez en visibilité',
+      texte: 'Recevez vos premiers contacts de parents qualifiés.',
+    },
+  ];
+
+  return (
+    <section style={{ maxWidth: 1180, margin: '64px auto 0', padding: '0 32px' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 18,
+        }}
+      >
+        {etapes.map((etape) => (
+          <div key={etape.rang} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <span
+              style={{
+                flex: 'none',
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                background: '#1D3557',
+                color: '#fff',
+                display: 'grid',
+                placeItems: 'center',
+                font: "800 16px/1 'Inter', sans-serif",
+              }}
+              aria-hidden
+            >
+              {etape.rang}
+            </span>
+            <div>
+              <h3 style={{ margin: 0, font: "700 17px/1.3 'Inter', sans-serif" }}>{etape.titre}</h3>
+              <p style={{ ...paragraphe, fontSize: 14.5, margin: '7px 0 0', color: '#5A6472' }}>
+                {etape.texte}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
